@@ -1,0 +1,19 @@
+name: kai_engine_workspace
+description: A modular, extensible AI chat engine built with a pipeline-based architecture.
+version: 1.0.0
+homepage: https://github.com/pckimlong/kai_engine
+repository: https://github.com/pckimlong/kai_engine
+issue_tracker: https://github.com/pckimlong/kai_engine/issues
+documentation: https://github.com/pckimlong/kai_engine#readme
+
+environment:
+  sdk: '^3.9.0-333.2.beta'
+
+dev_dependencies:
+  mono_repo: ^6.1.0
+  coverage: ^1.11.0
+  test: ^1.26.2
+
+workspace:
+  - packages/kai_engine
+  - packages/kai_engine_firebase_ai
