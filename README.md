@@ -1,8 +1,7 @@
 # Kai Engine
 
-[![Pub Version](https://img.shields.io/pub/v/kai_engine)](https://pub.dev/packages/kai_engine)
 [![GitHub](https://img.shields.io/github/license/pckimlong/kai_engine)](https://github.com/pckimlong/kai_engine/blob/main/LICENSE)
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/pckimlong/kai_engine/ci.yml)](https://github.com/pckimlong/kai_engine/actions)
+[![CI](https://github.com/pckimlong/kai_engine/actions/workflows/ci.yml/badge.svg)](https://github.com/pckimlong/kai_engine/actions/workflows/ci.yml)
 
 A modular, extensible AI chat engine built with a pipeline-based architecture.
 
@@ -14,7 +13,7 @@ This repository is a monorepo containing the following packages:
 
 | Package | Description | Version |
 |---------|-------------|---------|
-| [`kai_engine`](packages/kai_engine/) | The core AI chat engine with a pipeline-based architecture | [![Pub](https://img.shields.io/pub/v/kai_engine)](https://pub.dev/packages/kai_engine) |
+| [`kai_engine`](packages/kai_engine/) | The core AI chat engine with a pipeline-based architecture | TBD |
 | [`kai_engine_firebase_ai`](packages/kai_engine_firebase_ai/) | Firebase AI adapter for the Kai Engine | TBD |
 
 ## Overview
