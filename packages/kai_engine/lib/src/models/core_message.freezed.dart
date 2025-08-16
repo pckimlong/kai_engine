@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CoreMessage {
 
- String get messageId; CoreMessageType get type; String get content; IMap<String, dynamic> get extensions;
+ String get messageId; CoreMessageType get type; String get content; Map<String, dynamic> get extensions;
 /// Create a copy of CoreMessage
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,12 +28,12 @@ $CoreMessageCopyWith<CoreMessage> get copyWith => _$CoreMessageCopyWithImpl<Core
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CoreMessage&&(identical(other.messageId, messageId) || other.messageId == messageId)&&(identical(other.type, type) || other.type == type)&&(identical(other.content, content) || other.content == content)&&(identical(other.extensions, extensions) || other.extensions == extensions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CoreMessage&&(identical(other.messageId, messageId) || other.messageId == messageId)&&(identical(other.type, type) || other.type == type)&&(identical(other.content, content) || other.content == content)&&const DeepCollectionEquality().equals(other.extensions, extensions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,messageId,type,content,extensions);
+int get hashCode => Object.hash(runtimeType,messageId,type,content,const DeepCollectionEquality().hash(extensions));
 
 @override
 String toString() {
@@ -48,7 +48,7 @@ abstract mixin class $CoreMessageCopyWith<$Res>  {
   factory $CoreMessageCopyWith(CoreMessage value, $Res Function(CoreMessage) _then) = _$CoreMessageCopyWithImpl;
 @useResult
 $Res call({
- String messageId, CoreMessageType type, String content, IMap<String, dynamic> extensions
+ String messageId, CoreMessageType type, String content, Map<String, dynamic> extensions
 });
 
 
@@ -71,7 +71,7 @@ messageId: null == messageId ? _self.messageId : messageId // ignore: cast_nulla
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as CoreMessageType,content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
 as String,extensions: null == extensions ? _self.extensions : extensions // ignore: cast_nullable_to_non_nullable
-as IMap<String, dynamic>,
+as Map<String, dynamic>,
   ));
 }
 
@@ -153,7 +153,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String messageId,  CoreMessageType type,  String content,  IMap<String, dynamic> extensions)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String messageId,  CoreMessageType type,  String content,  Map<String, dynamic> extensions)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CoreMessage() when $default != null:
 return $default(_that.messageId,_that.type,_that.content,_that.extensions);case _:
@@ -174,7 +174,7 @@ return $default(_that.messageId,_that.type,_that.content,_that.extensions);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String messageId,  CoreMessageType type,  String content,  IMap<String, dynamic> extensions)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String messageId,  CoreMessageType type,  String content,  Map<String, dynamic> extensions)  $default,) {final _that = this;
 switch (_that) {
 case _CoreMessage():
 return $default(_that.messageId,_that.type,_that.content,_that.extensions);}
@@ -191,7 +191,7 @@ return $default(_that.messageId,_that.type,_that.content,_that.extensions);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String messageId,  CoreMessageType type,  String content,  IMap<String, dynamic> extensions)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String messageId,  CoreMessageType type,  String content,  Map<String, dynamic> extensions)?  $default,) {final _that = this;
 switch (_that) {
 case _CoreMessage() when $default != null:
 return $default(_that.messageId,_that.type,_that.content,_that.extensions);case _:
@@ -206,13 +206,19 @@ return $default(_that.messageId,_that.type,_that.content,_that.extensions);case 
 @JsonSerializable()
 
 class _CoreMessage extends CoreMessage {
-  const _CoreMessage({required this.messageId, required this.type, required this.content, this.extensions = const IMap.empty()}): super._();
+  const _CoreMessage({required this.messageId, required this.type, required this.content, final  Map<String, dynamic> extensions = const <String, dynamic>{}}): _extensions = extensions,super._();
   factory _CoreMessage.fromJson(Map<String, dynamic> json) => _$CoreMessageFromJson(json);
 
 @override final  String messageId;
 @override final  CoreMessageType type;
 @override final  String content;
-@override@JsonKey() final  IMap<String, dynamic> extensions;
+ final  Map<String, dynamic> _extensions;
+@override@JsonKey() Map<String, dynamic> get extensions {
+  if (_extensions is EqualUnmodifiableMapView) return _extensions;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_extensions);
+}
+
 
 /// Create a copy of CoreMessage
 /// with the given fields replaced by the non-null parameter values.
@@ -227,12 +233,12 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CoreMessage&&(identical(other.messageId, messageId) || other.messageId == messageId)&&(identical(other.type, type) || other.type == type)&&(identical(other.content, content) || other.content == content)&&(identical(other.extensions, extensions) || other.extensions == extensions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CoreMessage&&(identical(other.messageId, messageId) || other.messageId == messageId)&&(identical(other.type, type) || other.type == type)&&(identical(other.content, content) || other.content == content)&&const DeepCollectionEquality().equals(other._extensions, _extensions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,messageId,type,content,extensions);
+int get hashCode => Object.hash(runtimeType,messageId,type,content,const DeepCollectionEquality().hash(_extensions));
 
 @override
 String toString() {
@@ -247,7 +253,7 @@ abstract mixin class _$CoreMessageCopyWith<$Res> implements $CoreMessageCopyWith
   factory _$CoreMessageCopyWith(_CoreMessage value, $Res Function(_CoreMessage) _then) = __$CoreMessageCopyWithImpl;
 @override @useResult
 $Res call({
- String messageId, CoreMessageType type, String content, IMap<String, dynamic> extensions
+ String messageId, CoreMessageType type, String content, Map<String, dynamic> extensions
 });
 
 
@@ -269,8 +275,8 @@ class __$CoreMessageCopyWithImpl<$Res>
 messageId: null == messageId ? _self.messageId : messageId // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as CoreMessageType,content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
-as String,extensions: null == extensions ? _self.extensions : extensions // ignore: cast_nullable_to_non_nullable
-as IMap<String, dynamic>,
+as String,extensions: null == extensions ? _self._extensions : extensions // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,
   ));
 }
 

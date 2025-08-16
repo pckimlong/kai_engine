@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:kai_engine/kai_engine.dart';
 import 'package:kai_engine_firebase_ai/src/adapters.dart';
@@ -70,7 +69,7 @@ void main() {
           messageId: 'important-id',
           type: CoreMessageType.user,
           content: 'Message with metadata',
-          extensions: {'key': 'value'}.lock,
+          extensions: {'key': 'value'},
         );
 
         // Act
@@ -159,16 +158,12 @@ void main() {
     group('Function call handling with JSON storage', () {
       test('should preserve function calls via JSON storage', () {
         // Arrange
-        final functionCall = FunctionCall(
-          'test_function',
-          {'param1': 'value1', 'param2': 42},
-          id: 'call-123',
-        );
+        final functionCall = FunctionCall('test_function', {
+          'param1': 'value1',
+          'param2': 42,
+        }, id: 'call-123');
 
-        final content = Content('model', [
-          TextPart('I will call a function'),
-          functionCall,
-        ]);
+        final content = Content('model', [TextPart('I will call a function'), functionCall]);
 
         // Act - Convert to CoreMessage and back to Content
         final message = adapter.toCoreMessage(content);
@@ -196,14 +191,10 @@ void main() {
 
       test('should preserve function responses via JSON storage', () {
         // Arrange
-        final functionResponse = FunctionResponse(
-          'test_function',
-          {
-            'result': 'success',
-            'data': [1, 2, 3],
-          },
-          id: 'resp-456',
-        );
+        final functionResponse = FunctionResponse('test_function', {
+          'result': 'success',
+          'data': [1, 2, 3],
+        }, id: 'resp-456');
 
         final content = Content('function', [
           TextPart('Function executed successfully'),
@@ -361,10 +352,7 @@ void main() {
           messageId: 'test-123',
           type: CoreMessageType.user,
           content: 'What is the weather like?',
-          extensions: {
-            'timestamp': '2024-01-01',
-            'sessionId': 'session-123',
-          }.lock,
+          extensions: {'timestamp': '2024-01-01', 'sessionId': 'session-123'},
         );
 
         // Act
@@ -441,7 +429,7 @@ void main() {
             messageId: 'complex-1',
             type: CoreMessageType.user,
             content: 'Complex query',
-            extensions: {'context': 'important data'}.lock,
+            extensions: {'context': 'important data'},
           ),
         ];
 
@@ -468,9 +456,7 @@ void main() {
           messageId: '',
           type: CoreMessageType.ai,
           content: 'I will call some functions',
-          extensions: {
-            'someOtherKey': 'someValue',
-          }.lock,
+          extensions: {'someOtherKey': 'someValue'},
         );
 
         // Act

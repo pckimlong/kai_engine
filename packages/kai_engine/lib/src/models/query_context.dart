@@ -14,7 +14,8 @@ sealed class QueryContext with _$QueryContext {
     /// Original input from user
     required String originalQuery,
     required String processedQuery,
-    @Default(IList.empty()) IList<double> embeddings,
+    // Prefer normal lists over immutable ones due to it size
+    @Default([]) List<double> embeddings,
 
     /// Extensible map for more specific data
     @Default({}) Map<String, dynamic> metadata,

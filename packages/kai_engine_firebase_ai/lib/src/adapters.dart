@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 // ignore: implementation_imports
 import 'package:firebase_ai/src/content.dart'; // Access parsePart function
 import 'package:kai_engine/kai_engine.dart';
@@ -90,11 +89,7 @@ class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> 
       _ => CoreMessageType.unknown,
     };
 
-    return CoreMessage.create(
-      type: messageType,
-      content: combinedText,
-      extensions: extensions.lock,
-    );
+    return CoreMessage.create(type: messageType, content: combinedText, extensions: extensions);
   }
 
   /// Helper method to manually reconstruct parts that Firebase AI's parseContent doesn't handle
@@ -136,10 +131,7 @@ class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> 
     // Handle FileData
     if (partJson.containsKey('fileData')) {
       final fileData = partJson['fileData'] as Map<String, dynamic>;
-      return FileData(
-        fileData['mimeType'] as String,
-        fileData['fileUri'] as String,
-      );
+      return FileData(fileData['mimeType'] as String, fileData['fileUri'] as String);
     }
 
     // If we can't reconstruct it, return null
