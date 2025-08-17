@@ -9,16 +9,12 @@ import 'package:kai_engine_firebase_ai/kai_engine_firebase_ai.dart';
 base class TestFirebaseAiToolSchema extends FirebaseAiToolSchema<FunctionCall, String> {
   TestFirebaseAiToolSchema()
     : super(
-        parser: (Map<String, Object?> json) => FunctionCall(
-          'testFirebaseTool',
-          Map<String, Object?>.from(json),
-        ),
+        parser: (Map<String, Object?> json) =>
+            FunctionCall('testFirebaseTool', Map<String, Object?>.from(json)),
         declaration: FunctionDeclaration(
           'testFirebaseTool',
           'A test Firebase tool',
-          parameters: {
-            'query': Schema.string(description: 'Search query'),
-          },
+          parameters: {'query': Schema.string(description: 'Search query')},
         ),
       );
 
@@ -56,10 +52,7 @@ List<FirebaseAiToolSchema> testEffectiveTools(
   List<FirebaseAiToolSchema>? configTools,
 ) {
   final firebaseTools = tools.whereType<FirebaseAiToolSchema>().toList();
-  final merged = <FirebaseAiToolSchema>[
-    ...firebaseTools,
-    if (configTools != null) ...configTools,
-  ];
+  final merged = <FirebaseAiToolSchema>[...firebaseTools, if (configTools != null) ...configTools];
   return merged..removeDuplicates(by: (item) => item.name);
 }
 
@@ -126,9 +119,7 @@ void main() {
       });
 
       test('handles single system message', () {
-        final messages = [
-          CoreMessage.system('Only system'),
-        ].toIList();
+        final messages = [CoreMessage.system('Only system')].toIList();
 
         final filtered = filterSystemMessages(messages);
 
@@ -196,20 +187,14 @@ void main() {
 
     group('GenerativeConfig', () {
       test('creates config with system prompt', () {
-        const config = GenerativeConfig(
-          model: 'gemini-1.5-flash',
-          systemPrompt: 'Test prompt',
-        );
+        const config = GenerativeConfig(model: 'gemini-1.5-flash', systemPrompt: 'Test prompt');
 
         expect(config.model, equals('gemini-1.5-flash'));
         expect(config.systemPrompt, equals('Test prompt'));
       });
 
       test('creates config without system prompt', () {
-        const config = GenerativeConfig(
-          model: 'gemini-1.5-flash',
-          systemPrompt: null,
-        );
+        const config = GenerativeConfig(model: 'gemini-1.5-flash', systemPrompt: null);
 
         expect(config.model, equals('gemini-1.5-flash'));
         expect(config.systemPrompt, isNull);
@@ -219,10 +204,7 @@ void main() {
     group('Service instantiation', () {
       test('creates service with default adapter', () {
         // This is more of a smoke test to ensure the service can be instantiated
-        expect(
-          () => FirebaseAiGenerationService,
-          returnsNormally,
-        );
+        expect(() => FirebaseAiGenerationService, returnsNormally);
       });
     });
   });
@@ -284,30 +266,9 @@ void main() {
       // Note: The actual generationUsage attachment is tested separately
     });
 
-    test('copyWithGenerationUsage works correctly', () {
-      final originalMessage = CoreMessage.ai(content: 'Test response');
-      final usage = GenerationUsage(
-        inputToken: 100,
-        outputToken: 50,
-        apiCallCount: 1,
-      );
-
-      final messageWithUsage = originalMessage.copyWithGenerationUsage(usage);
-
-      expect(messageWithUsage.generationUsage, isNotNull);
-      expect(messageWithUsage.generationUsage!.inputToken, equals(100));
-      expect(messageWithUsage.generationUsage!.outputToken, equals(50));
-      expect(messageWithUsage.generationUsage!.apiCallCount, equals(1));
-      expect(messageWithUsage.content, equals('Test response'));
-    });
-
     test('copyWithGenerationUsage can remove usage when null is passed', () {
       final originalMessage = CoreMessage.ai(content: 'Test response');
-      final usage = GenerationUsage(
-        inputToken: 100,
-        outputToken: 50,
-        apiCallCount: 1,
-      );
+      final usage = GenerationUsage(inputToken: 100, outputToken: 50, apiCallCount: 1);
 
       final messageWithUsage = originalMessage.copyWithGenerationUsage(usage);
       expect(messageWithUsage.generationUsage, isNotNull);

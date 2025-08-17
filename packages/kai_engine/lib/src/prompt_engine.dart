@@ -73,11 +73,7 @@ abstract base class ContextEngine {
         .toList();
 
     // Process both concurrently
-    final parallelFuture = _buildParallelWithIndex(
-      parallelItems,
-      inputQuery,
-      onStageStart,
-    );
+    final parallelFuture = _buildParallelWithIndex(parallelItems, source, inputQuery, onStageStart);
     final sequentialFuture = _buildSequentialWithIndex(
       sequentialItems,
       source,
@@ -139,6 +135,7 @@ abstract base class ContextEngine {
   /// - A list of results with their original indices for proper reordering
   Future<List<({int index, List<CoreMessage> result})>> _buildParallelWithIndex(
     List<({int index, PromptTemplate builder})> items,
+    IList<CoreMessage> source,
     QueryContext inputQuery,
     void Function(String name)? onStageStart,
   ) async {
@@ -147,7 +144,7 @@ abstract base class ContextEngine {
         final parallelBuilder = item.builder as _BuildParallelPromptTemplate;
         final builder = parallelBuilder.builder;
         onStageStart?.call('${builder.runtimeType}');
-        final result = await builder.build(inputQuery);
+        final result = await builder.build(inputQuery, source);
         return (index: item.index, result: result);
       }),
     );
@@ -230,7 +227,8 @@ sealed class PromptTemplate with _$PromptTemplate {
   ///
   /// Parameters:
   /// - [builder]: The context builder that will generate the prompt content
-  const factory PromptTemplate.buildParallel(ParallelContextBuilder builder) = _BuildParallelPromptTemplate;
+  const factory PromptTemplate.buildParallel(ParallelContextBuilder builder) =
+      _BuildParallelPromptTemplate;
 
   /// Creates a prompt template that builds context through sequential execution.
   ///
@@ -258,7 +256,6 @@ sealed class PromptTemplate with _$PromptTemplate {
   ///
   /// Parameters:
   /// - [prompt]: Optional function to modify the raw user input before inclusion
-  const factory PromptTemplate.input([
-    FutureOr<String> Function(String raw)? prompt,
-  ]) = _InputPromptTemplate;
+  const factory PromptTemplate.input([FutureOr<String> Function(String raw)? prompt]) =
+      _InputPromptTemplate;
 }

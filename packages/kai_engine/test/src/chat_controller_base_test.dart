@@ -53,11 +53,14 @@ final class TestContextEngine extends ContextEngine {
     generateFunction,
   }) : _generateFunction = generateFunction;
 
-  void setGenerateFunction(Future<(CoreMessage, IList<CoreMessage>)> Function({
-    required IList<CoreMessage> source,
-    required QueryContext inputQuery,
-    void Function(String name)? onStageStart,
-  }) generateFunction) {
+  void setGenerateFunction(
+    Future<(CoreMessage, IList<CoreMessage>)> Function({
+      required IList<CoreMessage> source,
+      required QueryContext inputQuery,
+      void Function(String name)? onStageStart,
+    })
+    generateFunction,
+  ) {
     _generateFunction = generateFunction;
   }
 
@@ -71,11 +74,7 @@ final class TestContextEngine extends ContextEngine {
     void Function(String name)? onStageStart,
   }) {
     if (_generateFunction != null) {
-      return _generateFunction!(
-        source: source,
-        inputQuery: inputQuery,
-        onStageStart: onStageStart,
-      );
+      return _generateFunction!(source: source, inputQuery: inputQuery, onStageStart: onStageStart);
     }
     // Default implementation
     return Future.value((
@@ -142,9 +141,7 @@ void main() {
     registerFallbackValue(CancelToken());
     registerFallbackValue(CoreMessage.user(content: 'test'));
     registerFallbackValue(
-      createTestGenerationResult(
-        messages: IList([CoreMessage.ai(content: 'test')]),
-      ),
+      createTestGenerationResult(messages: IList([CoreMessage.ai(content: 'test')])),
     );
     registerFallbackValue(<ToolSchema>[]);
     registerFallbackValue(<String, dynamic>{});
@@ -169,9 +166,7 @@ void main() {
       testContextEngine = TestContextEngine();
 
       // Setup default mocks BEFORE creating controller
-      when(
-        () => mockLogger.logInfo(any(), data: any(named: 'data')),
-      ).thenAnswer((_) async {});
+      when(() => mockLogger.logInfo(any(), data: any(named: 'data'))).thenAnswer((_) async {});
       when(
         () => mockLogger.logError(
           any(),
@@ -214,9 +209,7 @@ void main() {
         // Setup basic successful flow
         when(
           () => mockConversationManager.addPlaceholderUserMessage(any()),
-        ).thenReturn(
-          CoreMessage.user(messageId: 'placeholder', content: 'Hello'),
-        );
+        ).thenReturn(CoreMessage.user(messageId: 'placeholder', content: 'Hello'));
 
         when(
           () => mockQueryEngine.process(
@@ -244,9 +237,7 @@ void main() {
                 void Function(String name)? onStageStart,
               }) async => (
                 CoreMessage.user(messageId: 'user-1', content: 'Hello'),
-                IList([
-                  CoreMessage.user(messageId: 'user-1', content: 'Hello'),
-                ]),
+                IList([CoreMessage.user(messageId: 'user-1', content: 'Hello')]),
               ),
         );
 
@@ -264,9 +255,7 @@ void main() {
         ).thenAnswer((_) {
           final controller = StreamController<GenerationState<GenerationResult>>();
           final result = createTestGenerationResult(
-            messages: IList([
-              CoreMessage.ai(messageId: 'ai-1', content: 'Hi there'),
-            ]),
+            messages: IList([CoreMessage.ai(messageId: 'ai-1', content: 'Hi there')]),
           );
 
           Future.microtask(() {
@@ -277,12 +266,11 @@ void main() {
           return controller.stream;
         });
 
-        when(
-          () => mockConversationManager.addMessages(any()),
-        ).thenAnswer((_) async {});
+        when(() => mockConversationManager.addMessages(any())).thenAnswer((_) async {});
 
         when(
           () => mockPostResponseEngine.process(
+            input: any(named: 'input'),
             prompts: any(named: 'prompts'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
@@ -297,19 +285,12 @@ void main() {
 
         // Verify logging
         verify(
-          () => mockLogger.logInfo(
-            'Chat submission started',
-            data: any(named: 'data'),
-          ),
+          () => mockLogger.logInfo('Chat submission started', data: any(named: 'data')),
         ).called(1);
-        verify(
-          () => mockLogger.logInfo('Chat submission completed successfully'),
-        ).called(1);
+        verify(() => mockLogger.logInfo('Chat submission completed successfully')).called(1);
 
         // Verify flow
-        verify(
-          () => mockConversationManager.addPlaceholderUserMessage('Hello'),
-        ).called(1);
+        verify(() => mockConversationManager.addPlaceholderUserMessage('Hello')).called(1);
         verify(
           () => mockQueryEngine.process(
             'Hello',
@@ -318,9 +299,7 @@ void main() {
           ),
         ).called(1);
         // Context engine generate should have been called (verified by successful execution)
-        verify(
-          () => mockConversationManager.replacePlaceholderMessage(any(), any()),
-        ).called(1);
+        verify(() => mockConversationManager.replacePlaceholderMessage(any(), any())).called(1);
         verify(
           () => mockGenerationService.stream(
             any(),
@@ -332,6 +311,7 @@ void main() {
         verify(() => mockConversationManager.addMessages(any())).called(1);
         verify(
           () => mockPostResponseEngine.process(
+            input: any(named: 'input'),
             prompts: any(named: 'prompts'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
@@ -470,6 +450,7 @@ void main() {
         // Create a delayed error that won't block the main submission flow
         when(
           () => mockPostResponseEngine.process(
+            input: any(named: 'input'),
             prompts: any(named: 'prompts'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
@@ -497,100 +478,75 @@ void main() {
         ).called(1);
       });
 
-      test(
-        'should revert input on error when revertInputOnError is true',
-        () async {
-          when(
-            () => mockQueryEngine.process(
-              any(),
-              session: any(named: 'session'),
-              onStageStart: any(named: 'onStageStart'),
-            ),
-          ).thenThrow(Exception('Query failed'));
+      test('should revert input on error when revertInputOnError is true', () async {
+        when(
+          () => mockQueryEngine.process(
+            any(),
+            session: any(named: 'session'),
+            onStageStart: any(named: 'onStageStart'),
+          ),
+        ).thenThrow(Exception('Query failed'));
 
-          when(
-            () => mockConversationManager.removeMessages(any()),
-          ).thenAnswer((_) async {});
+        when(() => mockConversationManager.removeMessages(any())).thenAnswer((_) async {});
 
-          final result = await controller.submit(
-            'Hello',
-            revertInputOnError: true,
-          );
+        final result = await controller.submit('Hello', revertInputOnError: true);
 
-          expect(result, isA<GenerationErrorState<CoreMessage>>());
+        expect(result, isA<GenerationErrorState<CoreMessage>>());
 
-          // Should remove placeholder
-          verify(() => mockConversationManager.removeMessages(any())).called(1);
-        },
-      );
+        // Should remove placeholder
+        verify(() => mockConversationManager.removeMessages(any())).called(1);
+      });
 
-      test(
-        'should revert persisted message on error when revertInputOnError is true',
-        () async {
-          // Setup successful flow up to generation failure
-          when(
-            () => mockGenerationService.stream(
-              any(),
-              cancelToken: any(named: 'cancelToken'),
-              tools: any(named: 'tools'),
-              config: any(named: 'config'),
-            ),
-          ).thenThrow(Exception('Generation failed'));
+      test('should revert persisted message on error when revertInputOnError is true', () async {
+        // Setup successful flow up to generation failure
+        when(
+          () => mockGenerationService.stream(
+            any(),
+            cancelToken: any(named: 'cancelToken'),
+            tools: any(named: 'tools'),
+            config: any(named: 'config'),
+          ),
+        ).thenThrow(Exception('Generation failed'));
 
-          when(
-            () => mockConversationManager.removeMessages(any()),
-          ).thenAnswer((_) async {});
+        when(() => mockConversationManager.removeMessages(any())).thenAnswer((_) async {});
 
-          final result = await controller.submit(
-            'Hello',
-            revertInputOnError: true,
-          );
+        final result = await controller.submit('Hello', revertInputOnError: true);
 
-          expect(result, isA<GenerationErrorState<CoreMessage>>());
+        expect(result, isA<GenerationErrorState<CoreMessage>>());
 
-          // Should remove persisted user message
-          verify(() => mockConversationManager.removeMessages(any())).called(1);
-        },
-      );
+        // Should remove persisted user message
+        verify(() => mockConversationManager.removeMessages(any())).called(1);
+      });
 
-      test(
-        'should not revert input on error when revertInputOnError is false',
-        () async {
-          when(
-            () => mockQueryEngine.process(
-              any(),
-              session: any(named: 'session'),
-              onStageStart: any(named: 'onStageStart'),
-            ),
-          ).thenThrow(Exception('Query failed'));
+      test('should not revert input on error when revertInputOnError is false', () async {
+        when(
+          () => mockQueryEngine.process(
+            any(),
+            session: any(named: 'session'),
+            onStageStart: any(named: 'onStageStart'),
+          ),
+        ).thenThrow(Exception('Query failed'));
 
-          final result = await controller.submit(
-            'Hello',
-            revertInputOnError: false,
-          );
+        final result = await controller.submit('Hello', revertInputOnError: false);
 
-          expect(result, isA<GenerationErrorState<CoreMessage>>());
+        expect(result, isA<GenerationErrorState<CoreMessage>>());
 
-          // Should not remove messages
-          verifyNever(() => mockConversationManager.removeMessages(any()));
-        },
-      );
+        // Should not remove messages
+        verifyNever(() => mockConversationManager.removeMessages(any()));
+      });
 
-      test(
-        'should pass custom generative configs to generation service',
-        () async {
-          await controller.submit('Hello');
+      test('should pass custom generative configs to generation service', () async {
+        await controller.submit('Hello');
 
-          verify(
-            () => mockGenerationService.stream(
-              any(),
-              cancelToken: any(named: 'cancelToken'),
-              tools: [],
-              config: {'temperature': 0.7},
-            ),
-          ).called(1);
-        },
-      );
+        verify(
+          () => mockGenerationService.stream(
+            any(),
+            cancelToken: any(named: 'cancelToken'),
+            tools: [],
+            config: {'temperature': 0.7},
+          ),
+        ).called(1);
+      });
 
       test(
         'should handle stream error states and revert input when revertInputOnError is true',
@@ -607,9 +563,7 @@ void main() {
 
             Future.microtask(() {
               controller.add(
-                GenerationState.error(
-                  KaiException.exception('Stream generation failed'),
-                ),
+                GenerationState.error(KaiException.exception('Stream generation failed')),
               );
               controller.close();
             });
@@ -617,23 +571,15 @@ void main() {
             return controller.stream;
           });
 
-          when(
-            () => mockConversationManager.removeMessages(any()),
-          ).thenAnswer((_) async {});
+          when(() => mockConversationManager.removeMessages(any())).thenAnswer((_) async {});
 
-          final result = await controller.submit(
-            'Hello',
-            revertInputOnError: true,
-          );
+          final result = await controller.submit('Hello', revertInputOnError: true);
 
           expect(result, isA<GenerationErrorState<CoreMessage>>());
 
           // Should log stream error
           verify(
-            () => mockLogger.logError(
-              'Generation stream error',
-              error: any(named: 'error'),
-            ),
+            () => mockLogger.logError('Generation stream error', error: any(named: 'error')),
           ).called(1);
 
           // Should revert user message (not placeholder since userMessage is set by this point)
@@ -656,9 +602,7 @@ void main() {
 
             Future.microtask(() {
               controller.add(
-                GenerationState.error(
-                  KaiException.exception('Stream generation failed'),
-                ),
+                GenerationState.error(KaiException.exception('Stream generation failed')),
               );
               controller.close();
             });
@@ -666,19 +610,13 @@ void main() {
             return controller.stream;
           });
 
-          final result = await controller.submit(
-            'Hello',
-            revertInputOnError: false,
-          );
+          final result = await controller.submit('Hello', revertInputOnError: false);
 
           expect(result, isA<GenerationErrorState<CoreMessage>>());
 
           // Should log stream error
           verify(
-            () => mockLogger.logError(
-              'Generation stream error',
-              error: any(named: 'error'),
-            ),
+            () => mockLogger.logError('Generation stream error', error: any(named: 'error')),
           ).called(1);
 
           // Should not revert messages
@@ -688,9 +626,7 @@ void main() {
 
       test('should emit states through stream during submission', () async {
         final states = <GenerationState<CoreMessage>>[];
-        final subscription = controller.generationStateStream.listen(
-          states.add,
-        );
+        final subscription = controller.generationStateStream.listen(states.add);
 
         await controller.submit('Hello');
 
@@ -703,21 +639,18 @@ void main() {
     });
 
     group('streams', () {
-      test(
-        'should provide messages stream from conversation manager',
-        () async {
-          final testMessages = IList([CoreMessage.user(content: 'Hello')]);
+      test('should provide messages stream from conversation manager', () async {
+        final testMessages = IList([CoreMessage.user(content: 'Hello')]);
 
-          when(
-            () => mockConversationManager.messagesStream,
-          ).thenAnswer((_) => Stream.value(testMessages));
+        when(
+          () => mockConversationManager.messagesStream,
+        ).thenAnswer((_) => Stream.value(testMessages));
 
-          final messages = await controller.messagesStream.first;
+        final messages = await controller.messagesStream.first;
 
-          expect(messages.length, equals(1));
-          expect(messages.first.content, equals('Hello'));
-        },
-      );
+        expect(messages.length, equals(1));
+        expect(messages.first.content, equals('Hello'));
+      });
     });
 
     group('dispose', () {
@@ -725,6 +658,5 @@ void main() {
         expect(() => controller.dispose(), returnsNormally);
       });
     });
-
   });
 }

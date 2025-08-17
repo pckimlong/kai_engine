@@ -18,23 +18,14 @@ sealed class GenerationUsage with _$GenerationUsage {
 }
 
 extension CoreMessageFirebaseExtension on CoreMessage {
-  GenerationUsage? get generationUsage {
-    final usage = extensions['generationUsage'];
-    if (usage is Map<String, dynamic>) {
-      return GenerationUsage.fromJson(usage);
-    }
-    return null;
-  }
+  Map<String, dynamic>? get generationUsage =>
+      extensions['generationUsage'] as Map<String, dynamic>?;
 
   CoreMessage copyWithGenerationUsage(GenerationUsage? usage) {
     if (usage == null) {
-      return copyWithExtensions({
-        'generationUsage': null,
-      });
+      return copyWithExtensions({'generationUsage': null});
     } else {
-      return copyWithExtensions({
-        'generationUsage': usage.toJson(),
-      });
+      return copyWithExtensions({'generationUsage': usage.toJson()});
     }
   }
 }

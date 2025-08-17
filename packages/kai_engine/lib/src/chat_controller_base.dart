@@ -42,6 +42,11 @@ abstract base class ChatControllerBase<TEntity> {
        _cancelToken = CancelToken(),
        _logger = logger ?? const NoOpKaiLogger();
 
+  /// This list holds the debug state for each generation request
+  /// It can be used to inspect the state of each request for debugging purposes
+  /// only work in debug mode where kIsRelease is false
+  final _debugState = List<GenerationState<GenerationResult>>.empty(growable: true);
+
   /// Handle generation state updates
   final _generationStateController = BehaviorSubject<GenerationState<GenerationResult>>.seeded(
     GenerationState.initial(),
@@ -133,6 +138,7 @@ abstract base class ChatControllerBase<TEntity> {
           // added messages might get modified again by post-processing
           _postResponseEngine
               .process(
+                input: inputQuery,
                 prompts: prompts,
                 result: state.result,
                 conversationManager: _conversationManager,
@@ -148,15 +154,16 @@ abstract base class ChatControllerBase<TEntity> {
           // Validate generatedMessage contains only newly generated content
           assert(
             state.result.generatedMessage.isNotEmpty,
-            'generatedMessage should not be empty - this indicates a bug in the generation service'
+            'generatedMessage should not be empty - this indicates a bug in the generation service',
           );
           assert(
-            state.result.generatedMessage.every((msg) => 
-              msg.type == CoreMessageType.ai || msg.type == CoreMessageType.function),
+            state.result.generatedMessage.every(
+              (msg) => msg.type == CoreMessageType.ai || msg.type == CoreMessageType.function,
+            ),
             'generatedMessage should only contain AI responses and function calls/responses, '
-            'not system prompts or user messages. Found: ${state.result.generatedMessage.map((m) => m.type).toList()}'
+            'not system prompts or user messages. Found: ${state.result.generatedMessage.map((m) => m.type).toList()}',
           );
-          
+
           // Save AI responses, added messages might get modified again by post-processing
           await _conversationManager.addMessages(state.result.generatedMessage);
         }
@@ -210,9 +217,7 @@ abstract base class ChatControllerBase<TEntity> {
     _cancelToken.cancel();
   }
 
-  GenerationState<CoreMessage> _mapGenerationState(
-    GenerationState<GenerationResult> state,
-  ) {
+  GenerationState<CoreMessage> _mapGenerationState(GenerationState<GenerationResult> state) {
     return state.map(
       loading: (l) => GenerationState.loading(l.phase),
       initial: (value) => GenerationState.initial(),
