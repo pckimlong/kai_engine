@@ -6,11 +6,11 @@ import 'package:kai_engine/kai_engine.dart';
 interface class PostResponseEngine {
   /// Process post-response actions
   /// This should run before save to database
-  /// [prompts] is the request to AI include the input but not include the response
-  /// [result] are the generated responses from the AI after process [prompts]
+  /// [requestPrompts] is the request to AI include the input but not include the response
+  /// [result] are the generated responses from the AI after process [requestPrompts]
   Future<void> process({
     required QueryContext input,
-    required IList<CoreMessage> prompts,
+    required IList<CoreMessage> requestPrompts,
     required GenerationResult result,
     required ConversationManager conversationManager,
   }) async {

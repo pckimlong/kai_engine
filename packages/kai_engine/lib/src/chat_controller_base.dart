@@ -66,13 +66,14 @@ abstract base class ChatControllerBase<TEntity> {
     String input, {
     bool revertInputOnError = false,
   }) async {
-    CoreMessage? userMessage;
-    CoreMessage? placeholder;
+    final userMessage = CoreMessage.user(content: input);
 
     try {
       await _logger.logInfo('Chat submission started', data: {'input': input});
       _setState(GenerationState.loading());
-      placeholder = _conversationManager.addPlaceholderUserMessage(input);
+
+      // Add user message to conversation, no await
+      unawaited(_conversationManager.addMessages([userMessage].lock));
 
       // Optimize query
       _setLoadingPhase(LoadingPhase.processingQuery());
@@ -89,23 +90,19 @@ abstract base class ChatControllerBase<TEntity> {
       final contextResult = await build().generate(
         source: await _conversationManager.getMessages(),
         inputQuery: inputQuery,
+        providedUserMessage: userMessage,
         onStageStart: (name) {
           _setLoadingPhase(LoadingPhase.buildContext(name));
         },
       );
 
-      // Extract user message and prompts from record
-      userMessage = contextResult.$1;
-      final prompts = contextResult.$2;
-
-      // persist user message (replace placeholder)
-      await _conversationManager.replacePlaceholderMessage(placeholder, userMessage);
+      final requestPrompts = contextResult.$2;
 
       // Generate response
-      final configs = generativeConfigs(prompts);
+      final configs = generativeConfigs(requestPrompts);
       _setLoadingPhase(LoadingPhase.generatingResponse());
       final responseStream = _generationService.stream(
-        prompts,
+        requestPrompts,
         cancelToken: _cancelToken,
         tools: configs.tools,
         config: configs.config,
@@ -133,13 +130,18 @@ abstract base class ChatControllerBase<TEntity> {
         }
 
         if (state is GenerationCompleteState<GenerationResult>) {
+          // Save AI responses, added messages might get modified again by post-processing
+          // we need to add the message before process background to make sure process background
+          // included the new responses
+          await _conversationManager.addMessages(state.result.generatedMessage);
+
           // Process background task on generated response, eg summarize, generate embedding
           // without blocking process
           // added messages might get modified again by post-processing
           _postResponseEngine
               .process(
                 input: inputQuery,
-                prompts: prompts,
+                requestPrompts: requestPrompts,
                 result: state.result,
                 conversationManager: _conversationManager,
               )
@@ -163,9 +165,6 @@ abstract base class ChatControllerBase<TEntity> {
             'generatedMessage should only contain AI responses and function calls/responses, '
             'not system prompts or user messages. Found: ${state.result.generatedMessage.map((m) => m.type).toList()}',
           );
-
-          // Save AI responses, added messages might get modified again by post-processing
-          await _conversationManager.addMessages(state.result.generatedMessage);
         }
 
         // Emit state through the controller
@@ -185,12 +184,7 @@ abstract base class ChatControllerBase<TEntity> {
 
       if (revertInputOnError) {
         // If userMessage is set, it means we successfully processed the input and persisted it
-        if (userMessage != null) {
-          await _conversationManager.removeMessages([userMessage].lock);
-        } else if (placeholder != null) {
-          // If we only have a placeholder, remove it from local state
-          await _conversationManager.removeMessages([placeholder].lock);
-        }
+        await _conversationManager.removeMessages([userMessage].lock);
       }
 
       final errorState = GenerationState<GenerationResult>.error(

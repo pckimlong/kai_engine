@@ -36,6 +36,7 @@ abstract base class ContextEngine {
   /// - [source]: The source messages to build context from, typically the existing chat history
   /// - [inputQuery]: The current user query with additional context
   /// - [onStageStart]: Optional callback to notify when each processing stage begins
+  /// - [providedUserMessage]: The user input message, if provided it will use that, otherwise it generate new one with new id
   ///
   /// Returns:
   /// - A record containing the user message and the complete contextual prompt
@@ -44,17 +45,16 @@ abstract base class ContextEngine {
     required IList<CoreMessage> source,
     required QueryContext inputQuery,
     void Function(String name)? onStageStart,
+    CoreMessage? providedUserMessage,
   }) async {
     assert(
       promptBuilder.whereType<_InputPromptTemplate>().length == 1,
       "Must define exactly one input prompt.",
     );
 
-    final input = promptBuilder.whereType<_InputPromptTemplate>().first;
-    final userInput =
-        await input.prompt?.call(inputQuery.originalQuery) ?? inputQuery.originalQuery;
-    // TODO: This might cause issue due to original query overridden
-    final userMessage = CoreMessage.user(content: userInput);
+    final userMessage =
+        providedUserMessage?.copyWith(content: inputQuery.originalQuery) ??
+        CoreMessage.user(content: inputQuery.originalQuery);
 
     // Create indexed pairs to preserve original order
     final indexedBuilders = promptBuilder
@@ -256,6 +256,5 @@ sealed class PromptTemplate with _$PromptTemplate {
   ///
   /// Parameters:
   /// - [prompt]: Optional function to modify the raw user input before inclusion
-  const factory PromptTemplate.input([FutureOr<String> Function(String raw)? prompt]) =
-      _InputPromptTemplate;
+  const factory PromptTemplate.input() = _InputPromptTemplate;
 }

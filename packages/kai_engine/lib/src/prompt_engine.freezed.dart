@@ -125,13 +125,13 @@ return input(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String text)?  system,TResult Function( ParallelContextBuilder builder)?  buildParallel,TResult Function( SequentialContextBuilder builder)?  buildSequential,TResult Function( FutureOr<String> Function(String raw)? prompt)?  input,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String text)?  system,TResult Function( ParallelContextBuilder builder)?  buildParallel,TResult Function( SequentialContextBuilder builder)?  buildSequential,TResult Function()?  input,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SystemPromptTemplate() when system != null:
 return system(_that.text);case _BuildParallelPromptTemplate() when buildParallel != null:
 return buildParallel(_that.builder);case _BuildSequentialPromptTemplate() when buildSequential != null:
 return buildSequential(_that.builder);case _InputPromptTemplate() when input != null:
-return input(_that.prompt);case _:
+return input();case _:
   return orElse();
 
 }
@@ -149,13 +149,13 @@ return input(_that.prompt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String text)  system,required TResult Function( ParallelContextBuilder builder)  buildParallel,required TResult Function( SequentialContextBuilder builder)  buildSequential,required TResult Function( FutureOr<String> Function(String raw)? prompt)  input,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String text)  system,required TResult Function( ParallelContextBuilder builder)  buildParallel,required TResult Function( SequentialContextBuilder builder)  buildSequential,required TResult Function()  input,}) {final _that = this;
 switch (_that) {
 case _SystemPromptTemplate():
 return system(_that.text);case _BuildParallelPromptTemplate():
 return buildParallel(_that.builder);case _BuildSequentialPromptTemplate():
 return buildSequential(_that.builder);case _InputPromptTemplate():
-return input(_that.prompt);}
+return input();}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -169,13 +169,13 @@ return input(_that.prompt);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String text)?  system,TResult? Function( ParallelContextBuilder builder)?  buildParallel,TResult? Function( SequentialContextBuilder builder)?  buildSequential,TResult? Function( FutureOr<String> Function(String raw)? prompt)?  input,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String text)?  system,TResult? Function( ParallelContextBuilder builder)?  buildParallel,TResult? Function( SequentialContextBuilder builder)?  buildSequential,TResult? Function()?  input,}) {final _that = this;
 switch (_that) {
 case _SystemPromptTemplate() when system != null:
 return system(_that.text);case _BuildParallelPromptTemplate() when buildParallel != null:
 return buildParallel(_that.builder);case _BuildSequentialPromptTemplate() when buildSequential != null:
 return buildSequential(_that.builder);case _InputPromptTemplate() when input != null:
-return input(_that.prompt);case _:
+return input();case _:
   return null;
 
 }
@@ -385,66 +385,32 @@ as SequentialContextBuilder,
 
 
 class _InputPromptTemplate extends PromptTemplate {
-  const _InputPromptTemplate([this.prompt]): super._();
+  const _InputPromptTemplate(): super._();
   
 
- final  FutureOr<String> Function(String raw)? prompt;
 
-/// Create a copy of PromptTemplate
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$InputPromptTemplateCopyWith<_InputPromptTemplate> get copyWith => __$InputPromptTemplateCopyWithImpl<_InputPromptTemplate>(this, _$identity);
+
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InputPromptTemplate&&(identical(other.prompt, prompt) || other.prompt == prompt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InputPromptTemplate);
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,prompt);
+int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'PromptTemplate.input(prompt: $prompt)';
+  return 'PromptTemplate.input()';
 }
 
 
 }
 
-/// @nodoc
-abstract mixin class _$InputPromptTemplateCopyWith<$Res> implements $PromptTemplateCopyWith<$Res> {
-  factory _$InputPromptTemplateCopyWith(_InputPromptTemplate value, $Res Function(_InputPromptTemplate) _then) = __$InputPromptTemplateCopyWithImpl;
-@useResult
-$Res call({
- FutureOr<String> Function(String raw)? prompt
-});
 
 
-
-
-}
-/// @nodoc
-class __$InputPromptTemplateCopyWithImpl<$Res>
-    implements _$InputPromptTemplateCopyWith<$Res> {
-  __$InputPromptTemplateCopyWithImpl(this._self, this._then);
-
-  final _InputPromptTemplate _self;
-  final $Res Function(_InputPromptTemplate) _then;
-
-/// Create a copy of PromptTemplate
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? prompt = freezed,}) {
-  return _then(_InputPromptTemplate(
-freezed == prompt ? _self.prompt : prompt // ignore: cast_nullable_to_non_nullable
-as FutureOr<String> Function(String raw)?,
-  ));
-}
-
-
-}
 
 // dart format on

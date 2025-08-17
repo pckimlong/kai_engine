@@ -18,9 +18,7 @@ class ConversationManager<T> {
   IList<CoreMessage> _messages = IList(const []);
   final BehaviorSubject<IList<CoreMessage>> _messagesController =
       BehaviorSubject<IList<CoreMessage>>();
-  final BehaviorSubject<bool> _loadingController = BehaviorSubject<bool>.seeded(
-    false,
-  );
+  final BehaviorSubject<bool> _loadingController = BehaviorSubject<bool>.seeded(false);
 
   ConversationManager._({
     required this.session,
@@ -56,52 +54,8 @@ class ConversationManager<T> {
     }
   }
 
-  /// Adds a placeholder user message for immediate UI feedback
-  /// Returns the placeholder message that was added
-  CoreMessage addPlaceholderUserMessage(String input) {
-    final placeholder = CoreMessage.user(content: input);
-    _messages = _messages.add(placeholder);
-    _messagesController.add(_messages);
-    return placeholder;
-  }
-
-  /// Replaces a placeholder message with the actual message and persists it
-  Future<void> replacePlaceholderMessage(CoreMessage placeholder, CoreMessage actualMessage) async {
-    // Store original state for rollback
-    final originalMessages = _messages;
-
-    try {
-      // Optimistic update: Replace placeholder with actual message immediately
-      _messages = _messages
-          .removeWhere((e) => e.messageId == placeholder.messageId)
-          .add(actualMessage);
-      _messagesController.add(_messages);
-
-      // Save actual message to repository
-      final result = await _repository
-          .saveMessages(
-            session: session,
-            messages: [_messageAdapter.fromCoreMessage(actualMessage, session: session)],
-          )
-          .then((e) => e.map(_messageAdapter.toCoreMessage));
-
-      // Replace optimistic message with repository result
-      _messages = _messages
-          .removeWhere((e) => e.messageId == actualMessage.messageId)
-          .addAll(result);
-      _messagesController.add(_messages);
-    } catch (error) {
-      // Rollback optimistic update on failure
-      _messages = originalMessages;
-      _messagesController.add(_messages);
-      rethrow;
-    }
-  }
-
   /// Adds a message to the conversation
-  Future<void> addMessages(
-    IList<CoreMessage> messages,
-  ) async {
+  Future<void> addMessages(IList<CoreMessage> messages) async {
     // Ensure system messages are ignored
     final nonSystemMessages = messages.where((m) => m.type != CoreMessageType.system).toList();
 
@@ -211,8 +165,5 @@ class ConversationManager<T> {
 /// Prebuilt for in memory management of conversation messages
 final class InMemoryConversationManager extends ConversationManager<CoreMessage> {
   InMemoryConversationManager({required super.session})
-    : super._(
-        repository: InMemoryMessageRepository(),
-        messageAdapter: CoreMessageAdapter(),
-      );
+    : super._(repository: InMemoryMessageRepository(), messageAdapter: CoreMessageAdapter());
 }
