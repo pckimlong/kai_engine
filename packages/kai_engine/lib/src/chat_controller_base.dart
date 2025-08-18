@@ -42,11 +42,6 @@ abstract base class ChatControllerBase<TEntity> {
        _cancelToken = CancelToken(),
        _logger = logger ?? const NoOpKaiLogger();
 
-  /// This list holds the debug state for each generation request
-  /// It can be used to inspect the state of each request for debugging purposes
-  /// only work in debug mode where kIsRelease is false
-  final _debugState = List<GenerationState<GenerationResult>>.empty(growable: true);
-
   /// Handle generation state updates
   final _generationStateController = BehaviorSubject<GenerationState<GenerationResult>>.seeded(
     GenerationState.initial(),

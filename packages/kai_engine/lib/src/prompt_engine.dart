@@ -115,8 +115,11 @@ abstract base class ContextEngine {
       }
     }
 
-    // Add user message at the end
-    finalContexts.add(userMessage);
+    /// Clean up context by removing duplicates and adding the user message
+    finalContexts
+      ..removeWhere((e) => e.messageId == userMessage.messageId)
+      ..removeDuplicates(by: (e) => e.messageId)
+      ..add(userMessage);
 
     return (userMessage, IList(finalContexts));
   }

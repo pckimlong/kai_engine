@@ -57,28 +57,28 @@ class ConversationManager<T> {
   /// Adds a message to the conversation
   Future<void> addMessages(IList<CoreMessage> messages) async {
     // Ensure system messages are ignored
-    final nonSystemMessages = messages.where((m) => m.type != CoreMessageType.system).toList();
+    final persistentMessages = messages.where((m) => m.isMessageSavable).toList();
 
     // Store original state for rollback
     final originalMessages = _messages;
 
     try {
       // Optimistic update: Add to local state first for instant UI feedback
-      _messages = _messages.addAll(nonSystemMessages);
+      _messages = _messages.addAll(persistentMessages);
       _messagesController.add(_messages);
 
       // Save to repository
       final result = await _repository
           .saveMessages(
             session: session,
-            messages: nonSystemMessages.map(
+            messages: persistentMessages.map(
               (e) => _messageAdapter.fromCoreMessage(e, session: session),
             ),
           )
           .then((e) => e.map(_messageAdapter.toCoreMessage));
 
       _messages = _messages
-          .removeWhere((e) => nonSystemMessages.any((m) => m.messageId == e.messageId))
+          .removeWhere((e) => persistentMessages.any((m) => m.messageId == e.messageId))
           .addAll(result);
       _messagesController.add(_messages);
     } catch (error) {
@@ -90,7 +90,7 @@ class ConversationManager<T> {
   }
 
   Future<void> updateMessages(IList<CoreMessage> messages) async {
-    final nonSystemMessages = messages.where((m) => m.type != CoreMessageType.system).toList();
+    final persistentMessages = messages.where((m) => m.isMessageSavable).toList();
 
     // Store original state for rollback
     final originalMessages = _messages;
@@ -98,15 +98,15 @@ class ConversationManager<T> {
     try {
       // Optimistic update: Update local state first for instant UI feedback
       _messages = _messages.updateById(
-        nonSystemMessages,
-        (e) => nonSystemMessages.any((m) => m.messageId == e.messageId),
+        persistentMessages,
+        (e) => persistentMessages.any((m) => m.messageId == e.messageId),
       );
       _messagesController.add(_messages);
 
       // Update repository
       final result = await _repository
           .updateMessages(
-            nonSystemMessages.map((e) => _messageAdapter.fromCoreMessage(e, session: session)),
+            persistentMessages.map((e) => _messageAdapter.fromCoreMessage(e, session: session)),
           )
           .then((e) => e.map(_messageAdapter.toCoreMessage));
 

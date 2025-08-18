@@ -34,6 +34,17 @@ sealed class CoreMessage with _$CoreMessage {
     return CoreMessage(messageId: _uuid.v4(), type: CoreMessageType.system, content: prompt);
   }
 
+  /// Creates a background context message. This act as user role, but is used for internal processing
+  /// it won't show in the user interface and is not persisted.
+  factory CoreMessage.backgroundContext(String text) {
+    return CoreMessage(
+      messageId: _uuid.v4(),
+      type: CoreMessageType.user,
+      content: text,
+      isBackgroundContext: true,
+    );
+  }
+
   /// Creates a new CoreMessage with the given parameters and automatically generates a messageId.
   factory CoreMessage.create({
     required String content,
@@ -47,10 +58,15 @@ sealed class CoreMessage with _$CoreMessage {
     required String messageId,
     required CoreMessageType type,
     required String content,
+
+    /// Whether this message is part of a background context, used for internal processing
+    /// it won't show in the user interface and is not persisted.
+    @Default(false) bool isBackgroundContext,
     @Default(<String, dynamic>{}) Map<String, dynamic> extensions,
   }) = _CoreMessage;
 
   bool get isDisplayable => type == CoreMessageType.user || type == CoreMessageType.ai;
+  bool get isMessageSavable => !isBackgroundContext && type != CoreMessageType.system;
 
   // This allow for simple use case where adapter is not require, user can directly use [CoreMessage] as main model
   factory CoreMessage.fromJson(Map<String, dynamic> json) => _$CoreMessageFromJson(json);
