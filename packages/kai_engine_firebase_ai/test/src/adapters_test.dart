@@ -70,6 +70,7 @@ void main() {
           type: CoreMessageType.user,
           content: 'Message with metadata',
           extensions: {'key': 'value'},
+          timestamp: DateTime.now(),
         );
 
         // Act
@@ -127,6 +128,7 @@ void main() {
             messageId: 'test',
             type: messageType,
             content: 'Test content',
+            timestamp: DateTime.now(),
           );
 
           final content = adapter.fromCoreMessage(message);
@@ -269,6 +271,7 @@ void main() {
           messageId: 'empty-content',
           type: CoreMessageType.user,
           content: '',
+          timestamp: DateTime.now(),
         );
 
         // Act
@@ -287,6 +290,7 @@ void main() {
           messageId: 'whitespace-test',
           type: CoreMessageType.user,
           content: '   \n\t  ',
+          timestamp: DateTime.now(),
         );
 
         // Act
@@ -352,6 +356,7 @@ void main() {
           messageId: 'test-123',
           type: CoreMessageType.user,
           content: 'What is the weather like?',
+          timestamp: DateTime.now(),
           extensions: {'timestamp': '2024-01-01', 'sessionId': 'session-123'},
         );
 
@@ -428,6 +433,7 @@ void main() {
           CoreMessage(
             messageId: 'complex-1',
             type: CoreMessageType.user,
+            timestamp: DateTime.now(),
             content: 'Complex query',
             extensions: {'context': 'important data'},
           ),
@@ -457,6 +463,7 @@ void main() {
           type: CoreMessageType.ai,
           content: 'I will call some functions',
           extensions: {'someOtherKey': 'someValue'},
+          timestamp: DateTime.now(),
         );
 
         // Act

@@ -17,7 +17,8 @@ mixin _$CoreMessage {
 
  String get messageId; CoreMessageType get type; String get content;/// Whether this message is part of a background context, used for internal processing
 /// it won't show in the user interface and is not persisted.
- bool get isBackgroundContext; Map<String, dynamic> get extensions;
+ bool get isBackgroundContext;/// Need this to function correctly
+ DateTime get timestamp; Map<String, dynamic> get extensions;
 /// Create a copy of CoreMessage
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,16 +31,16 @@ $CoreMessageCopyWith<CoreMessage> get copyWith => _$CoreMessageCopyWithImpl<Core
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CoreMessage&&(identical(other.messageId, messageId) || other.messageId == messageId)&&(identical(other.type, type) || other.type == type)&&(identical(other.content, content) || other.content == content)&&(identical(other.isBackgroundContext, isBackgroundContext) || other.isBackgroundContext == isBackgroundContext)&&const DeepCollectionEquality().equals(other.extensions, extensions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CoreMessage&&(identical(other.messageId, messageId) || other.messageId == messageId)&&(identical(other.type, type) || other.type == type)&&(identical(other.content, content) || other.content == content)&&(identical(other.isBackgroundContext, isBackgroundContext) || other.isBackgroundContext == isBackgroundContext)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp)&&const DeepCollectionEquality().equals(other.extensions, extensions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,messageId,type,content,isBackgroundContext,const DeepCollectionEquality().hash(extensions));
+int get hashCode => Object.hash(runtimeType,messageId,type,content,isBackgroundContext,timestamp,const DeepCollectionEquality().hash(extensions));
 
 @override
 String toString() {
-  return 'CoreMessage(messageId: $messageId, type: $type, content: $content, isBackgroundContext: $isBackgroundContext, extensions: $extensions)';
+  return 'CoreMessage(messageId: $messageId, type: $type, content: $content, isBackgroundContext: $isBackgroundContext, timestamp: $timestamp, extensions: $extensions)';
 }
 
 
@@ -50,7 +51,7 @@ abstract mixin class $CoreMessageCopyWith<$Res>  {
   factory $CoreMessageCopyWith(CoreMessage value, $Res Function(CoreMessage) _then) = _$CoreMessageCopyWithImpl;
 @useResult
 $Res call({
- String messageId, CoreMessageType type, String content, bool isBackgroundContext, Map<String, dynamic> extensions
+ String messageId, CoreMessageType type, String content, bool isBackgroundContext, DateTime timestamp, Map<String, dynamic> extensions
 });
 
 
@@ -67,13 +68,14 @@ class _$CoreMessageCopyWithImpl<$Res>
 
 /// Create a copy of CoreMessage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? messageId = null,Object? type = null,Object? content = null,Object? isBackgroundContext = null,Object? extensions = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? messageId = null,Object? type = null,Object? content = null,Object? isBackgroundContext = null,Object? timestamp = null,Object? extensions = null,}) {
   return _then(_self.copyWith(
 messageId: null == messageId ? _self.messageId : messageId // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as CoreMessageType,content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
 as String,isBackgroundContext: null == isBackgroundContext ? _self.isBackgroundContext : isBackgroundContext // ignore: cast_nullable_to_non_nullable
-as bool,extensions: null == extensions ? _self.extensions : extensions // ignore: cast_nullable_to_non_nullable
+as bool,timestamp: null == timestamp ? _self.timestamp : timestamp // ignore: cast_nullable_to_non_nullable
+as DateTime,extensions: null == extensions ? _self.extensions : extensions // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,
   ));
 }
@@ -156,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String messageId,  CoreMessageType type,  String content,  bool isBackgroundContext,  Map<String, dynamic> extensions)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String messageId,  CoreMessageType type,  String content,  bool isBackgroundContext,  DateTime timestamp,  Map<String, dynamic> extensions)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CoreMessage() when $default != null:
-return $default(_that.messageId,_that.type,_that.content,_that.isBackgroundContext,_that.extensions);case _:
+return $default(_that.messageId,_that.type,_that.content,_that.isBackgroundContext,_that.timestamp,_that.extensions);case _:
   return orElse();
 
 }
@@ -177,10 +179,10 @@ return $default(_that.messageId,_that.type,_that.content,_that.isBackgroundConte
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String messageId,  CoreMessageType type,  String content,  bool isBackgroundContext,  Map<String, dynamic> extensions)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String messageId,  CoreMessageType type,  String content,  bool isBackgroundContext,  DateTime timestamp,  Map<String, dynamic> extensions)  $default,) {final _that = this;
 switch (_that) {
 case _CoreMessage():
-return $default(_that.messageId,_that.type,_that.content,_that.isBackgroundContext,_that.extensions);}
+return $default(_that.messageId,_that.type,_that.content,_that.isBackgroundContext,_that.timestamp,_that.extensions);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -194,10 +196,10 @@ return $default(_that.messageId,_that.type,_that.content,_that.isBackgroundConte
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String messageId,  CoreMessageType type,  String content,  bool isBackgroundContext,  Map<String, dynamic> extensions)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String messageId,  CoreMessageType type,  String content,  bool isBackgroundContext,  DateTime timestamp,  Map<String, dynamic> extensions)?  $default,) {final _that = this;
 switch (_that) {
 case _CoreMessage() when $default != null:
-return $default(_that.messageId,_that.type,_that.content,_that.isBackgroundContext,_that.extensions);case _:
+return $default(_that.messageId,_that.type,_that.content,_that.isBackgroundContext,_that.timestamp,_that.extensions);case _:
   return null;
 
 }
@@ -209,7 +211,7 @@ return $default(_that.messageId,_that.type,_that.content,_that.isBackgroundConte
 @JsonSerializable()
 
 class _CoreMessage extends CoreMessage {
-  const _CoreMessage({required this.messageId, required this.type, required this.content, this.isBackgroundContext = false, final  Map<String, dynamic> extensions = const <String, dynamic>{}}): _extensions = extensions,super._();
+  const _CoreMessage({required this.messageId, required this.type, required this.content, this.isBackgroundContext = false, required this.timestamp, final  Map<String, dynamic> extensions = const <String, dynamic>{}}): _extensions = extensions,super._();
   factory _CoreMessage.fromJson(Map<String, dynamic> json) => _$CoreMessageFromJson(json);
 
 @override final  String messageId;
@@ -218,6 +220,8 @@ class _CoreMessage extends CoreMessage {
 /// Whether this message is part of a background context, used for internal processing
 /// it won't show in the user interface and is not persisted.
 @override@JsonKey() final  bool isBackgroundContext;
+/// Need this to function correctly
+@override final  DateTime timestamp;
  final  Map<String, dynamic> _extensions;
 @override@JsonKey() Map<String, dynamic> get extensions {
   if (_extensions is EqualUnmodifiableMapView) return _extensions;
@@ -239,16 +243,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CoreMessage&&(identical(other.messageId, messageId) || other.messageId == messageId)&&(identical(other.type, type) || other.type == type)&&(identical(other.content, content) || other.content == content)&&(identical(other.isBackgroundContext, isBackgroundContext) || other.isBackgroundContext == isBackgroundContext)&&const DeepCollectionEquality().equals(other._extensions, _extensions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CoreMessage&&(identical(other.messageId, messageId) || other.messageId == messageId)&&(identical(other.type, type) || other.type == type)&&(identical(other.content, content) || other.content == content)&&(identical(other.isBackgroundContext, isBackgroundContext) || other.isBackgroundContext == isBackgroundContext)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp)&&const DeepCollectionEquality().equals(other._extensions, _extensions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,messageId,type,content,isBackgroundContext,const DeepCollectionEquality().hash(_extensions));
+int get hashCode => Object.hash(runtimeType,messageId,type,content,isBackgroundContext,timestamp,const DeepCollectionEquality().hash(_extensions));
 
 @override
 String toString() {
-  return 'CoreMessage(messageId: $messageId, type: $type, content: $content, isBackgroundContext: $isBackgroundContext, extensions: $extensions)';
+  return 'CoreMessage(messageId: $messageId, type: $type, content: $content, isBackgroundContext: $isBackgroundContext, timestamp: $timestamp, extensions: $extensions)';
 }
 
 
@@ -259,7 +263,7 @@ abstract mixin class _$CoreMessageCopyWith<$Res> implements $CoreMessageCopyWith
   factory _$CoreMessageCopyWith(_CoreMessage value, $Res Function(_CoreMessage) _then) = __$CoreMessageCopyWithImpl;
 @override @useResult
 $Res call({
- String messageId, CoreMessageType type, String content, bool isBackgroundContext, Map<String, dynamic> extensions
+ String messageId, CoreMessageType type, String content, bool isBackgroundContext, DateTime timestamp, Map<String, dynamic> extensions
 });
 
 
@@ -276,13 +280,14 @@ class __$CoreMessageCopyWithImpl<$Res>
 
 /// Create a copy of CoreMessage
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? messageId = null,Object? type = null,Object? content = null,Object? isBackgroundContext = null,Object? extensions = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? messageId = null,Object? type = null,Object? content = null,Object? isBackgroundContext = null,Object? timestamp = null,Object? extensions = null,}) {
   return _then(_CoreMessage(
 messageId: null == messageId ? _self.messageId : messageId // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as CoreMessageType,content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
 as String,isBackgroundContext: null == isBackgroundContext ? _self.isBackgroundContext : isBackgroundContext // ignore: cast_nullable_to_non_nullable
-as bool,extensions: null == extensions ? _self._extensions : extensions // ignore: cast_nullable_to_non_nullable
+as bool,timestamp: null == timestamp ? _self.timestamp : timestamp // ignore: cast_nullable_to_non_nullable
+as DateTime,extensions: null == extensions ? _self._extensions : extensions // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,
   ));
 }

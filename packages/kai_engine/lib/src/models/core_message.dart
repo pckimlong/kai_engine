@@ -18,6 +18,7 @@ sealed class CoreMessage with _$CoreMessage {
       messageId: messageId ?? _uuid.v4(),
       type: CoreMessageType.user,
       content: content,
+      timestamp: DateTime.now(),
     );
   }
 
@@ -26,12 +27,18 @@ sealed class CoreMessage with _$CoreMessage {
       messageId: messageId ?? _uuid.v4(),
       type: CoreMessageType.ai,
       content: content,
+      timestamp: DateTime.now(),
     );
   }
 
   /// Creates a system message. Note that system message never persist to database
   factory CoreMessage.system(String prompt) {
-    return CoreMessage(messageId: _uuid.v4(), type: CoreMessageType.system, content: prompt);
+    return CoreMessage(
+      messageId: _uuid.v4(),
+      type: CoreMessageType.system,
+      content: prompt,
+      timestamp: DateTime.now(),
+    );
   }
 
   /// Creates a background context message. This act as user role, but is used for internal processing
@@ -42,6 +49,7 @@ sealed class CoreMessage with _$CoreMessage {
       type: CoreMessageType.user,
       content: text,
       isBackgroundContext: true,
+      timestamp: DateTime.now(),
     );
   }
 
@@ -51,7 +59,13 @@ sealed class CoreMessage with _$CoreMessage {
     required CoreMessageType type,
     required Map<String, dynamic> extensions,
   }) {
-    return CoreMessage(messageId: _uuid.v4(), type: type, content: content, extensions: extensions);
+    return CoreMessage(
+      messageId: _uuid.v4(),
+      type: type,
+      content: content,
+      extensions: extensions,
+      timestamp: DateTime.now(),
+    );
   }
 
   const factory CoreMessage({
@@ -62,6 +76,9 @@ sealed class CoreMessage with _$CoreMessage {
     /// Whether this message is part of a background context, used for internal processing
     /// it won't show in the user interface and is not persisted.
     @Default(false) bool isBackgroundContext,
+
+    /// Need this to function correctly
+    required DateTime timestamp,
     @Default(<String, dynamic>{}) Map<String, dynamic> extensions,
   }) = _CoreMessage;
 

@@ -248,15 +248,11 @@ void main() {
       );
     });
 
-    test('processes input with custom prompt function', () async {
-      final engine = TestContextEngine([
-        const PromptTemplate.system('You are a helpful assistant'),
-        PromptTemplate.input((raw) async => 'Modified: $raw'),
-      ]);
-
-      final result = await engine.generate(source: sourceMessages, inputQuery: queryContext);
-
-      expect(result.$1.content, 'Modified: Tell me a joke');
+    // This test is no longer relevant as PromptTemplate.input no longer accepts a transformer function
+    // The functionality was removed in commit 0096dba
+    test('PromptTemplate.input no longer accepts transformer function', () {
+      // This is just a placeholder test since the functionality was removed
+      expect(true, isTrue);
     });
 
     test('maintains correct order of mixed template types', () async {

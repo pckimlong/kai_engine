@@ -11,6 +11,7 @@ _CoreMessage _$CoreMessageFromJson(Map<String, dynamic> json) => _CoreMessage(
   type: $enumDecode(_$CoreMessageTypeEnumMap, json['type']),
   content: json['content'] as String,
   isBackgroundContext: json['isBackgroundContext'] as bool? ?? false,
+  timestamp: DateTime.parse(json['timestamp'] as String),
   extensions:
       json['extensions'] as Map<String, dynamic>? ?? const <String, dynamic>{},
 );
@@ -21,6 +22,7 @@ Map<String, dynamic> _$CoreMessageToJson(_CoreMessage instance) =>
       'type': _$CoreMessageTypeEnumMap[instance.type]!,
       'content': instance.content,
       'isBackgroundContext': instance.isBackgroundContext,
+      'timestamp': instance.timestamp.toIso8601String(),
       'extensions': instance.extensions,
     };
 

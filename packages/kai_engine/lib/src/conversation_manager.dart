@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:rxdart/rxdart.dart';
@@ -90,6 +91,7 @@ class ConversationManager<T> {
   }
 
   Future<void> updateMessages(IList<CoreMessage> messages) async {
+    log('Updating messages: ${messages}');
     final persistentMessages = messages.where((m) => m.isMessageSavable).toList();
 
     // Store original state for rollback

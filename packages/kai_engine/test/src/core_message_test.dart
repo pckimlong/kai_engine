@@ -129,28 +129,38 @@ void main() {
         const type = CoreMessageType.user;
         const content = 'Test content';
         final extensions = {'test': true};
+        final timestamp = DateTime.now();
 
         final message = CoreMessage(
           messageId: messageId,
           type: type,
           content: content,
           extensions: extensions,
+          timestamp: timestamp,
         );
 
         expect(message.messageId, equals(messageId));
         expect(message.type, equals(type));
         expect(message.content, equals(content));
         expect(message.extensions, equals(extensions));
+        expect(message.timestamp, equals(timestamp));
       });
 
       test('uses empty extensions by default', () {
-        const message = CoreMessage(
-          messageId: 'test-id',
-          type: CoreMessageType.ai,
-          content: 'Test content',
+        const messageId = 'test-id';
+        const type = CoreMessageType.ai;
+        const content = 'Test content';
+        final timestamp = DateTime.now();
+
+        final message = CoreMessage(
+          messageId: messageId,
+          type: type,
+          content: content,
+          timestamp: timestamp,
         );
 
         expect(message.extensions, equals({}));
+        expect(message.timestamp, equals(timestamp));
       });
     });
   });
@@ -329,12 +339,14 @@ void main() {
       const content = 'Test content';
       const type = CoreMessageType.user;
       final extensions = {'key': 'value'};
+      final timestamp = DateTime.now();
 
       final message1 = CoreMessage(
         messageId: messageId,
         type: type,
         content: content,
         extensions: extensions,
+        timestamp: timestamp,
       );
 
       final message2 = CoreMessage(
@@ -342,6 +354,7 @@ void main() {
         type: type,
         content: content,
         extensions: extensions,
+        timestamp: timestamp,
       );
 
       expect(message1, equals(message2));

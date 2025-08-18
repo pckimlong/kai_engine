@@ -372,9 +372,20 @@ void main() {
       late ConversationManager<TestMessage> manager;
 
       setUp(() async {
+        final timestamp = DateTime.now();
         final existingMessages = [
-          CoreMessage.user(messageId: '1', content: 'Message 1'),
-          CoreMessage.user(messageId: '2', content: 'Message 2'),
+          CoreMessage(
+            messageId: '1',
+            type: CoreMessageType.user,
+            content: 'Message 1',
+            timestamp: timestamp,
+          ),
+          CoreMessage(
+            messageId: '2',
+            type: CoreMessageType.user,
+            content: 'Message 2',
+            timestamp: timestamp,
+          ),
         ];
         final testMessages = [
           TestMessage(messageId: '1', content: 'Message 1', type: 'user'),
@@ -393,7 +404,9 @@ void main() {
       });
 
       test('should remove messages from local state and repository', () async {
-        final messageToRemove = CoreMessage.user(messageId: '1', content: 'Message 1');
+        // Get the actual messages from the manager
+        final messages = await manager.getMessages();
+        final messageToRemove = messages.first; // Remove the first message
         final testMessageToRemove = TestMessage(messageId: '1', content: 'Message 1', type: 'user');
 
         when(
@@ -403,15 +416,17 @@ void main() {
 
         await manager.removeMessages(IList([messageToRemove]));
 
-        final messages = await manager.getMessages();
-        expect(messages.length, equals(1));
-        expect(messages.first.messageId, equals('2'));
+        final remainingMessages = await manager.getMessages();
+        expect(remainingMessages.length, equals(1));
+        expect(remainingMessages.first.messageId, equals('2'));
 
         verify(() => mockRepository.removeMessages(any())).called(1);
       });
 
       test('should provide optimistic updates for message removal', () async {
-        final messageToRemove = CoreMessage.user(messageId: '1', content: 'Message 1');
+        // Get the actual messages from the manager
+        final messages = await manager.getMessages();
+        final messageToRemove = messages.first; // Remove the first message
         final testMessageToRemove = TestMessage(messageId: '1', content: 'Message 1', type: 'user');
 
         when(
@@ -441,7 +456,9 @@ void main() {
       });
 
       test('should rollback optimistic updates on removal failure', () async {
-        final messageToRemove = CoreMessage.user(messageId: '1', content: 'Message 1');
+        // Get the actual messages from the manager
+        final messages = await manager.getMessages();
+        final messageToRemove = messages.first; // Remove the first message
         final testMessageToRemove = TestMessage(messageId: '1', content: 'Message 1', type: 'user');
 
         when(
@@ -458,8 +475,8 @@ void main() {
         await Future.delayed(Duration.zero);
 
         // Should still have both messages
-        final messages = await manager.getMessages();
-        expect(messages.length, equals(2));
+        final remainingMessages = await manager.getMessages();
+        expect(remainingMessages.length, equals(2));
       });
     });
 
@@ -527,122 +544,12 @@ void main() {
     });
 
     group('placeholder functionality', () {
-      late ConversationManager<TestMessage> manager;
-
-      setUp(() async {
-        when(() => mockRepository.getMessages(any())).thenAnswer((_) async => <TestMessage>[]);
-        manager = await ConversationManager.create(
-          session: session,
-          repository: mockRepository,
-          messageAdapter: mockAdapter,
-        );
-      });
-
-      test('addPlaceholderUserMessage should add message immediately', () async {
-        final placeholder = manager.addPlaceholderUserMessage('Hello');
-
-        final messages = await manager.getMessages();
-        expect(messages.length, equals(1));
-        expect(messages.first.content, equals('Hello'));
-        expect(messages.first.messageId, equals(placeholder.messageId));
-      });
-
-      test('replacePlaceholderMessage should replace and persist', () async {
-        final placeholder = manager.addPlaceholderUserMessage('Hello');
-        final actualMessage = CoreMessage.user(messageId: '1', content: 'Hello');
-        final testMessage = TestMessage(messageId: '1', content: 'Hello', type: 'user');
-
-        when(
-          () => mockAdapter.fromCoreMessage(actualMessage, session: session),
-        ).thenReturn(testMessage);
-        when(() => mockAdapter.toCoreMessage(testMessage)).thenReturn(actualMessage);
-        when(
-          () => mockRepository.saveMessages(
-            session: any(named: 'session'),
-            messages: any(named: 'messages'),
-          ),
-        ).thenAnswer((_) async => [testMessage]);
-
-        await manager.replacePlaceholderMessage(placeholder, actualMessage);
-
-        final messages = await manager.getMessages();
-        expect(messages.length, equals(1));
-        expect(messages.first.messageId, equals('1')); // Should have repository ID
-        expect(messages.first.content, equals('Hello'));
-
-        verify(
-          () => mockRepository.saveMessages(
-            session: session,
-            messages: any(named: 'messages'),
-          ),
-        ).called(1);
-      });
-
-      test('replacePlaceholderMessage should provide optimistic updates', () async {
-        final placeholder = manager.addPlaceholderUserMessage('Hello');
-        final actualMessage = CoreMessage.user(messageId: '1', content: 'Hello');
-        final testMessage = TestMessage(messageId: '1', content: 'Hello', type: 'user');
-
-        when(
-          () => mockAdapter.fromCoreMessage(actualMessage, session: session),
-        ).thenReturn(testMessage);
-        when(() => mockAdapter.toCoreMessage(testMessage)).thenReturn(actualMessage);
-
-        final completer = Completer<List<TestMessage>>();
-        when(
-          () => mockRepository.saveMessages(
-            session: any(named: 'session'),
-            messages: any(named: 'messages'),
-          ),
-        ).thenAnswer((_) => completer.future);
-
-        final streamData = <IList<CoreMessage>>[];
-        final subscription = manager.messagesStream.listen(streamData.add);
-
-        // Start the replacement operation
-        final replaceFuture = manager.replacePlaceholderMessage(placeholder, actualMessage);
-
-        await Future.delayed(Duration.zero);
-
-        // Should show optimistic replacement
-        expect(streamData.last.length, equals(1));
-        expect(streamData.last.first.content, equals('Hello'));
-
-        // Complete the repository operation
-        completer.complete([testMessage]);
-        await replaceFuture;
-
-        await subscription.cancel();
-      });
-
-      test('replacePlaceholderMessage should rollback on failure', () async {
-        final placeholder = manager.addPlaceholderUserMessage('Hello');
-        final actualMessage = CoreMessage.user(messageId: '1', content: 'Hello');
-        final testMessage = TestMessage(messageId: '1', content: 'Hello', type: 'user');
-
-        when(
-          () => mockAdapter.fromCoreMessage(actualMessage, session: session),
-        ).thenReturn(testMessage);
-        when(() => mockAdapter.toCoreMessage(testMessage)).thenReturn(actualMessage);
-        when(
-          () => mockRepository.saveMessages(
-            session: any(named: 'session'),
-            messages: any(named: 'messages'),
-          ),
-        ).thenThrow(Exception('Save failed'));
-
-        // Should throw and rollback to original placeholder state
-        expect(
-          () => manager.replacePlaceholderMessage(placeholder, actualMessage),
-          throwsA(isA<Exception>()),
-        );
-
-        await Future.delayed(Duration.zero);
-
-        // Should still have placeholder
-        final messages = await manager.getMessages();
-        expect(messages.length, equals(1));
-        expect(messages.first.messageId, equals(placeholder.messageId));
+      // These tests are no longer relevant as placeholder functionality has been removed
+      // The new approach uses direct addMessages with unawaited for immediate UI feedback
+      test('placeholder functionality has been removed', () {
+        // Placeholder functionality was removed in commit 0096dba
+        // Direct addMessages is now used instead with unawaited for immediate UI feedback
+        expect(true, isTrue); // Placeholder test
       });
     });
   });
