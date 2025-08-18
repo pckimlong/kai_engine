@@ -25,6 +25,9 @@ GenerationResult createTestGenerationResult({
 final class MockConversationManager extends Mock implements ConversationManager<TestMessage> {
   @override
   ConversationSession get session => const ConversationSession(id: 'test_session');
+
+  @override
+  Stream<IList<CoreMessage>> get messagesStream => Stream.value(IList(const []));
 }
 
 class MockGenerationService extends Mock implements GenerationServiceBase {}
@@ -271,7 +274,7 @@ void main() {
         when(
           () => mockPostResponseEngine.process(
             input: any(named: 'input'),
-            prompts: any(named: 'prompts'),
+            requestPrompts: any(named: 'requestPrompts'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
           ),
@@ -312,7 +315,7 @@ void main() {
         verify(
           () => mockPostResponseEngine.process(
             input: any(named: 'input'),
-            prompts: any(named: 'prompts'),
+            requestPrompts: any(named: 'requestPrompts'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
           ),
@@ -451,7 +454,7 @@ void main() {
         when(
           () => mockPostResponseEngine.process(
             input: any(named: 'input'),
-            prompts: any(named: 'prompts'),
+            requestPrompts: any(named: 'requestPrompts'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
           ),
@@ -636,17 +639,186 @@ void main() {
 
         await subscription.cancel();
       });
+
+      test('should not have duplicate user input in prompt sent to stream', () async {
+        // Track the prompts sent to the generation service
+        IList<CoreMessage>? capturedPrompts;
+
+        // Create new mocks for this specific test
+        final mockConversationManager = MockConversationManager();
+        when(() => mockConversationManager.session).thenReturn(const ConversationSession(id: 'test_session'));
+        
+        final mockGenerationService = MockGenerationService();
+        final mockQueryEngine = MockQueryEngine();
+        final mockPostResponseEngine = MockPostResponseEngine();
+        final mockLogger = MockKaiLogger();
+
+        // Setup basic mocks
+        when(() => mockLogger.logInfo(any(), data: any(named: 'data'))).thenAnswer((_) async {});
+        when(
+          () => mockLogger.logError(
+            any(),
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        // Setup conversation manager to return existing messages including a placeholder
+        when(() => mockConversationManager.getMessages()).thenAnswer(
+          (_) async => IList([
+            CoreMessage.user(content: 'Previous message'),
+            CoreMessage.ai(content: 'Previous response'),
+            CoreMessage.user(messageId: 'placeholder-123', content: 'Typing...'), // Placeholder
+          ]),
+        );
+
+        // Setup addPlaceholderUserMessage to return a placeholder
+        when(
+          () => mockConversationManager.addPlaceholderUserMessage(any()),
+        ).thenReturn(CoreMessage.user(messageId: 'placeholder-123', content: 'Hello'));
+
+        // Setup replacePlaceholderMessage
+        when(
+          () => mockConversationManager.replacePlaceholderMessage(any(), any()),
+        ).thenAnswer((_) async {});
+
+        when(() => mockConversationManager.addMessages(any())).thenAnswer((_) async {});
+
+        // Setup query engine
+        when(
+          () => mockQueryEngine.process(
+            any(),
+            session: any(named: 'session'),
+            onStageStart: any(named: 'onStageStart'),
+          ),
+        ).thenAnswer(
+          (_) async => const QueryContext(
+            originalQuery: 'Hello',
+            processedQuery: 'Hello',
+            session: ConversationSession(id: 'test_session'),
+          ),
+        );
+
+        // Setup post response engine
+        when(
+          () => mockPostResponseEngine.process(
+            input: any(named: 'input'),
+            requestPrompts: any(named: 'requestPrompts'),
+            result: any(named: 'result'),
+            conversationManager: any(named: 'conversationManager'),
+          ),
+        ).thenAnswer((_) async {});
+
+        // Capture the prompts passed to the generation service
+        when(
+          () => mockGenerationService.stream(
+            captureAny(that: isA<IList<CoreMessage>>()),
+            cancelToken: any(named: 'cancelToken'),
+            tools: any(named: 'tools'),
+            config: any(named: 'config'),
+          ),
+        ).thenAnswer((invocation) {
+          // Capture the prompts argument
+          capturedPrompts = invocation.positionalArguments[0] as IList<CoreMessage>;
+
+          final controller = StreamController<GenerationState<GenerationResult>>();
+          final result = createTestGenerationResult(
+            messages: IList([CoreMessage.ai(messageId: 'ai-1', content: 'Hi there')]),
+          );
+
+          Future.microtask(() {
+            controller.add(GenerationState.complete(result));
+            controller.close();
+          });
+
+          return controller.stream;
+        });
+
+        // Setup context engine to return the user message
+        final testContextEngine = TestContextEngine(
+          generateFunction:
+              ({
+                required IList<CoreMessage> source,
+                required QueryContext inputQuery,
+                void Function(String name)? onStageStart,
+              }) async => (
+                CoreMessage.user(messageId: 'user-1', content: 'Hello'),
+                IList([
+                  CoreMessage.user(content: 'Previous message'),
+                  CoreMessage.ai(content: 'Previous response'),
+                  CoreMessage.user(messageId: 'user-1', content: 'Hello'),
+                ]),
+              ),
+        );
+
+        // Create a new controller for this test
+        final controller = TestChatController(
+          conversationManager: mockConversationManager,
+          generationService: mockGenerationService,
+          queryEngine: mockQueryEngine,
+          postResponseEngine: mockPostResponseEngine,
+          logger: mockLogger,
+          testContextEngine: testContextEngine,
+        );
+
+        await controller.submit('Hello');
+
+        // Verify that the captured prompts don't have duplicate user input
+        expect(capturedPrompts, isNotNull);
+        expect(capturedPrompts!.length, equals(3));
+
+        // Check that we have the expected messages in order
+        expect(capturedPrompts![0].content, equals('Previous message'));
+        expect(capturedPrompts![1].content, equals('Previous response'));
+        expect(capturedPrompts![2].content, equals('Hello'));
+
+        // Verify no duplicate 'Hello' messages
+        final helloMessages = capturedPrompts!.where((msg) => msg.content == 'Hello').toList();
+        expect(helloMessages.length, equals(1));
+        expect(helloMessages[0].messageId, equals('user-1'));
+
+        // Verify placeholder is not in the prompts
+        final placeholderMessages = capturedPrompts!
+            .where((msg) => msg.messageId == 'placeholder-123')
+            .toList();
+        expect(placeholderMessages.length, equals(0));
+      });
     });
 
     group('streams', () {
       test('should provide messages stream from conversation manager', () async {
         final testMessages = IList([CoreMessage.user(content: 'Hello')]);
 
+        // Create a new controller with a properly configured mock
+        final mockConversationManagerWithStream = MockConversationManager();
         when(
-          () => mockConversationManager.messagesStream,
+          () => mockConversationManagerWithStream.session,
+        ).thenReturn(const ConversationSession(id: 'test_session'));
+        when(
+          () => mockConversationManagerWithStream.messagesStream,
         ).thenAnswer((_) => Stream.value(testMessages));
 
-        final messages = await controller.messagesStream.first;
+        // Need to set up other required mocks
+        final mockLogger = MockKaiLogger();
+        when(() => mockLogger.logInfo(any(), data: any(named: 'data'))).thenAnswer((_) async {});
+        when(
+          () => mockLogger.logError(
+            any(),
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final controllerWithStream = TestChatController(
+          conversationManager: mockConversationManagerWithStream,
+          generationService: MockGenerationService(),
+          queryEngine: MockQueryEngine(),
+          postResponseEngine: MockPostResponseEngine(),
+          logger: mockLogger,
+          testContextEngine: TestContextEngine(),
+        );
+
+        final messages = await controllerWithStream.messagesStream.first;
 
         expect(messages.length, equals(1));
         expect(messages.first.content, equals('Hello'));

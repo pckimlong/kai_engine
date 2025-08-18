@@ -162,7 +162,7 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
   }) async* {
     final filteredPrompts = _filterSystemMessages(prompts);
     var conversationHistory = filteredPrompts.map(_messageAdapter.fromCoreMessage).toList();
-    
+
     // Track the starting point to know what's newly generated
     final initialHistoryLength = conversationHistory.length;
 
@@ -230,7 +230,7 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
       if (functionCalls.isEmpty) {
         // Extract only the newly generated content (everything after initial history)
         final newlyGeneratedContent = conversationHistory.skip(initialHistoryLength).toList();
-        
+
         yield GenerationState.complete(
           GenerationResult(
             requestMessage: prompts.last,
