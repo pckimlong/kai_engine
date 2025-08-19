@@ -15,6 +15,9 @@ sealed class GenerationResult with _$GenerationResult {
     /// Generate messages result per request, not including previous context and user messages
     required IList<CoreMessage> generatedMessage,
 
+    /// The usage information for the generation, this is optional
+    required GenerationUsage? usage,
+
     Map<String, dynamic>? extensions,
   }) = _GenerationResult;
 
@@ -28,4 +31,16 @@ sealed class GenerationResult with _$GenerationResult {
     /// We expect AI message back, not function call etc
     return generatedMessage.lastWhere((e) => e.type == CoreMessageType.ai);
   }
+}
+
+@freezed
+sealed class GenerationUsage with _$GenerationUsage {
+  const GenerationUsage._();
+
+  const factory GenerationUsage({
+    required int? inputToken,
+    required int? outputToken,
+    required int? apiCallCount,
+    Map<String, dynamic>? extensions,
+  }) = _GenerationUsage;
 }

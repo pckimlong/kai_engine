@@ -14,6 +14,7 @@ GenerationResult createTestGenerationResult({
     generatedMessage: messages,
     extensions: extensions,
     requestMessage: messages.last,
+    usage: null,
   );
 }
 
