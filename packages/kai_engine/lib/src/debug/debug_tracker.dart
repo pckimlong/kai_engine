@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
 
+import '../models/generation_result.dart';
 import 'debug_data.dart';
 import 'debug_events.dart';
 
@@ -19,41 +20,49 @@ class KaiDebugTracker implements DebugTrackerInterface {
   static KaiDebugTracker get instance => _instance ??= KaiDebugTracker._();
   static set instance(KaiDebugTracker tracker) => _instance = tracker;
 
-  // Cost configuration (per million tokens)
-  static double _inputTokenCostPerMillion = 0.0;
-  static double _outputTokenCostPerMillion = 0.0;
-
   KaiDebugTracker._();
 
   final Map<String, MessageDebugInfo> _debugInfo = {};
   final BehaviorSubject<MessageDebugInfo> _debugInfoController =
       BehaviorSubject<MessageDebugInfo>();
 
-  bool get isEnabled => !kReleaseMode;
+  double _inputTokenCostPerMillion = 0.0;
+  double _outputTokenCostPerMillion = 0.0;
 
-  // Cost configuration getters and setters
-  static double get inputTokenCostPerMillion => _inputTokenCostPerMillion;
-  static double get outputTokenCostPerMillion => _outputTokenCostPerMillion;
-
-  static set inputTokenCostPerMillion(double cost) {
+  /// Set the cost per million input tokens
+  void setInputTokenCostPerMillion(double cost) {
     _inputTokenCostPerMillion = cost;
   }
 
-  static set outputTokenCostPerMillion(double cost) {
+  /// Set the cost per million output tokens
+  void setOutputTokenCostPerMillion(double cost) {
     _outputTokenCostPerMillion = cost;
   }
 
-  static double calculateInputCost(int inputTokens) {
-    return (inputTokens / 1000000) * _inputTokenCostPerMillion;
+  /// Get the cost per million input tokens
+  double getInputTokenCostPerMillion() {
+    return _inputTokenCostPerMillion;
   }
 
-  static double calculateOutputCost(int outputTokens) {
-    return (outputTokens / 1000000) * _outputTokenCostPerMillion;
+  /// Get the cost per million output tokens
+  double getOutputTokenCostPerMillion() {
+    return _outputTokenCostPerMillion;
   }
 
-  static double calculateTotalCost(int inputTokens, int outputTokens) {
-    return calculateInputCost(inputTokens) + calculateOutputCost(outputTokens);
+  /// Calculate the total cost for a message based on its token usage
+  double calculateTotalCost(GenerationUsage? usage) {
+    if (usage == null) return 0.0;
+
+    final inputTokens = usage.inputToken ?? 0;
+    final outputTokens = usage.outputToken ?? 0;
+
+    final inputCost = (inputTokens / 1000000) * _inputTokenCostPerMillion;
+    final outputCost = (outputTokens / 1000000) * _outputTokenCostPerMillion;
+
+    return inputCost + outputCost;
   }
+
+  bool get isEnabled => !kReleaseMode;
 
   @override
   void trackEvent(DebugEvent event) {

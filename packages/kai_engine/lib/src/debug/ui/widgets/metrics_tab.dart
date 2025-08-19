@@ -10,6 +10,10 @@ class MetricsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final inputCost = KaiDebugTracker.instance.getInputTokenCostPerMillion();
+    final outputCost = KaiDebugTracker.instance.getOutputTokenCostPerMillion();
+    final showCostBreakdown = inputCost > 0 || outputCost > 0;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -20,6 +24,10 @@ class MetricsTab extends StatelessWidget {
           const SizedBox(height: 16),
           _TokenBreakdown(debugInfo: debugInfo),
           const SizedBox(height: 16),
+          if (showCostBreakdown) ...[
+            _CostBreakdown(debugInfo: debugInfo),
+            const SizedBox(height: 16),
+          ],
           _ErrorSection(debugInfo: debugInfo),
         ],
       ),
@@ -202,6 +210,15 @@ class _TokenBreakdown extends StatelessWidget {
 
   const _TokenBreakdown({required this.debugInfo});
 
+  void _showTokenCostDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return _TokenCostDialog();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final usage = debugInfo.usage;
@@ -211,7 +228,18 @@ class _TokenBreakdown extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Token Breakdown', style: Theme.of(context).textTheme.titleLarge),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Token Breakdown', style: Theme.of(context).textTheme.titleLarge),
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  onPressed: () {
+                    _showTokenCostDialog(context);
+                  },
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             _TokenMetricRow(
               label: 'Total Input Tokens',
@@ -235,16 +263,166 @@ class _TokenBreakdown extends StatelessWidget {
   }
 }
 
+class _TokenCostDialog extends StatefulWidget {
+  @override
+  _TokenCostDialogState createState() => _TokenCostDialogState();
+}
+
+class _TokenCostDialogState extends State<_TokenCostDialog> {
+  final TextEditingController _inputController = TextEditingController();
+  final TextEditingController _outputController = TextEditingController();
+  late double _inputCost;
+  late double _outputCost;
+
+  @override
+  void initState() {
+    super.initState();
+    _inputCost = KaiDebugTracker.instance.getInputTokenCostPerMillion();
+    _outputCost = KaiDebugTracker.instance.getOutputTokenCostPerMillion();
+    _inputController.text = _inputCost.toString();
+    _outputController.text = _outputCost.toString();
+  }
+
+  @override
+  void dispose() {
+    _inputController.dispose();
+    _outputController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Set Token Costs'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _inputController,
+            decoration: const InputDecoration(
+              labelText: 'Input Token Cost per Million',
+              prefixText: '\$',
+            ),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _outputController,
+            decoration: const InputDecoration(
+              labelText: 'Output Token Cost per Million',
+              prefixText: '\$',
+            ),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final inputCost = double.tryParse(_inputController.text) ?? 0.0;
+            final outputCost = double.tryParse(_outputController.text) ?? 0.0;
+            KaiDebugTracker.instance.setInputTokenCostPerMillion(inputCost);
+            KaiDebugTracker.instance.setOutputTokenCostPerMillion(outputCost);
+            Navigator.of(context).pop();
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+class _CostBreakdown extends StatelessWidget {
+  final MessageDebugInfo debugInfo;
+
+  const _CostBreakdown({required this.debugInfo});
+
+  @override
+  Widget build(BuildContext context) {
+    final totalCost = KaiDebugTracker.instance.calculateTotalCost(debugInfo.usage);
+    final inputTokens = debugInfo.usage?.inputToken ?? 0;
+    final outputTokens = debugInfo.usage?.outputToken ?? 0;
+    final inputCost = KaiDebugTracker.instance.getInputTokenCostPerMillion();
+    final outputCost = KaiDebugTracker.instance.getOutputTokenCostPerMillion();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Cost Breakdown', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
+            _TokenMetricRow(
+              label: 'Input Token Cost',
+              value: '\$${inputCost.toStringAsFixed(2)} per million',
+              icon: Icons.input,
+            ),
+            _TokenMetricRow(
+              label: 'Output Token Cost',
+              value: '\$${outputCost.toStringAsFixed(2)} per million',
+              icon: Icons.output,
+            ),
+            const SizedBox(height: 16),
+            _TokenMetricRow(
+              label: 'Total Input Tokens',
+              value: inputTokens.toString(),
+              icon: Icons.input,
+            ),
+            _TokenMetricRow(
+              label: 'Total Output Tokens',
+              value: outputTokens.toString(),
+              icon: Icons.output,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.withAlpha((255 * 0.1).round()),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Total Cost:',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                  Text(
+                    '\$${totalCost.toStringAsFixed(4)}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _TokenMetricRow extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
 
-  const _TokenMetricRow({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
+  const _TokenMetricRow({required this.label, required this.value, required this.icon});
 
   @override
   Widget build(BuildContext context) {

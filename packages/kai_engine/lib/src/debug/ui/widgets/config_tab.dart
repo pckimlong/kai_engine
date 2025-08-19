@@ -21,6 +21,8 @@ class ConfigTab extends StatelessWidget {
           _QueryProcessingSection(debugInfo: debugInfo),
           const SizedBox(height: 16),
           _MetadataSection(debugInfo: debugInfo),
+          const SizedBox(height: 16),
+          _TokenCostSection(),
         ],
       ),
     );
@@ -47,14 +49,8 @@ class _GenerationConfigSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (debugInfo.usage?.tokenCount != null)
-                  _ConfigRow(
-                    label: 'Token Count',
-                    value: '${debugInfo.usage?.tokenCount}',
-                  ),
-                _ConfigRow(
-                  label: 'Used Embedding',
-                  value: config.usedEmbedding ? 'Yes' : 'No',
-                ),
+                  _ConfigRow(label: 'Token Count', value: '${debugInfo.usage?.tokenCount}'),
+                _ConfigRow(label: 'Used Embedding', value: config.usedEmbedding ? 'Yes' : 'No'),
                 const SizedBox(height: 12),
                 const Text('Available Tools:', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
@@ -170,6 +166,91 @@ class _ConfigRow extends StatelessWidget {
             child: Text('$label:', style: const TextStyle(fontWeight: FontWeight.w500)),
           ),
           Expanded(child: SelectableText(value)),
+        ],
+      ),
+    );
+  }
+}
+
+class _TokenCostSection extends StatefulWidget {
+  @override
+  _TokenCostSectionState createState() => _TokenCostSectionState();
+}
+
+class _TokenCostSectionState extends State<_TokenCostSection> {
+  late TextEditingController _inputCostController;
+  late TextEditingController _outputCostController;
+
+  @override
+  void initState() {
+    super.initState();
+    _inputCostController = TextEditingController(
+      text: KaiDebugTracker.instance.getInputTokenCostPerMillion().toStringAsFixed(2),
+    );
+    _outputCostController = TextEditingController(
+      text: KaiDebugTracker.instance.getOutputTokenCostPerMillion().toStringAsFixed(2),
+    );
+  }
+
+  @override
+  void dispose() {
+    _inputCostController.dispose();
+    _outputCostController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ExpandableSectionCard(
+      title: 'Token Cost Configuration',
+      subtitle: 'Set cost per million tokens',
+      icon: Icons.attach_money,
+      initiallyExpanded: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _inputCostController,
+            decoration: const InputDecoration(
+              labelText: 'Input Token Cost per Million',
+              prefixText: '\$',
+            ),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            onChanged: (value) {
+              if (value.isNotEmpty) {
+                try {
+                  final cost = double.parse(value);
+                  KaiDebugTracker.instance.setInputTokenCostPerMillion(cost);
+                } catch (e) {
+                  // Ignore invalid input
+                }
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _outputCostController,
+            decoration: const InputDecoration(
+              labelText: 'Output Token Cost per Million',
+              prefixText: '\$',
+            ),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            onChanged: (value) {
+              if (value.isNotEmpty) {
+                try {
+                  final cost = double.parse(value);
+                  KaiDebugTracker.instance.setOutputTokenCostPerMillion(cost);
+                } catch (e) {
+                  // Ignore invalid input
+                }
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Note: These costs are used to calculate the total cost based on token usage.',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
         ],
       ),
     );
