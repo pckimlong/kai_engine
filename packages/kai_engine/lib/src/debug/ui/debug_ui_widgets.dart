@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'debug_system.dart';
+import '../debug_system.dart';
 
 /// Simple debug info widget that shows debug data for a specific message
 class MessageDebugWidget extends StatelessWidget {

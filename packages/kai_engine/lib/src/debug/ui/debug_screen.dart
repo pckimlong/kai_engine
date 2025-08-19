@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../models/core_message.dart';
-import 'debug_system.dart';
+import '../../models/core_message.dart';
+import '../debug_system.dart';
 
 /// Comprehensive debug screen for message analysis
 class MessageDebugScreen extends StatefulWidget {
@@ -74,10 +74,10 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(icon: Icon(Icons.timeline), text: 'Timeline'),
-            Tab(icon: Icon(Icons.message), text: 'Messages'),
-            Tab(icon: Icon(Icons.settings), text: 'Config'),
-            Tab(icon: Icon(Icons.analytics), text: 'Metrics'),
+            Tab(text: 'Timeline'),
+            Tab(text: 'Messages'),
+            Tab(text: 'Config'),
+            Tab(text: 'Metrics'),
           ],
         ),
       ),
