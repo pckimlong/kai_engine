@@ -51,11 +51,8 @@ class MessageDebugWidget extends StatelessWidget {
                   ),
               ],
             ),
-            if (debugInfo.generationConfig?.tokenCount != null)
-              Text(
-                'Tokens: ${debugInfo.generationConfig!.tokenCount}',
-                style: const TextStyle(fontSize: 10),
-              ),
+            if (debugInfo.usage?.tokenCount != null)
+              Text('Tokens: ${debugInfo.usage!.tokenCount}', style: const TextStyle(fontSize: 10)),
             if (debugInfo.usage != null)
               Text(
                 'Usage: ${debugInfo.usage!.inputToken ?? 0} in, ${debugInfo.usage!.outputToken ?? 0} out',
@@ -128,8 +125,12 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
       right: 10,
       bottom: 100,
       width: 350,
-      child: Card(
-        elevation: 10,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.red.withValues(alpha: 0.3), width: 2),
+          color: Theme.of(context).scaffoldBackgroundColor,
+        ),
         child: Column(
           children: [
             Container(
@@ -212,8 +213,8 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
             children: [
               _buildInfoRow('Message ID', info.messageId),
               _buildInfoRow('Start Time', info.startTime.toString()),
-              if (info.generationConfig?.tokenCount != null)
-                _buildInfoRow('Tokens', info.generationConfig!.tokenCount.toString()),
+              if (info.usage?.tokenCount != null)
+                _buildInfoRow('Tokens', info.usage!.tokenCount.toString()),
               if (info.usage != null)
                 _buildInfoRow(
                   'Usage',

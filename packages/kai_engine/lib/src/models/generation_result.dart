@@ -43,4 +43,11 @@ sealed class GenerationUsage with _$GenerationUsage {
     required int? apiCallCount,
     Map<String, dynamic>? extensions,
   }) = _GenerationUsage;
+
+  int? get tokenCount {
+    if (inputToken != null && outputToken != null) {
+      return inputToken! + outputToken!;
+    }
+    return null;
+  }
 }

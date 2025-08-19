@@ -28,13 +28,11 @@ class DebugPhase {
 class DebugGenerationConfig {
   final List<String> availableTools;
   final Map<String, dynamic> config;
-  final int? tokenCount;
   final bool usedEmbedding;
 
   const DebugGenerationConfig({
     required this.availableTools,
     required this.config,
-    this.tokenCount,
     this.usedEmbedding = false,
   });
 }
@@ -72,7 +70,7 @@ class MessageDebugInfo {
 
   // Results
   IList<CoreMessage>? generatedMessages;
-  GenerationUsage? usage; // Add this line
+  GenerationUsage? usage;
   Exception? error;
   String? errorPhase;
 
@@ -335,7 +333,11 @@ mixin DebugTrackingMixin {
     emitDebugEvent(StreamingChunkEvent(messageId, chunk));
   }
 
-  void debugMessageCompleted(String messageId, IList<CoreMessage> generatedMessages, [GenerationUsage? usage]) {
+  void debugMessageCompleted(
+    String messageId,
+    IList<CoreMessage> generatedMessages, [
+    GenerationUsage? usage,
+  ]) {
     emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages, usage));
   }
 

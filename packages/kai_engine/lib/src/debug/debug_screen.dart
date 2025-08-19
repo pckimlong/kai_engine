@@ -684,15 +684,15 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
     return _buildExpandableSection(
       title: 'Generation Configuration',
       subtitle: config != null
-          ? '${config.availableTools.length} tools, ${config.tokenCount ?? "Unknown"} tokens'
+          ? '${config.availableTools.length} tools, ${_debugInfo!.usage?.tokenCount ?? "Unknown"} tokens'
           : 'Not available',
       icon: Icons.settings,
       child: config != null
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (config.tokenCount != null)
-                  _buildConfigRow('Token Count', '${config.tokenCount}'),
+                if (_debugInfo!.usage?.tokenCount != null)
+                  _buildConfigRow('Token Count', '${_debugInfo!.usage?.tokenCount}'),
                 _buildConfigRow('Used Embedding', config.usedEmbedding ? 'Yes' : 'No'),
                 const SizedBox(height: 12),
                 const Text('Available Tools:', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -803,6 +803,8 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
           const SizedBox(height: 16),
           _buildPhaseBreakdown(),
           const SizedBox(height: 16),
+          _buildTokenBreakdown(),
+          const SizedBox(height: 16),
           _buildErrorSection(),
         ],
       ),
@@ -849,9 +851,7 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
                 Expanded(
                   child: _buildMetricCard(
                     'Token Count',
-                    info.generationConfig?.tokenCount != null
-                        ? '${info.generationConfig!.tokenCount}'
-                        : 'Unknown',
+                    info.usage?.tokenCount != null ? '${info.usage?.tokenCount}' : 'Unknown',
                     Icons.token,
                     Colors.purple,
                   ),
@@ -939,6 +939,60 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
           Text(
             phase.duration != null ? '${phase.duration!.inMilliseconds}ms' : 'In Progress...',
             style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTokenBreakdown() {
+    final info = _debugInfo!;
+    int? totalInputTokens = info.usage?.inputToken;
+    int? totalOutputTokens = info.usage?.outputToken;
+    int? totalApiCalls = info.usage?.apiCallCount;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Token Breakdown', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
+            _buildTokenMetricRow(
+              'Total Input Tokens',
+              totalInputTokens?.toString() ?? "Unknown",
+              Icons.input,
+            ),
+            _buildTokenMetricRow(
+              'Total Output Tokens',
+              totalOutputTokens?.toString() ?? "Unknown",
+              Icons.output,
+            ),
+            _buildTokenMetricRow(
+              'Total API Calls',
+              totalApiCalls?.toString() ?? "Unknown",
+              Icons.api,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTokenMetricRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.blue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
           ),
         ],
       ),
@@ -1054,7 +1108,7 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
           ? {
               'availableTools': info.generationConfig!.availableTools,
               'config': info.generationConfig!.config,
-              'tokenCount': info.generationConfig!.tokenCount,
+              'tokenCount': info.usage?.tokenCount,
               'usedEmbedding': info.generationConfig!.usedEmbedding,
             }
           : null,
