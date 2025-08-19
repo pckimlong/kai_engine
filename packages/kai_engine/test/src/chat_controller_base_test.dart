@@ -37,7 +37,7 @@ class MockKaiLogger extends Mock implements KaiLogger {}
 
 // Test implementation of ContextEngine
 final class TestContextEngine extends ContextEngine {
-  Future<(CoreMessage, IList<CoreMessage>)> Function({
+  Future<({CoreMessage userMessage, IList<CoreMessage> prompts})> Function({
     required IList<CoreMessage> source,
     required QueryContext inputQuery,
     void Function(String name)? onStageStart,
@@ -46,7 +46,7 @@ final class TestContextEngine extends ContextEngine {
   _generateFunction;
 
   TestContextEngine({
-    Future<(CoreMessage, IList<CoreMessage>)> Function({
+    Future<({CoreMessage userMessage, IList<CoreMessage> prompts})> Function({
       required IList<CoreMessage> source,
       required QueryContext inputQuery,
       void Function(String name)? onStageStart,
@@ -56,7 +56,7 @@ final class TestContextEngine extends ContextEngine {
   }) : _generateFunction = generateFunction;
 
   void setGenerateFunction(
-    Future<(CoreMessage, IList<CoreMessage>)> Function({
+    Future<({CoreMessage userMessage, IList<CoreMessage> prompts})> Function({
       required IList<CoreMessage> source,
       required QueryContext inputQuery,
       void Function(String name)? onStageStart,
@@ -71,7 +71,7 @@ final class TestContextEngine extends ContextEngine {
   List<PromptTemplate> get promptBuilder => [PromptTemplate.input()];
 
   @override
-  Future<(CoreMessage, IList<CoreMessage>)> generate({
+  Future<({CoreMessage userMessage, IList<CoreMessage> prompts})> generate({
     required IList<CoreMessage> source,
     required QueryContext inputQuery,
     void Function(String name)? onStageStart,
@@ -79,19 +79,17 @@ final class TestContextEngine extends ContextEngine {
   }) {
     if (_generateFunction != null) {
       return _generateFunction!(
-        source: source, 
-        inputQuery: inputQuery, 
+        source: source,
+        inputQuery: inputQuery,
         onStageStart: onStageStart,
         providedUserMessage: providedUserMessage,
       );
     }
     // Default implementation
-    final userMessage = providedUserMessage?.copyWith(content: inputQuery.processedQuery) ?? 
-                       CoreMessage.user(content: inputQuery.processedQuery);
-    return Future.value((
-      userMessage,
-      IList([userMessage]),
-    ));
+    final userMessage =
+        providedUserMessage?.copyWith(content: inputQuery.processedQuery) ??
+        CoreMessage.user(content: inputQuery.processedQuery);
+    return Future.value((userMessage: userMessage, prompts: IList([userMessage])));
   }
 }
 
@@ -244,8 +242,11 @@ void main() {
                 void Function(String name)? onStageStart,
                 CoreMessage? providedUserMessage,
               }) async => (
-                providedUserMessage ?? CoreMessage.user(messageId: 'user-1', content: 'Hello'),
-                IList([providedUserMessage ?? CoreMessage.user(messageId: 'user-1', content: 'Hello')]),
+                userMessage:
+                    providedUserMessage ?? CoreMessage.user(messageId: 'user-1', content: 'Hello'),
+                prompts: IList([
+                  providedUserMessage ?? CoreMessage.user(messageId: 'user-1', content: 'Hello'),
+                ]),
               ),
         );
 
@@ -275,7 +276,6 @@ void main() {
         when(
           () => mockPostResponseEngine.process(
             input: any(named: 'input'),
-            requestPrompts: any(named: 'requestPrompts'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
           ),
@@ -315,7 +315,6 @@ void main() {
         verify(
           () => mockPostResponseEngine.process(
             input: any(named: 'input'),
-            requestPrompts: any(named: 'requestPrompts'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
           ),
@@ -475,7 +474,6 @@ void main() {
         when(
           () => mockPostResponseEngine.process(
             input: any(named: 'input'),
-            requestPrompts: any(named: 'requestPrompts'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
           ),
@@ -667,7 +665,7 @@ void main() {
 
         // Create new mocks for this specific test
         final mockConversationManager = MockConversationManager();
-        
+
         final mockGenerationService = MockGenerationService();
         final mockQueryEngine = MockQueryEngine();
         final mockPostResponseEngine = MockPostResponseEngine();
@@ -712,7 +710,6 @@ void main() {
         when(
           () => mockPostResponseEngine.process(
             input: any(named: 'input'),
-            requestPrompts: any(named: 'requestPrompts'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
           ),
@@ -752,8 +749,9 @@ void main() {
                 void Function(String name)? onStageStart,
                 CoreMessage? providedUserMessage,
               }) async => (
-                providedUserMessage ?? CoreMessage.user(messageId: 'user-1', content: 'Hello'),
-                IList([
+                userMessage:
+                    providedUserMessage ?? CoreMessage.user(messageId: 'user-1', content: 'Hello'),
+                prompts: IList([
                   CoreMessage.user(content: 'Previous message'),
                   CoreMessage.ai(content: 'Previous response'),
                   providedUserMessage ?? CoreMessage.user(messageId: 'user-1', content: 'Hello'),

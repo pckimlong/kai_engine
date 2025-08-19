@@ -61,14 +61,21 @@ abstract base class ChatControllerBase<TEntity> {
     String input, {
     bool revertInputOnError = false,
   }) async {
-    final userMessage = CoreMessage.user(content: input);
+    var userMessage = CoreMessage.user(content: input);
 
     try {
       await _logger.logInfo('Chat submission started', data: {'input': input});
       _setState(GenerationState.loading());
 
       // Add user message to conversation, no await
-      unawaited(_conversationManager.addMessages([userMessage].lock));
+      unawaited(
+        _conversationManager.addMessages([userMessage].lock).then((_) async {
+          // Get back the fresh user message for later use, since it might contain metadata
+          userMessage = (await _conversationManager.getMessages()).firstWhere(
+            (m) => m.messageId == userMessage.messageId,
+          );
+        }),
+      );
 
       // Optimize query
       _setLoadingPhase(LoadingPhase.processingQuery());
@@ -85,19 +92,18 @@ abstract base class ChatControllerBase<TEntity> {
       final contextResult = await build().generate(
         source: await _conversationManager.getMessages(),
         inputQuery: inputQuery,
+        // the original user message will get override but not effect database
         providedUserMessage: userMessage,
         onStageStart: (name) {
           _setLoadingPhase(LoadingPhase.buildContext(name));
         },
       );
 
-      final requestPrompts = contextResult.$2;
-
       // Generate response
-      final configs = generativeConfigs(requestPrompts);
+      final configs = generativeConfigs(contextResult.prompts);
       _setLoadingPhase(LoadingPhase.generatingResponse());
       final responseStream = _generationService.stream(
-        requestPrompts,
+        contextResult.prompts,
         cancelToken: _cancelToken,
         tools: configs.tools,
         config: configs.config,
@@ -136,7 +142,6 @@ abstract base class ChatControllerBase<TEntity> {
           _postResponseEngine
               .process(
                 input: inputQuery,
-                requestPrompts: requestPrompts,
                 result: state.result,
                 conversationManager: _conversationManager,
               )

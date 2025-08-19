@@ -40,7 +40,7 @@ abstract base class ContextEngine {
   ///
   /// Returns:
   /// - A record containing the user message and the complete contextual prompt
-  Future<(CoreMessage userMessage, IList<CoreMessage> prompts)> generate({
+  Future<({CoreMessage userMessage, IList<CoreMessage> prompts})> generate({
     /// Source messages to build context from, usually this is the message available in chat context
     required IList<CoreMessage> source,
     required QueryContext inputQuery,
@@ -48,13 +48,9 @@ abstract base class ContextEngine {
     CoreMessage? providedUserMessage,
   }) async {
     assert(
-      promptBuilder.whereType<_InputPromptTemplate>().length == 1,
+      promptBuilder.whereType<InputPromptTemplate>().length == 1,
       "Must define exactly one input prompt.",
     );
-
-    final userMessage =
-        providedUserMessage?.copyWith(content: inputQuery.originalQuery) ??
-        CoreMessage.user(content: inputQuery.originalQuery);
 
     // Create indexed pairs to preserve original order
     final indexedBuilders = promptBuilder
@@ -115,13 +111,19 @@ abstract base class ContextEngine {
       }
     }
 
+    final userMessage = providedUserMessage ?? CoreMessage.user(content: inputQuery.originalQuery);
+
     /// Clean up context by removing duplicates and adding the user message
     finalContexts
       ..removeWhere((e) => e.messageId == userMessage.messageId)
-      ..removeDuplicates(by: (e) => e.messageId)
-      ..add(userMessage);
+      ..removeDuplicates(by: (e) => e.messageId);
 
-    return (userMessage, IList(finalContexts));
+    final input = promptBuilder.whereType<InputPromptTemplate>().first;
+    final overriddenMessage =
+        await input.revision?.call(inputQuery, finalContexts.toIList()) ?? inputQuery.originalQuery;
+    final finalUserMessage = userMessage.copyWith(content: overriddenMessage);
+
+    return (userMessage: finalUserMessage, prompts: IList([...finalContexts, finalUserMessage]));
   }
 
   /// Builds parallel context items while preserving their original indices.
@@ -258,6 +260,10 @@ sealed class PromptTemplate with _$PromptTemplate {
   /// ensures developers have full visibility into how their prompts are constructed.
   ///
   /// Parameters:
-  /// - [prompt]: Optional function to modify the raw user input before inclusion
-  const factory PromptTemplate.input() = _InputPromptTemplate;
+  /// - [revision]: Optional function to override the raw user input before inclusion. This helpful for inject custom instruction to user input
+  /// - [input]: The user's raw input message
+  /// - [messages]: The final list of messages in the conversation context after processing other templates include system prompts
+  const factory PromptTemplate.input([
+    FutureOr<String> Function(QueryContext input, IList<CoreMessage> finalizedMessages)? revision,
+  ]) = InputPromptTemplate;
 }

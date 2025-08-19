@@ -50,16 +50,16 @@ void main() {
       final result = await engine.generate(source: sourceMessages, inputQuery: queryContext);
 
       expect(result, isNotNull);
-      expect(result.$1, isA<CoreMessage>());
-      expect(result.$2, isA<IList<CoreMessage>>());
+      expect(result.userMessage, isA<CoreMessage>());
+      expect(result.prompts, isA<IList<CoreMessage>>());
       // Should have system message + user message
-      expect(result.$2.length, 2);
+      expect(result.prompts.length, 2);
 
       // First message should be the system message
-      expect(result.$2.first.content, 'You are a helpful assistant');
+      expect(result.prompts.first.content, 'You are a helpful assistant');
 
       // User message should match
-      expect(result.$1.content, 'Tell me a joke');
+      expect(result.userMessage.content, 'Tell me a joke');
     });
 
     test('generates prompt with parallel builders', () async {
@@ -80,10 +80,10 @@ void main() {
 
       expect(result, isNotNull);
       // Should have system message + parallel message + user message
-      expect(result.$2.length, 3);
-      expect(result.$2[0].content, 'You are a helpful assistant');
-      expect(result.$2[1].content, 'Current date: 2023-01-01');
-      expect(result.$1.content, 'Tell me a joke');
+      expect(result.prompts.length, 3);
+      expect(result.prompts[0].content, 'You are a helpful assistant');
+      expect(result.prompts[1].content, 'Current date: 2023-01-01');
+      expect(result.userMessage.content, 'Tell me a joke');
 
       verify(() => mockBuilder.build(any(), any())).called(1);
     });
@@ -104,10 +104,10 @@ void main() {
 
       expect(result, isNotNull);
       // Should have system message + sequential message + user message
-      expect(result.$2.length, 3);
-      expect(result.$2[0].content, 'You are a helpful assistant');
-      expect(result.$2[1].content, 'Processed history');
-      expect(result.$1.content, 'Tell me a joke');
+      expect(result.prompts.length, 3);
+      expect(result.prompts[0].content, 'You are a helpful assistant');
+      expect(result.prompts[1].content, 'Processed history');
+      expect(result.userMessage.content, 'Tell me a joke');
 
       verify(() => mockBuilder.build(any(), any())).called(1);
     });
@@ -296,9 +296,12 @@ void main() {
       verify(() => mockSequentialBuilder2.build(any(), any())).called(1);
 
       // Check that we have the expected messages
-      expect(result.$2.length, greaterThan(3)); // At least system + 3 built messages + user input
-      expect(result.$2[0].content, 'You are a helpful assistant');
-      expect(result.$1.content, 'Tell me a joke');
+      expect(
+        result.prompts.length,
+        greaterThan(3),
+      ); // At least system + 3 built messages + user input
+      expect(result.prompts[0].content, 'You are a helpful assistant');
+      expect(result.userMessage.content, 'Tell me a joke');
     });
 
     test('SimpleContextEngine generates expected prompt structure', () async {
@@ -306,15 +309,15 @@ void main() {
       final result = await engine.generate(source: sourceMessages, inputQuery: queryContext);
 
       expect(result, isNotNull);
-      expect(result.$2, isA<IList<CoreMessage>>());
+      expect(result.prompts, isA<IList<CoreMessage>>());
       // Should have system message + history messages + user message
-      expect(result.$2.length, 2 + sourceMessages.length);
+      expect(result.prompts.length, 2 + sourceMessages.length);
 
       // First message should be the system message
-      expect(result.$2.first.content, "You're kai, a useful friendly personal assistant.");
+      expect(result.prompts.first.content, "You're kai, a useful friendly personal assistant.");
 
       // User message should match
-      expect(result.$1.content, 'Tell me a joke');
+      expect(result.userMessage.content, 'Tell me a joke');
     });
   });
 }
