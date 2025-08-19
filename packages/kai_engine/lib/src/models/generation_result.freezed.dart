@@ -16,7 +16,7 @@ mixin _$GenerationResult {
 
 /// The original request message
  CoreMessage get requestMessage;/// Generate messages result per request, not including previous context and user messages
- IList<CoreMessage> get generatedMessage;/// The usage information for the generation
+ IList<CoreMessage> get generatedMessage;/// The usage information for the generation, this is optional
  GenerationUsage? get usage; Map<String, dynamic>? get extensions;
 /// Create a copy of GenerationResult
 /// with the given fields replaced by the non-null parameter values.
@@ -234,7 +234,7 @@ class _GenerationResult extends GenerationResult {
 @override final  CoreMessage requestMessage;
 /// Generate messages result per request, not including previous context and user messages
 @override final  IList<CoreMessage> generatedMessage;
-/// The usage information for the generation
+/// The usage information for the generation, this is optional
 @override final  GenerationUsage? usage;
  final  Map<String, dynamic>? _extensions;
 @override Map<String, dynamic>? get extensions {

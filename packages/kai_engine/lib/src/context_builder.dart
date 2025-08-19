@@ -1,8 +1,5 @@
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:kai_engine/src/models/core_message.dart';
-
-import 'debug/debug_system.dart';
-import 'models/query_context.dart';
+import 'package:kai_engine/kai_engine.dart';
 
 /// Base context builder class to extend and use in the template
 abstract interface class ContextBuilder {}
@@ -31,13 +28,13 @@ mixin SequentialContextBuilderDebugMixin on SequentialContextBuilder implements 
 
   /// Enhanced build method with debug tracking
   Future<NextSequentialContext> buildWithDebug(
-    QueryContext input, 
+    QueryContext input,
     List<CoreMessage> previous,
     String messageId,
   ) async {
     final builderName = 'seq-${runtimeType.toString()}';
     debugStartPhase(messageId, builderName);
-    
+
     try {
       final result = await build(input, previous);
       debugAddMetadata(messageId, '${builderName}-result-count', result.length);
@@ -50,25 +47,41 @@ mixin SequentialContextBuilderDebugMixin on SequentialContextBuilder implements 
   }
 
   @override
-  void debugStartMessage(String messageId, String originalInput) => emitDebugEvent(MessageStartedEvent(messageId, originalInput));
+  void debugStartMessage(String messageId, String originalInput) =>
+      emitDebugEvent(MessageStartedEvent(messageId, originalInput));
   @override
-  void debugStartPhase(String messageId, String phase) => emitDebugEvent(PhaseStartedEvent(messageId, phase));
+  void debugStartPhase(String messageId, String phase) =>
+      emitDebugEvent(PhaseStartedEvent(messageId, phase));
   @override
-  void debugEndPhase(String messageId, String phase) => emitDebugEvent(PhaseEndedEvent(messageId, phase));
+  void debugEndPhase(String messageId, String phase) =>
+      emitDebugEvent(PhaseEndedEvent(messageId, phase));
   @override
-  void debugQueryProcessed(String messageId, QueryContext processedQuery) => emitDebugEvent(QueryProcessedEvent(messageId, processedQuery));
+  void debugQueryProcessed(String messageId, QueryContext processedQuery) =>
+      emitDebugEvent(QueryProcessedEvent(messageId, processedQuery));
   @override
-  void debugContextBuilt(String messageId, IList<CoreMessage> contextMessages, IList<CoreMessage> finalPrompts) => emitDebugEvent(ContextBuiltEvent(messageId, contextMessages, finalPrompts));
+  void debugContextBuilt(
+    String messageId,
+    IList<CoreMessage> contextMessages,
+    IList<CoreMessage> finalPrompts,
+  ) => emitDebugEvent(ContextBuiltEvent(messageId, contextMessages, finalPrompts));
   @override
-  void debugGenerationConfigured(String messageId, DebugGenerationConfig config) => emitDebugEvent(GenerationConfiguredEvent(messageId, config));
+  void debugGenerationConfigured(String messageId, DebugGenerationConfig config) =>
+      emitDebugEvent(GenerationConfiguredEvent(messageId, config));
   @override
-  void debugStreamingChunk(String messageId, String chunk) => emitDebugEvent(StreamingChunkEvent(messageId, chunk));
+  void debugStreamingChunk(String messageId, String chunk) =>
+      emitDebugEvent(StreamingChunkEvent(messageId, chunk));
   @override
-  void debugMessageCompleted(String messageId, IList<CoreMessage> generatedMessages) => emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages));
+  void debugMessageCompleted(
+    String messageId,
+    IList<CoreMessage> generatedMessages, [
+    GenerationUsage? usage,
+  ]) => emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages, usage));
   @override
-  void debugMessageFailed(String messageId, Exception error, String phase) => emitDebugEvent(MessageFailedEvent(messageId, error, phase));
+  void debugMessageFailed(String messageId, Exception error, String phase) =>
+      emitDebugEvent(MessageFailedEvent(messageId, error, phase));
   @override
-  void debugAddMetadata(String messageId, String key, dynamic value) => emitDebugEvent(MetadataAddedEvent(messageId, key, value));
+  void debugAddMetadata(String messageId, String key, dynamic value) =>
+      emitDebugEvent(MetadataAddedEvent(messageId, key, value));
 }
 
 abstract interface class ParallelContextBuilder implements ContextBuilder {
@@ -92,13 +105,13 @@ mixin ParallelContextBuilderDebugMixin on ParallelContextBuilder implements Debu
 
   /// Enhanced build method with debug tracking
   Future<List<CoreMessage>> buildWithDebug(
-    QueryContext input, 
+    QueryContext input,
     IList<CoreMessage> context,
     String messageId,
   ) async {
     final builderName = 'par-${runtimeType.toString()}';
     debugStartPhase(messageId, builderName);
-    
+
     try {
       final result = await build(input, context);
       debugAddMetadata(messageId, '${builderName}-result-count', result.length);
@@ -111,25 +124,41 @@ mixin ParallelContextBuilderDebugMixin on ParallelContextBuilder implements Debu
   }
 
   @override
-  void debugStartMessage(String messageId, String originalInput) => emitDebugEvent(MessageStartedEvent(messageId, originalInput));
+  void debugStartMessage(String messageId, String originalInput) =>
+      emitDebugEvent(MessageStartedEvent(messageId, originalInput));
   @override
-  void debugStartPhase(String messageId, String phase) => emitDebugEvent(PhaseStartedEvent(messageId, phase));
+  void debugStartPhase(String messageId, String phase) =>
+      emitDebugEvent(PhaseStartedEvent(messageId, phase));
   @override
-  void debugEndPhase(String messageId, String phase) => emitDebugEvent(PhaseEndedEvent(messageId, phase));
+  void debugEndPhase(String messageId, String phase) =>
+      emitDebugEvent(PhaseEndedEvent(messageId, phase));
   @override
-  void debugQueryProcessed(String messageId, QueryContext processedQuery) => emitDebugEvent(QueryProcessedEvent(messageId, processedQuery));
+  void debugQueryProcessed(String messageId, QueryContext processedQuery) =>
+      emitDebugEvent(QueryProcessedEvent(messageId, processedQuery));
   @override
-  void debugContextBuilt(String messageId, IList<CoreMessage> contextMessages, IList<CoreMessage> finalPrompts) => emitDebugEvent(ContextBuiltEvent(messageId, contextMessages, finalPrompts));
+  void debugContextBuilt(
+    String messageId,
+    IList<CoreMessage> contextMessages,
+    IList<CoreMessage> finalPrompts,
+  ) => emitDebugEvent(ContextBuiltEvent(messageId, contextMessages, finalPrompts));
   @override
-  void debugGenerationConfigured(String messageId, DebugGenerationConfig config) => emitDebugEvent(GenerationConfiguredEvent(messageId, config));
+  void debugGenerationConfigured(String messageId, DebugGenerationConfig config) =>
+      emitDebugEvent(GenerationConfiguredEvent(messageId, config));
   @override
-  void debugStreamingChunk(String messageId, String chunk) => emitDebugEvent(StreamingChunkEvent(messageId, chunk));
+  void debugStreamingChunk(String messageId, String chunk) =>
+      emitDebugEvent(StreamingChunkEvent(messageId, chunk));
   @override
-  void debugMessageCompleted(String messageId, IList<CoreMessage> generatedMessages) => emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages));
+  void debugMessageCompleted(
+    String messageId,
+    IList<CoreMessage> generatedMessages, [
+    GenerationUsage? usage,
+  ]) => emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages, usage));
   @override
-  void debugMessageFailed(String messageId, Exception error, String phase) => emitDebugEvent(MessageFailedEvent(messageId, error, phase));
+  void debugMessageFailed(String messageId, Exception error, String phase) =>
+      emitDebugEvent(MessageFailedEvent(messageId, error, phase));
   @override
-  void debugAddMetadata(String messageId, String key, dynamic value) => emitDebugEvent(MetadataAddedEvent(messageId, key, value));
+  void debugAddMetadata(String messageId, String key, dynamic value) =>
+      emitDebugEvent(MetadataAddedEvent(messageId, key, value));
 }
 
 /// Prebuilt history context

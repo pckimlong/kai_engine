@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'debug_system.dart';
+import '../models/generation_result.dart';
 
 /// Simple debug info widget that shows debug data for a specific message
 class MessageDebugWidget extends StatelessWidget {
@@ -47,6 +48,11 @@ class MessageDebugWidget extends StatelessWidget {
             if (debugInfo.generationConfig?.tokenCount != null)
               Text(
                 'Tokens: ${debugInfo.generationConfig!.tokenCount}',
+                style: const TextStyle(fontSize: 10),
+              ),
+            if (debugInfo.usage != null)
+              Text(
+                'Usage: ${debugInfo.usage!.inputToken ?? 0} in, ${debugInfo.usage!.outputToken ?? 0} out',
                 style: const TextStyle(fontSize: 10),
               ),
             if (debugInfo.streaming.eventCount > 0)
@@ -197,6 +203,8 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
               _buildInfoRow('Start Time', info.startTime.toString()),
               if (info.generationConfig?.tokenCount != null)
                 _buildInfoRow('Tokens', info.generationConfig!.tokenCount.toString()),
+              if (info.usage != null)
+                _buildInfoRow('Usage', '${info.usage!.inputToken ?? 0} in, ${info.usage!.outputToken ?? 0} out'),
               if (info.generationConfig?.availableTools.isNotEmpty == true)
                 _buildInfoRow('Tools', info.generationConfig!.availableTools.join(', ')),
               _buildInfoRow('Streaming Events', info.streaming.eventCount.toString()),

@@ -83,7 +83,7 @@ mixin PostResponseEngineDebugMixin on PostResponseEngine implements DebugTrackin
   @override
   void debugStreamingChunk(String messageId, String chunk) => emitDebugEvent(StreamingChunkEvent(messageId, chunk));
   @override
-  void debugMessageCompleted(String messageId, IList<CoreMessage> generatedMessages) => emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages));
+  void debugMessageCompleted(String messageId, IList<CoreMessage> generatedMessages, [GenerationUsage? usage]) => emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages, usage));
   @override
   void debugMessageFailed(String messageId, Exception error, String phase) => emitDebugEvent(MessageFailedEvent(messageId, error, phase));
   @override

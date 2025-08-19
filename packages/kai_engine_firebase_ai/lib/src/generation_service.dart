@@ -236,21 +236,9 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
         yield GenerationState.complete(
           GenerationResult(
             requestMessage: prompts.last,
-            generatedMessage: newlyGeneratedContent.mapIndexed((index, content) {
-              // Add generation usage only to the last message
-              final isLastMessage = index == newlyGeneratedContent.length - 1;
-              return _messageAdapter
-                  .toCoreMessage(content)
-                  .copyWithGenerationUsage(
-                    !isLastMessage
-                        ? null
-                        : GenerationUsage(
-                            inputToken: totalInputTokens,
-                            outputToken: totalOutputTokens,
-                            apiCallCount: apiCallCount,
-                          ),
-                  );
-            }).toIList(),
+            generatedMessage: newlyGeneratedContent
+                .map((content) => _messageAdapter.toCoreMessage(content))
+                .toIList(),
             extensions: {
               'prompt_feedback': {
                 'block_reason': lastResponse.promptFeedback?.blockReason?.toJson(),
@@ -260,6 +248,11 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
                 }).toList(),
               },
             },
+            usage: GenerationUsage(
+              inputToken: totalInputTokens,
+              outputToken: totalOutputTokens,
+              apiCallCount: apiCallCount,
+            ),
           ),
         );
         return;

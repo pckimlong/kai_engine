@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../models/core_message.dart';
+import '../models/generation_result.dart';
 import '../models/query_context.dart';
 
 /// Type-safe debug data classes
@@ -71,6 +72,7 @@ class MessageDebugInfo {
 
   // Results
   IList<CoreMessage>? generatedMessages;
+  GenerationUsage? usage; // Add this line
   Exception? error;
   String? errorPhase;
 
@@ -149,7 +151,8 @@ class StreamingChunkEvent extends DebugEvent {
 
 class MessageCompletedEvent extends DebugEvent {
   final IList<CoreMessage> generatedMessages;
-  MessageCompletedEvent(super.messageId, this.generatedMessages);
+  final GenerationUsage? usage;
+  MessageCompletedEvent(super.messageId, this.generatedMessages, [this.usage]);
 }
 
 class MessageFailedEvent extends DebugEvent {
@@ -239,6 +242,7 @@ class KaiDebugTracker implements DebugTrackerInterface {
         final info = _debugInfo[event.messageId];
         if (info != null) {
           info.generatedMessages = event.generatedMessages;
+          info.usage = event.usage; // Add this line
           info.complete();
           _debugInfoController.add(info);
         }
@@ -331,8 +335,8 @@ mixin DebugTrackingMixin {
     emitDebugEvent(StreamingChunkEvent(messageId, chunk));
   }
 
-  void debugMessageCompleted(String messageId, IList<CoreMessage> generatedMessages) {
-    emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages));
+  void debugMessageCompleted(String messageId, IList<CoreMessage> generatedMessages, [GenerationUsage? usage]) {
+    emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages, usage));
   }
 
   void debugMessageFailed(String messageId, Exception error, String phase) {

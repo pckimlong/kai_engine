@@ -200,7 +200,7 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
           );
 
           // Complete debug session
-          debugMessageCompleted(userMessage.messageId, state.result.generatedMessage);
+          debugMessageCompleted(userMessage.messageId, state.result.generatedMessage, state.result.usage);
         }
 
         // Emit state through the controller

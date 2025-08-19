@@ -265,18 +265,6 @@ void main() {
       expect(generatedMessage.first.type, equals(CoreMessageType.ai));
       // Note: The actual generationUsage attachment is tested separately
     });
-
-    test('copyWithGenerationUsage can remove usage when null is passed', () {
-      final originalMessage = CoreMessage.ai(content: 'Test response');
-      final usage = GenerationUsage(inputToken: 100, outputToken: 50, apiCallCount: 1);
-
-      final messageWithUsage = originalMessage.copyWithGenerationUsage(usage);
-      expect(messageWithUsage.generationUsage, isNotNull);
-
-      final messageWithoutUsage = messageWithUsage.copyWithGenerationUsage(null);
-      expect(messageWithoutUsage.generationUsage, isNull);
-      expect(messageWithoutUsage.content, equals('Test response'));
-    });
   });
 
   group('FirebaseAiGenerationService - Tool Type Handling', () {
