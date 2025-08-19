@@ -56,7 +56,7 @@ class ConversationManager<T> {
   }
 
   /// Adds a message to the conversation
-  Future<void> addMessages(IList<CoreMessage> messages) async {
+  Future<IList<CoreMessage>> addMessages(IList<CoreMessage> messages) async {
     // Ensure system messages are ignored
     final persistentMessages = messages.where((m) => m.isMessageSavable).toList();
 
@@ -82,6 +82,7 @@ class ConversationManager<T> {
           .removeWhere((e) => persistentMessages.any((m) => m.messageId == e.messageId))
           .addAll(result);
       _messagesController.add(_messages);
+      return result.toIList();
     } catch (error) {
       // Rollback optimistic update on failure
       _messages = originalMessages;

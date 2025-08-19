@@ -69,11 +69,8 @@ abstract base class ChatControllerBase<TEntity> {
 
       // Add user message to conversation, no await
       unawaited(
-        _conversationManager.addMessages([userMessage].lock).then((_) async {
-          // Get back the fresh user message for later use, since it might contain metadata
-          userMessage = (await _conversationManager.getMessages()).firstWhere(
-            (m) => m.messageId == userMessage.messageId,
-          );
+        _conversationManager.addMessages([userMessage].lock).then((inserted) async {
+          userMessage = inserted.first;
         }),
       );
 

@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:collection/collection.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:firebase_ai/firebase_ai.dart';
@@ -87,21 +89,20 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
 
   @override
   Future<String> invoke(IList<CoreMessage> prompts) async {
-    return await _generationLock.synchronized(() async {
-      try {
-        final filteredPrompts = _filterSystemMessages(prompts);
-        final content = filteredPrompts.map(_messageAdapter.fromCoreMessage).toList();
-        final response = await _effectiveGenerativeModel(prompts).generateContent(content);
+    try {
+      log(prompts.toString(), name: 'FirebaseAiGenerationService.invoke');
+      final filteredPrompts = _filterSystemMessages(prompts);
+      final content = filteredPrompts.map(_messageAdapter.fromCoreMessage).toList();
+      final response = await _effectiveGenerativeModel(prompts).generateContent(content);
 
-        if (response.text case final text?) {
-          return text;
-        }
-
-        throw Exception('No text response generated');
-      } catch (e) {
-        throw Exception('Invocation failed: $e');
+      if (response.text case final text?) {
+        return text;
       }
-    });
+
+      throw Exception('No text response generated');
+    } catch (e) {
+      throw Exception('Invocation failed: $e');
+    }
   }
 
   /// Aggregates streaming content chunks into a single Content object
@@ -143,6 +144,7 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
     List<ToolSchema> tools = const [],
     Map<String, dynamic>? config,
   }) async* {
+    log(prompts.toString(), name: 'FirebaseAiGenerationService.stream');
     yield const GenerationState.loading();
 
     try {
