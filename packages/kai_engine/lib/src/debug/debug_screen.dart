@@ -245,7 +245,8 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
     return phaseName == 'query-processing' ||
         phaseName == 'context-building' ||
         phaseName == 'context-engine-processing' ||
-        phaseName == 'ai-generation';
+        phaseName == 'ai-generation' ||
+        phaseName == 'post-response-processing';
   }
 
   String? _getParentPhase(String phaseName) {
@@ -254,6 +255,9 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
     }
     if (phaseName.startsWith('par-') || phaseName.startsWith('seq-')) {
       return 'context-engine-processing';
+    }
+    if (phaseName.startsWith('post-response-')) {
+      return 'post-response-processing';
     }
     return null;
   }
@@ -380,6 +384,9 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
     if (phaseName.startsWith('seq-')) {
       return phaseName.replaceFirst('seq-', '→ ');
     }
+    if (phaseName.startsWith('post-response-')) {
+      return phaseName.replaceFirst('post-response-', '⚡ ');
+    }
 
     // Convert kebab-case to title case
     return phaseName
@@ -415,6 +422,8 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
         return Colors.orange;
       case 'ai-generation':
         return Colors.green;
+      case 'post-response-processing':
+        return Colors.red;
       default:
         // Context builder specific colors
         if (lowerName.startsWith('parallel-') || lowerName.startsWith('par-')) {
@@ -422,6 +431,10 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
         }
         if (lowerName.startsWith('sequential-') || lowerName.startsWith('seq-')) {
           return Colors.indigo;
+        }
+        // Post-response engine specific colors
+        if (lowerName.startsWith('post-response-')) {
+          return Colors.pink;
         }
         return Colors.purple;
     }

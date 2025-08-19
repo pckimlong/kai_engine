@@ -167,13 +167,18 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
           // Process background task on generated response, eg summarize, generate embedding
           // without blocking process
           // added messages might get modified again by post-processing
+          debugStartPhase(userMessage.messageId, 'post-response-processing');
           _postResponseEngine
               .process(
                 input: inputQuery,
                 result: state.result,
                 conversationManager: _conversationManager,
               )
+              .then((_) {
+                debugEndPhase(userMessage.messageId, 'post-response-processing');
+              })
               .catchError((error, stackTrace) {
+                debugMessageFailed(userMessage.messageId, Exception(error.toString()), 'post-response-processing');
                 _logger.logError(
                   'Post response processing failed',
                   error: error,
