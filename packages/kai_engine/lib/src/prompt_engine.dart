@@ -4,6 +4,7 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'context_builder.dart';
+import 'debug/debug_system.dart';
 import 'models/core_message.dart';
 import 'models/query_context.dart';
 
@@ -15,7 +16,7 @@ part 'prompt_engine.freezed.dart';
 /// system prompts, historical context, and user input according to a defined template structure.
 /// It supports both parallel and sequential context building strategies to optimize performance
 /// while maintaining logical ordering where required.
-abstract base class ContextEngine {
+abstract base class ContextEngine with DebugTrackingMixin {
   /// Defines the template structure for building prompts.
   ///
   /// This list specifies what components should be included in the final prompt and in what order.
@@ -47,6 +48,15 @@ abstract base class ContextEngine {
     void Function(String name)? onStageStart,
     CoreMessage? providedUserMessage,
   }) async {
+    // Extract messageId for debug tracking
+    final userMessage = providedUserMessage ?? CoreMessage.user(content: inputQuery.originalQuery);
+    final messageId = userMessage.messageId;
+
+    // Track context building phase start
+    debugStartPhase(messageId, 'context-engine-processing');
+    debugAddMetadata(messageId, 'prompt-templates', promptBuilder.length);
+    debugAddMetadata(messageId, 'source-messages', source.length);
+
     assert(
       promptBuilder.whereType<InputPromptTemplate>().length == 1,
       "Must define exactly one input prompt.",
@@ -68,13 +78,24 @@ abstract base class ContextEngine {
         .where((item) => item.builder is _BuildSequentialPromptTemplate)
         .toList();
 
+    // Track builder distribution
+    debugAddMetadata(messageId, 'parallel-builders', parallelItems.length);
+    debugAddMetadata(messageId, 'sequential-builders', sequentialItems.length);
+
     // Process both concurrently
-    final parallelFuture = _buildParallelWithIndex(parallelItems, source, inputQuery, onStageStart);
+    final parallelFuture = _buildParallelWithIndex(
+      parallelItems,
+      source,
+      inputQuery,
+      onStageStart,
+      messageId,
+    );
     final sequentialFuture = _buildSequentialWithIndex(
       sequentialItems,
       source,
       inputQuery,
       onStageStart,
+      messageId,
     );
 
     final results = await Future.wait([parallelFuture, sequentialFuture]);
@@ -111,8 +132,6 @@ abstract base class ContextEngine {
       }
     }
 
-    final userMessage = providedUserMessage ?? CoreMessage.user(content: inputQuery.originalQuery);
-
     /// Clean up context by removing duplicates and adding the user message
     finalContexts
       ..removeWhere((e) => e.messageId == userMessage.messageId)
@@ -122,6 +141,11 @@ abstract base class ContextEngine {
     final overriddenMessage =
         await input.revision?.call(inputQuery, finalContexts.toIList()) ?? inputQuery.originalQuery;
     final finalUserMessage = userMessage.copyWith(content: overriddenMessage);
+
+    // Track final results
+    debugAddMetadata(messageId, 'final-context-messages', finalContexts.length);
+    debugAddMetadata(messageId, 'total-prompt-messages', finalContexts.length + 1);
+    debugEndPhase(messageId, 'context-engine-processing');
 
     return (userMessage: finalUserMessage, prompts: IList([...finalContexts, finalUserMessage]));
   }
@@ -143,14 +167,29 @@ abstract base class ContextEngine {
     IList<CoreMessage> source,
     QueryContext inputQuery,
     void Function(String name)? onStageStart,
+    String messageId,
   ) async {
     return await Future.wait(
       items.map((item) async {
         final parallelBuilder = item.builder as _BuildParallelPromptTemplate;
         final builder = parallelBuilder.builder;
+        final builderName = 'parallel-${builder.runtimeType}';
+
+        debugStartPhase(messageId, builderName);
         onStageStart?.call('${builder.runtimeType}');
-        final result = await builder.build(inputQuery, source);
-        return (index: item.index, result: result);
+
+        try {
+          final result = await (builder is ParallelContextBuilderDebugMixin
+              ? builder.buildWithDebug(inputQuery, source, messageId)
+              : builder.build(inputQuery, source));
+
+          debugAddMetadata(messageId, '${builderName}-messages', result.length);
+          debugEndPhase(messageId, builderName);
+          return (index: item.index, result: result);
+        } catch (e) {
+          debugMessageFailed(messageId, Exception(e.toString()), builderName);
+          rethrow;
+        }
       }),
     );
   }
@@ -174,6 +213,7 @@ abstract base class ContextEngine {
     IList<CoreMessage> source,
     QueryContext inputQuery,
     void Function(String name)? onStageStart,
+    String messageId,
   ) async {
     final results = <({int index, List<CoreMessage> result})>[];
     List<CoreMessage> currentContext = source.unlock;
@@ -181,10 +221,26 @@ abstract base class ContextEngine {
     for (final item in items) {
       final sequentialBuilder = item.builder as _BuildSequentialPromptTemplate;
       final builder = sequentialBuilder.builder;
+      final builderName = 'sequential-${builder.runtimeType}';
+
+      debugStartPhase(messageId, builderName);
       onStageStart?.call('${builder.runtimeType}');
-      final context = await builder.build(inputQuery, currentContext);
-      currentContext = context;
-      results.add((index: item.index, result: context));
+
+      try {
+        final context = await (builder is SequentialContextBuilderDebugMixin
+            ? builder.buildWithDebug(inputQuery, currentContext, messageId)
+            : builder.build(inputQuery, currentContext));
+
+        debugAddMetadata(messageId, '${builderName}-messages', context.length);
+        debugAddMetadata(messageId, '${builderName}-context-size', currentContext.length);
+
+        currentContext = context;
+        results.add((index: item.index, result: context));
+        debugEndPhase(messageId, builderName);
+      } catch (e) {
+        debugMessageFailed(messageId, Exception(e.toString()), builderName);
+        rethrow;
+      }
     }
 
     return results;

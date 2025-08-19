@@ -207,82 +207,222 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
         _debugInfo!.totalDuration?.inMilliseconds ??
         phases.last.startTime.difference(phases.first.startTime).inMilliseconds;
 
-    return Column(
-      children: phases.map((phase) {
-        final startOffset = phase.startTime.difference(_debugInfo!.startTime).inMilliseconds;
-        final phaseDuration = phase.duration?.inMilliseconds ?? 0;
-        final startPercent = totalDuration > 0 ? (startOffset / totalDuration) : 0.0;
-        final widthPercent = totalDuration > 0 ? (phaseDuration / totalDuration) : 0.1;
+    // Group phases by main categories for hierarchical display
+    final mainPhases = <String, List<DebugPhase>>{};
+    final subPhases = <String, List<DebugPhase>>{};
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  SizedBox(
-                    width: 120,
-                    child: Text(phase.name, style: const TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                  Text(
-                    phase.duration != null
-                        ? '${phase.duration!.inMilliseconds}ms'
-                        : 'In Progress...',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Container(
-                height: 24,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Stack(
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      margin: EdgeInsets.only(
-                        left: MediaQuery.of(context).size.width * 0.6 * startPercent,
-                      ),
-                      width: MediaQuery.of(context).size.width * 0.6 * widthPercent,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: _getPhaseColor(phase.name),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Center(
-                        child: Text(
-                          phase.duration != null ? '${phase.duration!.inMilliseconds}ms' : '...',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+    for (final phase in phases) {
+      if (_isMainPhase(phase.name)) {
+        mainPhases[phase.name] = [phase];
+      } else {
+        // Find the parent phase
+        final parentPhase = _getParentPhase(phase.name);
+        if (parentPhase != null) {
+          subPhases.putIfAbsent(parentPhase, () => []).add(phase);
+        } else {
+          // If no parent found, treat as main phase
+          mainPhases[phase.name] = [phase];
+        }
+      }
+    }
+
+    return Column(
+      children: phases.where((phase) => _isMainPhase(phase.name)).map((mainPhase) {
+        final subPhasesForMain = subPhases[mainPhase.name] ?? [];
+        final hasSubPhases = subPhasesForMain.isNotEmpty;
+
+        return _buildPhaseGroup(
+          mainPhase: mainPhase,
+          subPhases: subPhasesForMain,
+          totalDuration: totalDuration,
+          hasSubPhases: hasSubPhases,
         );
       }).toList(),
     );
   }
 
+  bool _isMainPhase(String phaseName) {
+    return phaseName == 'query-processing' ||
+        phaseName == 'context-building' ||
+        phaseName == 'context-engine-processing' ||
+        phaseName == 'ai-generation';
+  }
+
+  String? _getParentPhase(String phaseName) {
+    if (phaseName.startsWith('parallel-') || phaseName.startsWith('sequential-')) {
+      return 'context-building';
+    }
+    if (phaseName.startsWith('par-') || phaseName.startsWith('seq-')) {
+      return 'context-engine-processing';
+    }
+    return null;
+  }
+
+  Widget _buildPhaseGroup({
+    required DebugPhase mainPhase,
+    required List<DebugPhase> subPhases,
+    required int totalDuration,
+    required bool hasSubPhases,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: hasSubPhases
+          ? ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(left: 16),
+              title: _buildPhaseRow(mainPhase, totalDuration, isMainPhase: true),
+              children: subPhases
+                  .map(
+                    (subPhase) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: _buildPhaseRow(subPhase, totalDuration, isMainPhase: false),
+                    ),
+                  )
+                  .toList(),
+            )
+          : _buildPhaseRow(mainPhase, totalDuration, isMainPhase: true),
+    );
+  }
+
+  Widget _buildPhaseRow(DebugPhase phase, int totalDuration, {required bool isMainPhase}) {
+    final startOffset = phase.startTime.difference(_debugInfo!.startTime).inMilliseconds;
+    final phaseDuration = phase.duration?.inMilliseconds ?? 0;
+    final startPercent = totalDuration > 0 ? (startOffset / totalDuration) : 0.0;
+    final widthPercent = totalDuration > 0 ? (phaseDuration / totalDuration) : 0.1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            SizedBox(
+              width: isMainPhase ? 120 : 100,
+              child: Text(
+                _formatPhaseName(phase.name),
+                style: TextStyle(
+                  fontWeight: isMainPhase ? FontWeight.w600 : FontWeight.w400,
+                  fontSize: isMainPhase ? 14 : 13,
+                  color: isMainPhase ? null : Colors.grey[700],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              phase.duration != null ? '${phase.duration!.inMilliseconds}ms' : 'In Progress...',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: isMainPhase ? 12 : 11,
+                fontWeight: isMainPhase ? FontWeight.w500 : FontWeight.normal,
+              ),
+            ),
+            if (!isMainPhase && phase.metadata.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Text(
+                _formatMetadata(phase.metadata),
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 10,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 4),
+        Container(
+          height: isMainPhase ? 24 : 16,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Stack(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                margin: EdgeInsets.only(
+                  left: MediaQuery.of(context).size.width * 0.6 * startPercent,
+                ),
+                width: MediaQuery.of(context).size.width * 0.6 * widthPercent,
+                height: isMainPhase ? 24 : 16,
+                decoration: BoxDecoration(
+                  color: _getPhaseColor(phase.name).withValues(alpha: isMainPhase ? 1.0 : 0.7),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Center(
+                  child: Text(
+                    phase.duration != null ? '${phase.duration!.inMilliseconds}ms' : '...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: isMainPhase ? 10 : 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatPhaseName(String phaseName) {
+    // Clean up phase names for better display
+    if (phaseName.startsWith('parallel-')) {
+      return phaseName.replaceFirst('parallel-', '↻ ');
+    }
+    if (phaseName.startsWith('sequential-')) {
+      return phaseName.replaceFirst('sequential-', '→ ');
+    }
+    if (phaseName.startsWith('par-')) {
+      return phaseName.replaceFirst('par-', '↻ ');
+    }
+    if (phaseName.startsWith('seq-')) {
+      return phaseName.replaceFirst('seq-', '→ ');
+    }
+
+    // Convert kebab-case to title case
+    return phaseName
+        .split('-')
+        .map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
+        .join(' ');
+  }
+
+  String _formatMetadata(Map<String, dynamic> metadata) {
+    final items = <String>[];
+
+    if (metadata.containsKey('result-count')) {
+      items.add('${metadata['result-count']} msgs');
+    }
+    if (metadata.containsKey('messages')) {
+      items.add('${metadata['messages']} msgs');
+    }
+    if (metadata.containsKey('context-size')) {
+      items.add('ctx:${metadata['context-size']}');
+    }
+
+    return items.join(', ');
+  }
+
   Color _getPhaseColor(String phaseName) {
-    switch (phaseName.toLowerCase()) {
+    final lowerName = phaseName.toLowerCase();
+
+    switch (lowerName) {
       case 'query-processing':
         return Colors.blue;
       case 'context-building':
+      case 'context-engine-processing':
         return Colors.orange;
       case 'ai-generation':
         return Colors.green;
       default:
+        // Context builder specific colors
+        if (lowerName.startsWith('parallel-') || lowerName.startsWith('par-')) {
+          return Colors.teal;
+        }
+        if (lowerName.startsWith('sequential-') || lowerName.startsWith('seq-')) {
+          return Colors.indigo;
+        }
         return Colors.purple;
     }
   }
