@@ -19,6 +19,10 @@ class KaiDebugTracker implements DebugTrackerInterface {
   static KaiDebugTracker get instance => _instance ??= KaiDebugTracker._();
   static set instance(KaiDebugTracker tracker) => _instance = tracker;
 
+  // Cost configuration (per million tokens)
+  static double _inputTokenCostPerMillion = 0.0;
+  static double _outputTokenCostPerMillion = 0.0;
+
   KaiDebugTracker._();
 
   final Map<String, MessageDebugInfo> _debugInfo = {};
@@ -26,6 +30,30 @@ class KaiDebugTracker implements DebugTrackerInterface {
       BehaviorSubject<MessageDebugInfo>();
 
   bool get isEnabled => !kReleaseMode;
+
+  // Cost configuration getters and setters
+  static double get inputTokenCostPerMillion => _inputTokenCostPerMillion;
+  static double get outputTokenCostPerMillion => _outputTokenCostPerMillion;
+
+  static set inputTokenCostPerMillion(double cost) {
+    _inputTokenCostPerMillion = cost;
+  }
+
+  static set outputTokenCostPerMillion(double cost) {
+    _outputTokenCostPerMillion = cost;
+  }
+
+  static double calculateInputCost(int inputTokens) {
+    return (inputTokens / 1000000) * _inputTokenCostPerMillion;
+  }
+
+  static double calculateOutputCost(int outputTokens) {
+    return (outputTokens / 1000000) * _outputTokenCostPerMillion;
+  }
+
+  static double calculateTotalCost(int inputTokens, int outputTokens) {
+    return calculateInputCost(inputTokens) + calculateOutputCost(outputTokens);
+  }
 
   @override
   void trackEvent(DebugEvent event) {
