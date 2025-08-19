@@ -6,6 +6,7 @@ import 'package:kai_engine/src/tool_schema.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'conversation_manager.dart';
+import 'debug/debug_system.dart';
 import 'generation_service_base.dart';
 import 'kai_logger.dart';
 import 'models/cancel_token.dart';
@@ -21,7 +22,7 @@ typedef GenerationExecuteConfig = ({List<ToolSchema> tools, Map<String, dynamic>
 /// Base orchestrator for chat interactions
 /// override to add more configuration
 /// [TEntity] is the type of the message object which can use to translate to the backend
-abstract base class ChatControllerBase<TEntity> {
+abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
   final QueryEngine _queryEngine;
   final ConversationManager<TEntity> _conversationManager;
   final GenerationServiceBase _generationService;
@@ -62,6 +63,7 @@ abstract base class ChatControllerBase<TEntity> {
     bool revertInputOnError = false,
   }) async {
     var userMessage = CoreMessage.user(content: input);
+    debugStartMessage(userMessage.messageId, input);
 
     try {
       await _logger.logInfo('Chat submission started', data: {'input': input});
@@ -76,6 +78,7 @@ abstract base class ChatControllerBase<TEntity> {
 
       // Optimize query
       _setLoadingPhase(LoadingPhase.processingQuery());
+      debugStartPhase(userMessage.messageId, 'query-processing');
       final inputQuery = await _queryEngine.process(
         input,
         session: _conversationManager.session,
@@ -83,9 +86,12 @@ abstract base class ChatControllerBase<TEntity> {
           _setLoadingPhase(LoadingPhase.processingQuery(name));
         },
       );
+      debugEndPhase(userMessage.messageId, 'query-processing');
+      debugQueryProcessed(userMessage.messageId, inputQuery);
 
       // Build context/history with input ready
       _setLoadingPhase(LoadingPhase.buildContext());
+      debugStartPhase(userMessage.messageId, 'context-building');
       final contextResult = await build().generate(
         source: await _conversationManager.getMessages(),
         inputQuery: inputQuery,
@@ -95,10 +101,25 @@ abstract base class ChatControllerBase<TEntity> {
           _setLoadingPhase(LoadingPhase.buildContext(name));
         },
       );
+      debugEndPhase(userMessage.messageId, 'context-building');
+      debugContextBuilt(
+        userMessage.messageId,
+        await _conversationManager.getMessages(),
+        contextResult.prompts,
+      );
 
       // Generate response
       final configs = generativeConfigs(contextResult.prompts);
+      debugGenerationConfigured(
+        userMessage.messageId,
+        DebugGenerationConfig(
+          availableTools: configs.tools.map((t) => t.name).toList(),
+          config: configs.config ?? {},
+        ),
+      );
+
       _setLoadingPhase(LoadingPhase.generatingResponse());
+      debugStartPhase(userMessage.messageId, 'ai-generation');
       final responseStream = _generationService.stream(
         contextResult.prompts,
         cancelToken: _cancelToken,
@@ -108,13 +129,21 @@ abstract base class ChatControllerBase<TEntity> {
 
       GenerationState<GenerationResult>? finalState;
       await for (final state in responseStream) {
-        if (state is! GenerationStreamingTextState) {
+        if (state is! GenerationStreamingTextState<GenerationResult>) {
           // If it not a generation streaming, log it to better see what behind
           _logger.logInfo('Generation state updated: $state');
         }
 
+        // Track streaming chunks for debug
+        if (state is GenerationStreamingTextState<GenerationResult>) {
+          debugStreamingChunk(userMessage.messageId, state.text);
+        }
+
         // Handle error states from the stream
         if (state is GenerationErrorState<GenerationResult>) {
+          debugEndPhase(userMessage.messageId, 'ai-generation');
+          debugMessageFailed(userMessage.messageId, state.exception, 'ai-generation');
+
           // Emit error state through the controller
           _generationStateController.add(state);
 
@@ -128,6 +157,8 @@ abstract base class ChatControllerBase<TEntity> {
         }
 
         if (state is GenerationCompleteState<GenerationResult>) {
+          debugEndPhase(userMessage.messageId, 'ai-generation');
+
           // Save AI responses, added messages might get modified again by post-processing
           // we need to add the message before process background to make sure process background
           // included the new responses
@@ -162,6 +193,9 @@ abstract base class ChatControllerBase<TEntity> {
             'generatedMessage should only contain AI responses and function calls/responses, '
             'not system prompts or user messages. Found: ${state.result.generatedMessage.map((m) => m.type).toList()}',
           );
+
+          // Complete debug session
+          debugMessageCompleted(userMessage.messageId, state.result.generatedMessage);
         }
 
         // Emit state through the controller
@@ -177,6 +211,7 @@ abstract base class ChatControllerBase<TEntity> {
       await _logger.logInfo('Chat submission completed successfully');
       return result;
     } catch (error, stackTrace) {
+      debugMessageFailed(userMessage.messageId, Exception(error.toString()), 'unknown');
       await _logger.logError('Chat submission failed', error: error, stackTrace: stackTrace);
 
       if (revertInputOnError) {

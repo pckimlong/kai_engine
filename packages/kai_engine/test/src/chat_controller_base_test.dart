@@ -271,7 +271,9 @@ void main() {
           return controller.stream;
         });
 
-        when(() => mockConversationManager.addMessages(any())).thenAnswer((_) async {});
+        when(() => mockConversationManager.addMessages(any())).thenAnswer((_) async {
+          return const IList.empty();
+        });
 
         when(
           () => mockPostResponseEngine.process(
@@ -689,7 +691,9 @@ void main() {
           ]),
         );
 
-        when(() => mockConversationManager.addMessages(any())).thenAnswer((_) async {});
+        when(() => mockConversationManager.addMessages(any())).thenAnswer((_) async {
+          return const IList.empty();
+        });
 
         // Setup query engine
         when(

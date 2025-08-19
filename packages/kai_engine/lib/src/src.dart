@@ -1,6 +1,10 @@
 export 'chat_controller_base.dart';
 export 'context_builder.dart';
 export 'conversation_manager.dart';
+export 'debug/debug.dart';
+export 'debug/debug_screen.dart';
+export 'debug/debug_system.dart';
+export 'debug/debug_ui_widgets.dart';
 export 'flex_template.dart';
 export 'generation_service_base.dart';
 export 'kai_logger.dart';
