@@ -1,21 +1,21 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+
 import 'debug_system.dart';
-import '../models/generation_result.dart';
 
 /// Simple debug info widget that shows debug data for a specific message
 class MessageDebugWidget extends StatelessWidget {
   final String messageId;
-  
+
   const MessageDebugWidget({super.key, required this.messageId});
-  
+
   @override
   Widget build(BuildContext context) {
     if (kReleaseMode) return const SizedBox.shrink();
-    
+
     final debugInfo = KaiDebug.getMessageInfo(messageId);
     if (debugInfo == null) return const SizedBox.shrink();
-    
+
     return Card(
       margin: const EdgeInsets.all(4),
       child: Padding(
@@ -26,11 +26,17 @@ class MessageDebugWidget extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  debugInfo.hasError ? Icons.error : 
-                  debugInfo.isComplete ? Icons.check_circle : Icons.hourglass_empty,
+                  debugInfo.hasError
+                      ? Icons.error
+                      : debugInfo.isComplete
+                      ? Icons.check_circle
+                      : Icons.hourglass_empty,
                   size: 16,
-                  color: debugInfo.hasError ? Colors.red : 
-                         debugInfo.isComplete ? Colors.green : Colors.orange,
+                  color: debugInfo.hasError
+                      ? Colors.red
+                      : debugInfo.isComplete
+                      ? Colors.green
+                      : Colors.orange,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -63,15 +69,17 @@ class MessageDebugWidget extends StatelessWidget {
             if (debugInfo.phases.isNotEmpty)
               Wrap(
                 spacing: 4,
-                children: debugInfo.phases.entries.map(
-                  (e) => Chip(
-                    label: Text(
-                      '${e.key}: ${e.value.duration?.inMilliseconds ?? "?"}ms',
-                      style: const TextStyle(fontSize: 8),
-                    ),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ).toList(),
+                children: debugInfo.phases.entries
+                    .map(
+                      (e) => Chip(
+                        label: Text(
+                          '${e.key}: ${e.value.duration?.inMilliseconds ?? "?"}ms',
+                          style: const TextStyle(fontSize: 8),
+                        ),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    )
+                    .toList(),
               ),
           ],
         ),
@@ -83,29 +91,25 @@ class MessageDebugWidget extends StatelessWidget {
 /// Floating debug overlay showing recent messages
 class DebugFloatingOverlay extends StatefulWidget {
   final Widget child;
-  
+
   const DebugFloatingOverlay({super.key, required this.child});
-  
+
   @override
   State<DebugFloatingOverlay> createState() => _DebugFloatingOverlayState();
 }
 
 class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
   bool _showDebug = false;
-  
+
   @override
   Widget build(BuildContext context) {
     if (kReleaseMode) return widget.child;
-    
+
     return Stack(
-      children: [
-        widget.child,
-        if (_showDebug) _buildDebugPanel(),
-        _buildToggleButton(),
-      ],
+      children: [widget.child, if (_showDebug) _buildDebugPanel(), _buildToggleButton()],
     );
   }
-  
+
   Widget _buildToggleButton() {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 10,
@@ -117,7 +121,7 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
       ),
     );
   }
-  
+
   Widget _buildDebugPanel() {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 70,
@@ -125,6 +129,7 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
       bottom: 100,
       width: 350,
       child: Card(
+        elevation: 10,
         child: Column(
           children: [
             Container(
@@ -149,11 +154,11 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
                 stream: KaiDebug.stream,
                 builder: (context, snapshot) {
                   final recentMessages = KaiDebug.getRecentMessages();
-                  
+
                   if (recentMessages.isEmpty) {
                     return const Center(child: Text('No debug messages'));
                   }
-                  
+
                   return ListView.builder(
                     itemCount: recentMessages.length,
                     itemBuilder: (context, index) => _buildMessageItem(recentMessages[index]),
@@ -166,7 +171,7 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
       ),
     );
   }
-  
+
   Widget _buildMessageItem(MessageDebugInfo info) {
     return ExpansionTile(
       title: Text(
@@ -178,11 +183,17 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
       subtitle: Row(
         children: [
           Icon(
-            info.hasError ? Icons.error :
-            info.isComplete ? Icons.check_circle : Icons.hourglass_empty,
+            info.hasError
+                ? Icons.error
+                : info.isComplete
+                ? Icons.check_circle
+                : Icons.hourglass_empty,
             size: 16,
-            color: info.hasError ? Colors.red :
-                   info.isComplete ? Colors.green : Colors.orange,
+            color: info.hasError
+                ? Colors.red
+                : info.isComplete
+                ? Colors.green
+                : Colors.orange,
           ),
           const SizedBox(width: 4),
           Text(
@@ -204,14 +215,16 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
               if (info.generationConfig?.tokenCount != null)
                 _buildInfoRow('Tokens', info.generationConfig!.tokenCount.toString()),
               if (info.usage != null)
-                _buildInfoRow('Usage', '${info.usage!.inputToken ?? 0} in, ${info.usage!.outputToken ?? 0} out'),
+                _buildInfoRow(
+                  'Usage',
+                  '${info.usage!.inputToken ?? 0} in, ${info.usage!.outputToken ?? 0} out',
+                ),
               if (info.generationConfig?.availableTools.isNotEmpty == true)
                 _buildInfoRow('Tools', info.generationConfig!.availableTools.join(', ')),
               _buildInfoRow('Streaming Events', info.streaming.eventCount.toString()),
               if (info.generationConfig?.usedEmbedding == true)
                 _buildInfoRow('Used Embedding', 'Yes'),
-              if (info.error != null)
-                _buildInfoRow('Error', info.error.toString()),
+              if (info.error != null) _buildInfoRow('Error', info.error.toString()),
               const Divider(height: 16),
               const Text(
                 'Phase Durations:',
@@ -231,7 +244,7 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
       ],
     );
   }
-  
+
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
@@ -245,12 +258,7 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 10),
-            ),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 10))),
         ],
       ),
     );
@@ -260,26 +268,27 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
 /// Simple stats widget
 class DebugStatsWidget extends StatelessWidget {
   const DebugStatsWidget({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     if (kReleaseMode) return const SizedBox.shrink();
-    
+
     return StreamBuilder<MessageDebugInfo>(
       stream: KaiDebug.stream,
       builder: (context, snapshot) {
         final messages = KaiDebug.getRecentMessages();
         final completedMessages = messages.where((m) => m.isComplete).toList();
         final errorMessages = messages.where((m) => m.hasError).toList();
-        
+
         if (messages.isEmpty) return const SizedBox.shrink();
-        
+
         final avgDuration = completedMessages.isNotEmpty
             ? completedMessages
-                .map((m) => m.totalDuration?.inMilliseconds ?? 0)
-                .reduce((a, b) => a + b) / completedMessages.length
+                      .map((m) => m.totalDuration?.inMilliseconds ?? 0)
+                      .reduce((a, b) => a + b) /
+                  completedMessages.length
             : 0.0;
-        
+
         return Container(
           padding: const EdgeInsets.all(8),
           margin: const EdgeInsets.all(4),
