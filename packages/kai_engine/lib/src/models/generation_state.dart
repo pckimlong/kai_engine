@@ -13,10 +13,8 @@ sealed class LoadingPhase with _$LoadingPhase {
   const factory LoadingPhase.processingQuery([String? stageName]) = _ProcessingQueryPhase;
   const factory LoadingPhase.buildContext([String? stageName]) = _BuildingContextPhase;
   const factory LoadingPhase.buildingResponse([String? stageName]) = _BuildingResponsePhase;
-  const factory LoadingPhase.generatingResponse([
-    String? stageName,
-    String? message,
-  ]) = _GeneratingResponsePhase;
+  const factory LoadingPhase.generatingResponse([String? stageName, String? message]) =
+      _GeneratingResponsePhase;
 }
 
 @freezed
@@ -42,4 +40,11 @@ class GenerationState<T> with _$GenerationState<T> {
       this is GenerationLoadingState ||
       this is GenerationStreamingTextState ||
       this is GenerationFunctionCallingState;
+
+  /// Requesting, but not yet stream the result. This good for show indicator
+  bool get isRequesting => this is GenerationLoadingState;
+
+  bool get isStreaming => this is GenerationStreamingTextState;
+
+  bool get isError => this is GenerationErrorState;
 }

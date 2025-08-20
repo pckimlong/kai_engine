@@ -66,6 +66,9 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
     debugStartMessage(userMessage.messageId, input);
 
     try {
+      // Reset cancel token for new generation
+      _cancelToken.reset();
+      
       await _logger.logInfo('Chat submission started', data: {'input': input});
       _setState(GenerationState.loading());
 
@@ -178,7 +181,11 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
                 debugEndPhase(userMessage.messageId, 'post-response-processing');
               })
               .catchError((error, stackTrace) {
-                debugMessageFailed(userMessage.messageId, Exception(error.toString()), 'post-response-processing');
+                debugMessageFailed(
+                  userMessage.messageId,
+                  Exception(error.toString()),
+                  'post-response-processing',
+                );
                 _logger.logError(
                   'Post response processing failed',
                   error: error,
@@ -200,7 +207,11 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
           );
 
           // Complete debug session
-          debugMessageCompleted(userMessage.messageId, state.result.generatedMessage, state.result.usage);
+          debugMessageCompleted(
+            userMessage.messageId,
+            state.result.generatedMessage,
+            state.result.usage,
+          );
         }
 
         // Emit state through the controller
