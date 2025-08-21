@@ -3,14 +3,16 @@
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:kai_engine/kai_engine.dart';
 
-interface class PostResponseEngine {
+abstract class PostResponseEngineBase {
   /// Process post-response actions
   /// This should run before save to database
   /// [result] are the generated responses from the AI after process
+  /// [requestMessages] are the original messages sent along with user input to AI to process.
   /// [input] is the original query context
   /// [conversationManager] is the conversation manager for the current session, to access conversation state use [conversationManager.getMessages()]
   Future<void> process({
     required QueryContext input,
+    required IList<CoreMessage> requestMessages,
     required GenerationResult result,
     required ConversationManager conversationManager,
   }) async {
@@ -19,7 +21,7 @@ interface class PostResponseEngine {
 }
 
 /// Enhanced PostResponseEngine with debug tracking capabilities
-mixin PostResponseEngineDebugMixin on PostResponseEngine implements DebugTrackingMixin {
+mixin PostResponseEngineDebugMixin on PostResponseEngineBase implements DebugTrackingMixin {
   @override
   DebugTrackerInterface get debugTracker => KaiDebugTracker.instance;
 
@@ -33,21 +35,27 @@ mixin PostResponseEngineDebugMixin on PostResponseEngine implements DebugTrackin
   @override
   Future<void> process({
     required QueryContext input,
+    required IList<CoreMessage> requestMessages,
     required GenerationResult result,
     required ConversationManager conversationManager,
   }) async {
     // Extract messageId from the first generated message
-    final messageId = result.generatedMessage.isNotEmpty 
-        ? result.generatedMessage.first.messageId
+    final messageId = result.generatedMessages.isNotEmpty
+        ? result.generatedMessages.first.messageId
         : result.displayMessage.messageId;
 
     final engineName = 'post-response-${runtimeType.toString()}';
     debugStartPhase(messageId, engineName);
-    debugAddMetadata(messageId, '${engineName}-generated-messages', result.generatedMessage.length);
-    
+    debugAddMetadata(
+      messageId,
+      '${engineName}-generated-messages',
+      result.generatedMessages.length,
+    );
+
     try {
       await processWithDebug(
         input: input,
+        requestMessages: requestMessages,
         result: result,
         conversationManager: conversationManager,
         messageId: messageId,
@@ -63,29 +71,46 @@ mixin PostResponseEngineDebugMixin on PostResponseEngine implements DebugTrackin
   /// Override this method in implementations instead of [process]
   Future<void> processWithDebug({
     required QueryContext input,
+    required IList<CoreMessage> requestMessages,
     required GenerationResult result,
     required ConversationManager conversationManager,
     required String messageId,
   });
 
   @override
-  void debugStartMessage(String messageId, String originalInput) => emitDebugEvent(MessageStartedEvent(messageId, originalInput));
+  void debugStartMessage(String messageId, String originalInput) =>
+      emitDebugEvent(MessageStartedEvent(messageId, originalInput));
   @override
-  void debugStartPhase(String messageId, String phase) => emitDebugEvent(PhaseStartedEvent(messageId, phase));
+  void debugStartPhase(String messageId, String phase) =>
+      emitDebugEvent(PhaseStartedEvent(messageId, phase));
   @override
-  void debugEndPhase(String messageId, String phase) => emitDebugEvent(PhaseEndedEvent(messageId, phase));
+  void debugEndPhase(String messageId, String phase) =>
+      emitDebugEvent(PhaseEndedEvent(messageId, phase));
   @override
-  void debugQueryProcessed(String messageId, QueryContext processedQuery) => emitDebugEvent(QueryProcessedEvent(messageId, processedQuery));
+  void debugQueryProcessed(String messageId, QueryContext processedQuery) =>
+      emitDebugEvent(QueryProcessedEvent(messageId, processedQuery));
   @override
-  void debugContextBuilt(String messageId, IList<CoreMessage> contextMessages, IList<CoreMessage> finalPrompts) => emitDebugEvent(ContextBuiltEvent(messageId, contextMessages, finalPrompts));
+  void debugContextBuilt(
+    String messageId,
+    IList<CoreMessage> contextMessages,
+    IList<CoreMessage> finalPrompts,
+  ) => emitDebugEvent(ContextBuiltEvent(messageId, contextMessages, finalPrompts));
   @override
-  void debugGenerationConfigured(String messageId, DebugGenerationConfig config) => emitDebugEvent(GenerationConfiguredEvent(messageId, config));
+  void debugGenerationConfigured(String messageId, DebugGenerationConfig config) =>
+      emitDebugEvent(GenerationConfiguredEvent(messageId, config));
   @override
-  void debugStreamingChunk(String messageId, String chunk) => emitDebugEvent(StreamingChunkEvent(messageId, chunk));
+  void debugStreamingChunk(String messageId, String chunk) =>
+      emitDebugEvent(StreamingChunkEvent(messageId, chunk));
   @override
-  void debugMessageCompleted(String messageId, IList<CoreMessage> generatedMessages, [GenerationUsage? usage]) => emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages, usage));
+  void debugMessageCompleted(
+    String messageId,
+    IList<CoreMessage> generatedMessages, [
+    GenerationUsage? usage,
+  ]) => emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages, usage));
   @override
-  void debugMessageFailed(String messageId, Exception error, String phase) => emitDebugEvent(MessageFailedEvent(messageId, error, phase));
+  void debugMessageFailed(String messageId, Exception error, String phase) =>
+      emitDebugEvent(MessageFailedEvent(messageId, error, phase));
   @override
-  void debugAddMetadata(String messageId, String key, dynamic value) => emitDebugEvent(MetadataAddedEvent(messageId, key, value));
+  void debugAddMetadata(String messageId, String key, dynamic value) =>
+      emitDebugEvent(MetadataAddedEvent(messageId, key, value));
 }

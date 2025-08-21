@@ -11,7 +11,7 @@ GenerationResult createTestGenerationResult({
   Map<String, dynamic>? extensions,
 }) {
   return GenerationResult(
-    generatedMessage: messages,
+    generatedMessages: messages,
     extensions: extensions,
     requestMessage: messages.last,
     usage: null,
@@ -30,9 +30,9 @@ final class MockConversationManager extends Mock implements ConversationManager<
 
 class MockGenerationService extends Mock implements GenerationServiceBase {}
 
-class MockQueryEngine extends Mock implements QueryEngine {}
+class MockQueryEngine extends Mock implements QueryEngineBase {}
 
-class MockPostResponseEngine extends Mock implements PostResponseEngine {}
+final class MockPostResponseEngine extends Mock implements PostResponseEngineBase {}
 
 class MockKaiLogger extends Mock implements KaiLogger {}
 
@@ -279,6 +279,7 @@ void main() {
         when(
           () => mockPostResponseEngine.process(
             input: any(named: 'input'),
+            requestMessages: any(named: 'requestMessages'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
           ),
@@ -318,6 +319,7 @@ void main() {
         verify(
           () => mockPostResponseEngine.process(
             input: any(named: 'input'),
+            requestMessages: any(named: 'requestMessages'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
           ),
@@ -477,6 +479,7 @@ void main() {
         when(
           () => mockPostResponseEngine.process(
             input: any(named: 'input'),
+            requestMessages: any(named: 'requestMessages'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
           ),
@@ -715,6 +718,7 @@ void main() {
         when(
           () => mockPostResponseEngine.process(
             input: any(named: 'input'),
+            requestMessages: any(named: 'requestMessages'),
             result: any(named: 'result'),
             conversationManager: any(named: 'conversationManager'),
           ),

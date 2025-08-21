@@ -1,7 +1,7 @@
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:kai_engine/kai_engine.dart';
 
-interface class QueryEngine {
+interface class QueryEngineBase {
   Future<QueryContext> process(
     String rawInput, {
     required ConversationSession session,

@@ -19,7 +19,7 @@ sealed class GenerativeConfig with _$GenerativeConfig {
     List<SafetySetting>? safetySettings,
     GenerationConfig? generationConfig,
     List<FirebaseAiToolSchema>? toolSchemas,
-    ToolConfig? toolConfig,
+    ToolingConfig? toolConfig,
     String? systemPrompt,
   }) = _GenerativeConfig;
 }
@@ -50,7 +50,7 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
         model: _config.model,
         safetySettings: _config.safetySettings,
         generationConfig: _config.generationConfig,
-        toolConfig: _config.toolConfig,
+        toolConfig: _config.toolConfig?.toFirebaseToolConfig(),
         tools: _config.toolSchemas?.toFirebaseAiTools(),
         systemInstruction: effectiveSystemPrompt != null
             ? Content.system(effectiveSystemPrompt)
@@ -142,6 +142,7 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
     IList<CoreMessage> prompts, {
     CancelToken? cancelToken,
     List<ToolSchema> tools = const [],
+    ToolingConfig toolingConfig = const ToolingConfig.auto(),
     Map<String, dynamic>? config,
   }) async* {
     yield const GenerationState.loading();
@@ -159,6 +160,7 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
     IList<CoreMessage> prompts, {
     CancelToken? cancelToken,
     List<ToolSchema> tools = const [],
+    ToolingConfig toolingConfig = const ToolingConfig.auto(),
     Map<String, dynamic>? config,
   }) async* {
     final filteredPrompts = _filterSystemMessages(prompts);
@@ -183,7 +185,7 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
         conversationHistory,
         tools: _effectiveTools(tools).toFirebaseAiTools(),
         generationConfig: config?['generationConfig'],
-        toolConfig: config?['toolConfig'],
+        toolConfig: toolingConfig.toFirebaseToolConfig(),
       );
 
       final accumulatedText = StringBuffer();
@@ -235,7 +237,7 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
         yield GenerationState.complete(
           GenerationResult(
             requestMessage: prompts.last,
-            generatedMessage: newlyGeneratedContent
+            generatedMessages: newlyGeneratedContent
                 .map((content) => _messageAdapter.toCoreMessage(content))
                 .toIList(),
             extensions: {
@@ -280,7 +282,8 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
   @override
   Future<String> tooling({
     required IList<CoreMessage> prompts,
-    required IList<ToolSchema> tools,
+    required List<ToolSchema> tools,
+    required ToolingConfig toolingConfig,
   }) async {
     assert(tools.isNotEmpty, 'Tools list cannot be empty');
 
@@ -288,14 +291,18 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
       log(prompts.toString(), name: 'FirebaseAiGenerationService.tooling');
 
       return await _generationLock.synchronized(() async {
-        return _generateTooling(prompts, tools);
+        return _generateTooling(prompts, tools, toolingConfig);
       });
     } catch (e) {
       throw Exception('Tooling failed: $e');
     }
   }
 
-  Future<String> _generateTooling(IList<CoreMessage> prompts, IList<ToolSchema> tools) async {
+  Future<String> _generateTooling(
+    IList<CoreMessage> prompts,
+    List<ToolSchema> tools,
+    ToolingConfig toolingConfig,
+  ) async {
     final filteredPrompts = _filterSystemMessages(prompts);
     var conversationHistory = filteredPrompts.map(_messageAdapter.fromCoreMessage).toList();
 
@@ -304,6 +311,7 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
       final response = await model.generateContent(
         conversationHistory,
         tools: _effectiveTools(tools.toList()).toFirebaseAiTools(),
+        toolConfig: toolingConfig.toFirebaseToolConfig(),
       );
 
       if (response.candidates case [final candidate, ...]) {
@@ -335,5 +343,17 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
 
       throw Exception('No candidates in response');
     }
+  }
+}
+
+extension on ToolingConfig {
+  ToolConfig toFirebaseToolConfig() {
+    return ToolConfig(
+      functionCallingConfig: when(
+        auto: () => FunctionCallingConfig.auto(),
+        any: (allows) => FunctionCallingConfig.any(allows),
+        none: () => FunctionCallingConfig.none(),
+      ),
+    );
   }
 }

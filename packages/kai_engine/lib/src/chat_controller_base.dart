@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:kai_engine/src/post_response_engine.dart';
+import 'package:kai_engine/src/post_response_engine_base.dart';
 import 'package:kai_engine/src/tool_schema.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -15,7 +15,7 @@ import 'models/generation_result.dart';
 import 'models/generation_state.dart';
 import 'models/kai_exception.dart';
 import 'prompt_engine.dart';
-import 'query_engine.dart';
+import 'query_engine_base.dart';
 
 typedef GenerationExecuteConfig = ({List<ToolSchema> tools, Map<String, dynamic>? config});
 
@@ -23,18 +23,18 @@ typedef GenerationExecuteConfig = ({List<ToolSchema> tools, Map<String, dynamic>
 /// override to add more configuration
 /// [TEntity] is the type of the message object which can use to translate to the backend
 abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
-  final QueryEngine _queryEngine;
+  final QueryEngineBase _queryEngine;
   final ConversationManager<TEntity> _conversationManager;
   final GenerationServiceBase _generationService;
-  final PostResponseEngine _postResponseEngine;
+  final PostResponseEngineBase _postResponseEngine;
   final CancelToken _cancelToken;
   final KaiLogger _logger;
 
   ChatControllerBase({
     required ConversationManager<TEntity> conversationManager,
     required GenerationServiceBase generationService,
-    required QueryEngine queryEngine,
-    required PostResponseEngine postResponseEngine,
+    required QueryEngineBase queryEngine,
+    required PostResponseEngineBase postResponseEngine,
     KaiLogger? logger,
   }) : _queryEngine = queryEngine,
        _conversationManager = conversationManager,
@@ -165,7 +165,7 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
           // Save AI responses, added messages might get modified again by post-processing
           // we need to add the message before process background to make sure process background
           // included the new responses
-          await _conversationManager.addMessages(state.result.generatedMessage);
+          await _conversationManager.addMessages(state.result.generatedMessages);
 
           // Process background task on generated response, eg summarize, generate embedding
           // without blocking process
@@ -174,6 +174,7 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
           _postResponseEngine
               .process(
                 input: inputQuery,
+                requestMessages: contextResult.prompts,
                 result: state.result,
                 conversationManager: _conversationManager,
               )
@@ -193,23 +194,23 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
                 );
               });
 
-          // Validate generatedMessage contains only newly generated content
+          // Validate generatedMessages contains only newly generated content
           assert(
-            state.result.generatedMessage.isNotEmpty,
-            'generatedMessage should not be empty - this indicates a bug in the generation service',
+            state.result.generatedMessages.isNotEmpty,
+            'generatedMessages should not be empty - this indicates a bug in the generation service',
           );
           assert(
-            state.result.generatedMessage.every(
+            state.result.generatedMessages.every(
               (msg) => msg.type == CoreMessageType.ai || msg.type == CoreMessageType.function,
             ),
-            'generatedMessage should only contain AI responses and function calls/responses, '
-            'not system prompts or user messages. Found: ${state.result.generatedMessage.map((m) => m.type).toList()}',
+            'generatedMessages should only contain AI responses and function calls/responses, '
+            'not system prompts or user messages. Found: ${state.result.generatedMessages.map((m) => m.type).toList()}',
           );
 
           // Complete debug session
           debugMessageCompleted(
             userMessage.messageId,
-            state.result.generatedMessage,
+            state.result.generatedMessages,
             state.result.usage,
           );
         }

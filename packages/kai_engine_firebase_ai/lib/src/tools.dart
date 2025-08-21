@@ -39,10 +39,8 @@ import 'package:kai_engine/kai_engine.dart';
 
 abstract base class FirebaseAiToolSchema<TCall, TResponse>
     extends ToolSchema<FunctionDeclaration, TCall, TResponse> {
-  FirebaseAiToolSchema({
-    required super.parser,
-    required super.declaration,
-  }) : super(name: declaration.name);
+  FirebaseAiToolSchema({required super.parser, required super.declaration, super.onSuccess})
+    : super(name: declaration.name);
 
   Future<FunctionResponse> toFunctionResponse(FunctionCall functionCall) async {
     final toolCall = ToolCall(toolName: functionCall.name, arguments: functionCall.args);
@@ -55,9 +53,7 @@ extension FirebaseAiToolSchemaListHelper on List<FirebaseAiToolSchema> {
   /// Convert type-safe tool schema to firebase tool
   List<Tool>? toFirebaseAiTools() {
     if (isEmpty) return null;
-    return [
-      Tool.functionDeclarations(map((e) => e.declaration).toList()),
-    ];
+    return [Tool.functionDeclarations(map((e) => e.declaration).toList())];
   }
 
   Future<List<FunctionResponse>> executes(List<FunctionCall> calls) {

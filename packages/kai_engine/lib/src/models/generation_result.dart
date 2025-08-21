@@ -13,7 +13,7 @@ sealed class GenerationResult with _$GenerationResult {
     required CoreMessage requestMessage,
 
     /// Generate messages result per request, not including previous context and user messages
-    required IList<CoreMessage> generatedMessage,
+    required IList<CoreMessage> generatedMessages,
 
     /// The usage information for the generation, this is optional
     required GenerationUsage? usage,
@@ -24,12 +24,12 @@ sealed class GenerationResult with _$GenerationResult {
   /// The message which suppose to display
   CoreMessage get displayMessage {
     // Return the last message from the messages list as default implementation
-    if (generatedMessage.isEmpty) {
+    if (generatedMessages.isEmpty) {
       throw StateError('Cannot get displayMessage from empty messages list');
     }
 
     /// We expect AI message back, not function call etc
-    return generatedMessage.lastWhere((e) => e.type == CoreMessageType.ai);
+    return generatedMessages.lastWhere((e) => e.type == CoreMessageType.ai);
   }
 }
 
