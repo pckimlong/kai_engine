@@ -68,7 +68,7 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
     try {
       // Reset cancel token for new generation
       _cancelToken.reset();
-      
+
       await _logger.logInfo('Chat submission started', data: {'input': input});
       _setState(GenerationState.loading());
 
@@ -249,6 +249,7 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
   }
 
   Stream<IList<CoreMessage>> get messagesStream => _conversationManager.messagesStream;
+  Future<IList<CoreMessage>> getAllMessages() => _conversationManager.getMessages();
 
   Stream<GenerationState<CoreMessage>> get generationStateStream =>
       _generationStateController.stream.map(_mapGenerationState);
