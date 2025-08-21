@@ -21,4 +21,7 @@ abstract interface class GenerationServiceBase {
   Future<int> countToken(IList<CoreMessage> prompts);
 
   Future<String> invoke(IList<CoreMessage> prompts);
+
+  /// Invoke the service with tools, must provide tools it will handle tool execution
+  Future<String> tooling({required IList<CoreMessage> prompts, required IList<ToolSchema> tools});
 }

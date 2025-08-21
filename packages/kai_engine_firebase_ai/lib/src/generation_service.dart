@@ -144,7 +144,6 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
     List<ToolSchema> tools = const [],
     Map<String, dynamic>? config,
   }) async* {
-    log(prompts.toString(), name: 'FirebaseAiGenerationService.stream');
     yield const GenerationState.loading();
 
     try {
@@ -276,5 +275,65 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
       if (_config.toolSchemas != null) ..._config.toolSchemas!,
     ];
     return merged..removeDuplicates(by: (item) => item.name);
+  }
+
+  @override
+  Future<String> tooling({
+    required IList<CoreMessage> prompts,
+    required IList<ToolSchema> tools,
+  }) async {
+    assert(tools.isNotEmpty, 'Tools list cannot be empty');
+
+    try {
+      log(prompts.toString(), name: 'FirebaseAiGenerationService.tooling');
+
+      return await _generationLock.synchronized(() async {
+        return _generateTooling(prompts, tools);
+      });
+    } catch (e) {
+      throw Exception('Tooling failed: $e');
+    }
+  }
+
+  Future<String> _generateTooling(IList<CoreMessage> prompts, IList<ToolSchema> tools) async {
+    final filteredPrompts = _filterSystemMessages(prompts);
+    var conversationHistory = filteredPrompts.map(_messageAdapter.fromCoreMessage).toList();
+
+    while (true) {
+      final model = _effectiveGenerativeModel(prompts);
+      final response = await model.generateContent(
+        conversationHistory,
+        tools: _effectiveTools(tools.toList()).toFirebaseAiTools(),
+      );
+
+      if (response.candidates case [final candidate, ...]) {
+        final modelContent = candidate.content;
+        conversationHistory.add(modelContent);
+
+        final functionCalls = modelContent.parts.whereType<FunctionCall>().toList();
+
+        if (functionCalls.isEmpty) {
+          if (response.text case final text?) {
+            return text;
+          }
+          throw Exception('No text response generated');
+        } else {
+          final functionResponses = await _effectiveTools(tools.toList()).executes(functionCalls);
+
+          // Check if function responses are empty - if so, exit the loop
+          final hasToolFeedback = functionResponses.any((response) {
+            return response.response.isNotEmpty && response.response != '{}';
+          });
+
+          if (!hasToolFeedback) {
+            return 'Success execute ${functionResponses.map((e) => e.name).join(', ')} without response';
+          }
+          conversationHistory.add(Content.functionResponses(functionResponses));
+          continue;
+        }
+      }
+
+      throw Exception('No candidates in response');
+    }
   }
 }

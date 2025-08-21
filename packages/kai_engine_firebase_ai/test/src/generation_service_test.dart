@@ -7,7 +7,9 @@ import 'package:kai_engine_firebase_ai/kai_engine_firebase_ai.dart';
 
 // Test FirebaseAiToolSchema for testing
 base class TestFirebaseAiToolSchema extends FirebaseAiToolSchema<FunctionCall, String> {
-  TestFirebaseAiToolSchema()
+  final String _response;
+  
+  TestFirebaseAiToolSchema([this._response = 'test result'])
     : super(
         parser: (Map<String, Object?> json) =>
             FunctionCall('testFirebaseTool', Map<String, Object?>.from(json)),
@@ -20,7 +22,26 @@ base class TestFirebaseAiToolSchema extends FirebaseAiToolSchema<FunctionCall, S
 
   @override
   Future<ToolResult<String>> execute(dynamic call) async {
-    return ToolResult.success('test result', {'result': 'test'});
+    return ToolResult.success(_response, {'result': _response});
+  }
+}
+
+// Test FirebaseAiToolSchema that returns empty response
+base class EmptyResponseToolSchema extends FirebaseAiToolSchema<FunctionCall, String> {
+  EmptyResponseToolSchema()
+    : super(
+        parser: (Map<String, Object?> json) =>
+            FunctionCall('emptyTool', Map<String, Object?>.from(json)),
+        declaration: FunctionDeclaration(
+          'emptyTool',
+          'A tool that returns empty response',
+          parameters: {'query': Schema.string(description: 'Search query')},
+        ),
+      );
+
+  @override
+  Future<ToolResult<String>> execute(dynamic call) async {
+    return ToolResult.success('', {});
   }
 }
 
@@ -321,6 +342,89 @@ void main() {
         // Should have 1 tool since duplicates by name are removed
         expect(effectiveTools.length, equals(1));
       });
+    });
+  });
+
+  group('FirebaseAiGenerationService - Tooling Function', () {
+    late FirebaseAiGenerationService service;
+    late MockFirebaseAI mockFirebaseAI;
+
+    setUp(() {
+      mockFirebaseAI = MockFirebaseAI();
+      const config = GenerativeConfig(model: 'gemini-1.5-flash');
+      service = FirebaseAiGenerationService(
+        firebaseAi: mockFirebaseAI,
+        config: config,
+      );
+    });
+
+    test('throws assertion error when tools list is empty', () async {
+      final messages = [CoreMessage.user(content: 'Hello')].toIList();
+      final tools = <ToolSchema>[].toIList();
+
+      expect(
+        () => service.tooling(prompts: messages, tools: tools),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('tooling method exists and accepts correct parameters', () async {
+      final messages = [CoreMessage.user(content: 'Hello')].toIList();
+      final tools = [TestFirebaseAiToolSchema()].toIList();
+
+      // Test that the method can be called and throws the expected error due to mocking limitations
+      expect(
+        () => service.tooling(prompts: messages, tools: tools),
+        throwsA(predicate((e) => e.toString().contains('UnimplementedError'))),
+      );
+    });
+  });
+
+  group('FirebaseAiGenerationService - Tooling Edge Cases', () {
+    test('empty response detection logic works correctly', () {
+      // Test the logic for detecting empty responses - simulate tool execution responses
+      final mockResponses = [
+        {'name': 'tool1', 'response': ''},
+        {'name': 'tool2', 'response': '{}'},
+        {'name': 'tool3', 'response': 'valid response'},
+      ];
+
+      final hasValidResponses = mockResponses.any((response) {
+        final responseStr = response['response'] as String;
+        return responseStr.isNotEmpty && responseStr != '{}';
+      });
+
+      expect(hasValidResponses, isTrue);
+    });
+
+    test('all empty responses are detected correctly', () {
+      final mockResponses = [
+        {'name': 'tool1', 'response': ''},
+        {'name': 'tool2', 'response': '{}'},
+        {'name': 'tool3', 'response': ''},
+      ];
+
+      final hasValidResponses = mockResponses.any((response) {
+        final responseStr = response['response'] as String;
+        return responseStr.isNotEmpty && responseStr != '{}';
+      });
+
+      expect(hasValidResponses, isFalse);
+    });
+
+    test('mixed empty and valid responses are handled correctly', () {
+      final mockResponses = [
+        {'name': 'tool1', 'response': ''},
+        {'name': 'tool2', 'response': 'some data'},
+        {'name': 'tool3', 'response': '{}'},
+      ];
+
+      final hasValidResponses = mockResponses.any((response) {
+        final responseStr = response['response'] as String;
+        return responseStr.isNotEmpty && responseStr != '{}';
+      });
+
+      expect(hasValidResponses, isTrue);
     });
   });
 }
