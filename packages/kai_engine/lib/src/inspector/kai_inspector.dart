@@ -1,3 +1,9 @@
+import 'dart:async';
+
+import 'models/timeline_session.dart';
+import 'models/timeline_step.dart';
+import 'models/timeline_types.dart';
+
 /// Role: The central Service Contract. This is the main "plug-in point" for the
 /// entire inspection system.
 ///
@@ -6,11 +12,62 @@
 /// own implementation (e.g., for custom storage) or use the default one provided
 /// in the `kai_inspector` package.
 abstract class KaiInspector {
-  // In a full implementation, this would contain method signatures like:
-  //
-  // Future<void> startSession(String sessionId);
-  // void recordTimeline(String sessionId, ExecutionTimeline timeline);
-  // Stream<TimelineSession> getSessionStream(String sessionId);
+  /// Starts a new session with the given ID.
+  Future<void> startSession(String sessionId);
+
+  /// Ends the session with the given ID.
+  Future<void> endSession(String sessionId, {TimelineStatus status = TimelineStatus.completed});
+
+  /// Starts a new timeline within the given session.
+  Future<void> startTimeline(String sessionId, String timelineId, String userMessage);
+
+  /// Ends the timeline with the given ID.
+  Future<void> endTimeline(
+    String sessionId,
+    String timelineId, {
+    TimelineStatus status = TimelineStatus.completed,
+  });
+
+  /// Starts a new phase within the given timeline.
+  Future<void> startPhase(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    String phaseName, {
+    String? description,
+  });
+
+  /// Ends the phase with the given ID.
+  Future<void> endPhase(
+    String sessionId,
+    String timelineId,
+    String phaseId, {
+    TimelineStatus status = TimelineStatus.completed,
+  });
+
+  /// Records a step within the given phase.
+  Future<void> recordStep(String sessionId, String timelineId, String phaseId, TimelineStep step);
+
+  /// Records a log entry for the given phase.
+  Future<void> recordPhaseLog(String sessionId, String timelineId, String phaseId, TimelineLog log);
+
+  /// Records a log entry for the given step.
+  Future<void> recordStepLog(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    String stepId,
+    TimelineLog log,
+  );
+
+  /// Gets a stream of session updates for the given session ID.
+  Stream<TimelineSession> getSessionStream(String sessionId);
+
+  /// Gets the current session data for the given session ID.
+  Future<TimelineSession?> getSession(String sessionId);
+
+  /// Updates aggregate data for the session (e.g., total token usage, cost).
+  Future<void> updateSessionAggregates(String sessionId, {int? tokenUsage, double? cost});
 }
 
 /// Role: The default "do-nothing" implementation of the KaiInspector.
@@ -19,4 +76,76 @@ abstract class KaiInspector {
 /// It ensures the system is completely disabled by default with zero performance
 /// overhead, as its methods will all be empty. This avoids the need for
 /// null-checks in the ChatController's logic.
-class NoOpKaiInspector implements KaiInspector {}
+class NoOpKaiInspector implements KaiInspector {
+  @override
+  Future<void> startSession(String sessionId) async {}
+
+  @override
+  Future<void> endSession(
+    String sessionId, {
+    TimelineStatus status = TimelineStatus.completed,
+  }) async {}
+
+  @override
+  Future<void> startTimeline(String sessionId, String timelineId, String userMessage) async {}
+
+  @override
+  Future<void> endTimeline(
+    String sessionId,
+    String timelineId, {
+    TimelineStatus status = TimelineStatus.completed,
+  }) async {}
+
+  @override
+  Future<void> startPhase(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    String phaseName, {
+    String? description,
+  }) async {}
+
+  @override
+  Future<void> endPhase(
+    String sessionId,
+    String timelineId,
+    String phaseId, {
+    TimelineStatus status = TimelineStatus.completed,
+  }) async {}
+
+  @override
+  Future<void> recordStep(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    TimelineStep step,
+  ) async {}
+
+  @override
+  Future<void> recordPhaseLog(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    TimelineLog log,
+  ) async {}
+
+  @override
+  Future<void> recordStepLog(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    String stepId,
+    TimelineLog log,
+  ) async {}
+
+  @override
+  Stream<TimelineSession> getSessionStream(String sessionId) {
+    return const Stream.empty();
+  }
+
+  @override
+  Future<TimelineSession?> getSession(String sessionId) async => null;
+
+  @override
+  Future<void> updateSessionAggregates(String sessionId, {int? tokenUsage, double? cost}) async {}
+}
