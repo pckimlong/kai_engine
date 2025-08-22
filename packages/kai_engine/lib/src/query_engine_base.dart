@@ -5,7 +5,8 @@ interface class QueryEngineBase {
   Future<QueryContext> process(
     String rawInput, {
     required ConversationSession session,
-    IList<CoreMessage> histories = const IList.empty(), // might helpful for enhance query
+    IList<CoreMessage> histories =
+        const IList.empty(), // might helpful for enhance query
     void Function(String stageName)? onStageStart,
   }) async {
     // Default implementation, no any logic, you might need to abstract it to extend functionality

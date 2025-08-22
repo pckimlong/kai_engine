@@ -49,7 +49,9 @@ abstract base class ContextEngine with DebugTrackingMixin {
     CoreMessage? providedUserMessage,
   }) async {
     // Extract messageId for debug tracking
-    final userMessage = providedUserMessage ?? CoreMessage.user(content: inputQuery.originalQuery);
+    final userMessage =
+        providedUserMessage ??
+        CoreMessage.user(content: inputQuery.originalQuery);
     final messageId = userMessage.messageId;
 
     // Track context building phase start
@@ -139,15 +141,23 @@ abstract base class ContextEngine with DebugTrackingMixin {
 
     final input = promptBuilder.whereType<InputPromptTemplate>().first;
     final overriddenMessage =
-        await input.revision?.call(inputQuery, finalContexts.toIList()) ?? inputQuery.originalQuery;
+        await input.revision?.call(inputQuery, finalContexts.toIList()) ??
+        inputQuery.originalQuery;
     final finalUserMessage = userMessage.copyWith(content: overriddenMessage);
 
     // Track final results
     debugAddMetadata(messageId, 'final-context-messages', finalContexts.length);
-    debugAddMetadata(messageId, 'total-prompt-messages', finalContexts.length + 1);
+    debugAddMetadata(
+      messageId,
+      'total-prompt-messages',
+      finalContexts.length + 1,
+    );
     debugEndPhase(messageId, 'context-engine-processing');
 
-    return (userMessage: finalUserMessage, prompts: IList([...finalContexts, finalUserMessage]));
+    return (
+      userMessage: finalUserMessage,
+      prompts: IList([...finalContexts, finalUserMessage]),
+    );
   }
 
   /// Builds parallel context items while preserving their original indices.
@@ -208,7 +218,8 @@ abstract base class ContextEngine with DebugTrackingMixin {
   ///
   /// Returns:
   /// - A list of results with their original indices for proper reordering
-  Future<List<({int index, List<CoreMessage> result})>> _buildSequentialWithIndex(
+  Future<List<({int index, List<CoreMessage> result})>>
+  _buildSequentialWithIndex(
     List<({int index, PromptTemplate builder})> items,
     IList<CoreMessage> source,
     QueryContext inputQuery,
@@ -232,7 +243,11 @@ abstract base class ContextEngine with DebugTrackingMixin {
             : builder.build(inputQuery, currentContext));
 
         debugAddMetadata(messageId, '${builderName}-messages', context.length);
-        debugAddMetadata(messageId, '${builderName}-context-size', currentContext.length);
+        debugAddMetadata(
+          messageId,
+          '${builderName}-context-size',
+          currentContext.length,
+        );
 
         currentContext = context;
         results.add((index: item.index, result: context));
@@ -303,8 +318,9 @@ sealed class PromptTemplate with _$PromptTemplate {
   ///
   /// Parameters:
   /// - [builder]: The context builder that will generate the prompt content
-  const factory PromptTemplate.buildSequential(SequentialContextBuilder builder) =
-      _BuildSequentialPromptTemplate;
+  const factory PromptTemplate.buildSequential(
+    SequentialContextBuilder builder,
+  ) = _BuildSequentialPromptTemplate;
 
   /// Creates an input prompt template for the user's message.
   ///
@@ -320,6 +336,10 @@ sealed class PromptTemplate with _$PromptTemplate {
   /// - [input]: The user's raw input message
   /// - [messages]: The final list of messages in the conversation context after processing other templates include system prompts
   const factory PromptTemplate.input([
-    FutureOr<String> Function(QueryContext input, IList<CoreMessage> finalizedMessages)? revision,
+    FutureOr<String> Function(
+      QueryContext input,
+      IList<CoreMessage> finalizedMessages,
+    )?
+    revision,
   ]) = InputPromptTemplate;
 }

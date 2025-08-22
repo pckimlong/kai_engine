@@ -11,5 +11,6 @@ class KaiDebug {
     return KaiDebugTracker.instance.getRecentMessages(limit: limit);
   }
 
-  static Stream<MessageDebugInfo> get stream => KaiDebugTracker.instance.debugInfoStream;
+  static Stream<MessageDebugInfo> get stream =>
+      KaiDebugTracker.instance.debugInfoStream;
 }

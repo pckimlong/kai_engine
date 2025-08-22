@@ -39,7 +39,10 @@ mixin DebugTrackingMixin {
     emitDebugEvent(ContextBuiltEvent(messageId, contextMessages, finalPrompts));
   }
 
-  void debugGenerationConfigured(String messageId, DebugGenerationConfig config) {
+  void debugGenerationConfigured(
+    String messageId,
+    DebugGenerationConfig config,
+  ) {
     emitDebugEvent(GenerationConfiguredEvent(messageId, config));
   }
 
@@ -61,5 +64,70 @@ mixin DebugTrackingMixin {
 
   void debugAddMetadata(String messageId, String key, dynamic value) {
     emitDebugEvent(MetadataAddedEvent(messageId, key, value));
+  }
+
+  // Post-response step tracking methods
+  void debugStartPostResponseStep(
+    String messageId,
+    String stepName, {
+    String? description,
+    Map<String, dynamic>? data,
+  }) {
+    emitDebugEvent(
+      PostResponseStepStartedEvent(
+        messageId,
+        stepName,
+        description: description,
+        data: data,
+      ),
+    );
+  }
+
+  void debugCompletePostResponseStep(
+    String messageId,
+    String stepName,
+    Duration duration, {
+    Map<String, dynamic>? result,
+    String? status,
+  }) {
+    emitDebugEvent(
+      PostResponseStepCompletedEvent(
+        messageId,
+        stepName,
+        duration,
+        result: result,
+        status: status,
+      ),
+    );
+  }
+
+  void debugFailPostResponseStep(
+    String messageId,
+    String stepName,
+    Duration duration,
+    Exception error, {
+    String? errorDetails,
+  }) {
+    emitDebugEvent(
+      PostResponseStepFailedEvent(
+        messageId,
+        stepName,
+        duration,
+        error,
+        errorDetails: errorDetails,
+      ),
+    );
+  }
+
+  void debugLogPostResponse(
+    String messageId,
+    String stepName,
+    String level,
+    String message, {
+    Map<String, dynamic>? data,
+  }) {
+    emitDebugEvent(
+      PostResponseLogEvent(messageId, stepName, level, message, data: data),
+    );
   }
 }

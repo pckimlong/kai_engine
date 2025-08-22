@@ -17,7 +17,10 @@ import 'models/kai_exception.dart';
 import 'prompt_engine.dart';
 import 'query_engine_base.dart';
 
-typedef GenerationExecuteConfig = ({List<ToolSchema> tools, Map<String, dynamic>? config});
+typedef GenerationExecuteConfig = ({
+  List<ToolSchema> tools,
+  Map<String, dynamic>? config,
+});
 
 /// Base orchestrator for chat interactions
 /// override to add more configuration
@@ -44,9 +47,10 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
        _logger = logger ?? const NoOpKaiLogger();
 
   /// Handle generation state updates
-  final _generationStateController = BehaviorSubject<GenerationState<GenerationResult>>.seeded(
-    GenerationState.initial(),
-  );
+  final _generationStateController =
+      BehaviorSubject<GenerationState<GenerationResult>>.seeded(
+        GenerationState.initial(),
+      );
 
   ContextEngine build();
 
@@ -74,7 +78,9 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
 
       // Add user message to conversation, no await
       unawaited(
-        _conversationManager.addMessages([userMessage].lock).then((inserted) async {
+        _conversationManager.addMessages([userMessage].lock).then((
+          inserted,
+        ) async {
           userMessage = inserted.first;
         }),
       );
@@ -145,7 +151,11 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
         // Handle error states from the stream
         if (state is GenerationErrorState<GenerationResult>) {
           debugEndPhase(userMessage.messageId, 'ai-generation');
-          debugMessageFailed(userMessage.messageId, state.exception, 'ai-generation');
+          debugMessageFailed(
+            userMessage.messageId,
+            state.exception,
+            'ai-generation',
+          );
 
           // Emit error state through the controller
           _generationStateController.add(state);
@@ -155,7 +165,10 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
             await _conversationManager.removeMessages([userMessage].lock);
           }
 
-          await _logger.logError('Generation stream error', error: state.exception);
+          await _logger.logError(
+            'Generation stream error',
+            error: state.exception,
+          );
           return _mapGenerationState(state);
         }
 
@@ -165,7 +178,9 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
           // Save AI responses, added messages might get modified again by post-processing
           // we need to add the message before process background to make sure process background
           // included the new responses
-          await _conversationManager.addMessages(state.result.generatedMessages);
+          final addedMessages = await _conversationManager.addMessages(
+            state.result.generatedMessages,
+          );
 
           // Process background task on generated response, eg summarize, generate embedding
           // without blocking process
@@ -175,11 +190,15 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
               .process(
                 input: inputQuery,
                 requestMessages: contextResult.prompts,
-                result: state.result,
+                // Make sure we use valid generated message which already store to database for calculate
+                result: state.result.copyWith(generatedMessages: addedMessages),
                 conversationManager: _conversationManager,
               )
               .then((_) {
-                debugEndPhase(userMessage.messageId, 'post-response-processing');
+                debugEndPhase(
+                  userMessage.messageId,
+                  'post-response-processing',
+                );
               })
               .catchError((error, stackTrace) {
                 debugMessageFailed(
@@ -201,7 +220,9 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
           );
           assert(
             state.result.generatedMessages.every(
-              (msg) => msg.type == CoreMessageType.ai || msg.type == CoreMessageType.function,
+              (msg) =>
+                  msg.type == CoreMessageType.ai ||
+                  msg.type == CoreMessageType.function,
             ),
             'generatedMessages should only contain AI responses and function calls/responses, '
             'not system prompts or user messages. Found: ${state.result.generatedMessages.map((m) => m.type).toList()}',
@@ -221,15 +242,25 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
       }
 
       if (finalState == null) {
-        throw KaiException.exception('Response stream completed without emitting a final state');
+        throw KaiException.exception(
+          'Response stream completed without emitting a final state',
+        );
       }
 
       final result = _mapGenerationState(finalState);
       await _logger.logInfo('Chat submission completed successfully');
       return result;
     } catch (error, stackTrace) {
-      debugMessageFailed(userMessage.messageId, Exception(error.toString()), 'unknown');
-      await _logger.logError('Chat submission failed', error: error, stackTrace: stackTrace);
+      debugMessageFailed(
+        userMessage.messageId,
+        Exception(error.toString()),
+        'unknown',
+      );
+      await _logger.logError(
+        'Chat submission failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
 
       if (revertInputOnError) {
         // If userMessage is set, it means we successfully processed the input and persisted it
@@ -249,8 +280,10 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
     _setState(GenerationState.error(KaiException.cancelled()));
   }
 
-  Stream<IList<CoreMessage>> get messagesStream => _conversationManager.messagesStream;
-  Future<IList<CoreMessage>> getAllMessages() => _conversationManager.getMessages();
+  Stream<IList<CoreMessage>> get messagesStream =>
+      _conversationManager.messagesStream;
+  Future<IList<CoreMessage>> getAllMessages() =>
+      _conversationManager.getMessages();
 
   Stream<GenerationState<CoreMessage>> get generationStateStream =>
       _generationStateController.stream.map(_mapGenerationState);
@@ -261,7 +294,9 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
     _cancelToken.cancel();
   }
 
-  GenerationState<CoreMessage> _mapGenerationState(GenerationState<GenerationResult> state) {
+  GenerationState<CoreMessage> _mapGenerationState(
+    GenerationState<GenerationResult> state,
+  ) {
     return state.map(
       loading: (l) => GenerationState.loading(l.phase),
       initial: (value) => GenerationState.initial(),
@@ -274,6 +309,8 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
     );
   }
 
-  void _setState(GenerationState<GenerationResult> state) => _generationStateController.add(state);
-  void _setLoadingPhase(LoadingPhase phase) => _setState(GenerationState.loading(phase));
+  void _setState(GenerationState<GenerationResult> state) =>
+      _generationStateController.add(state);
+  void _setLoadingPhase(LoadingPhase phase) =>
+      _setState(GenerationState.loading(phase));
 }

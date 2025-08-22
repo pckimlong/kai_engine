@@ -49,10 +49,19 @@ class _GenerationConfigSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (debugInfo.usage?.tokenCount != null)
-                  _ConfigRow(label: 'Token Count', value: '${debugInfo.usage?.tokenCount}'),
-                _ConfigRow(label: 'Used Embedding', value: config.usedEmbedding ? 'Yes' : 'No'),
+                  _ConfigRow(
+                    label: 'Token Count',
+                    value: '${debugInfo.usage?.tokenCount}',
+                  ),
+                _ConfigRow(
+                  label: 'Used Embedding',
+                  value: config.usedEmbedding ? 'Yes' : 'No',
+                ),
                 const SizedBox(height: 12),
-                const Text('Available Tools:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Available Tools:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 if (config.availableTools.isEmpty)
                   const Text('No tools available')
@@ -64,13 +73,17 @@ class _GenerationConfigSection extends StatelessWidget {
                         .map(
                           (tool) => Chip(
                             label: Text(tool),
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                           ),
                         )
                         .toList(),
                   ),
                 const SizedBox(height: 12),
-                const Text('Configuration:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Configuration:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 Container(
                   width: double.infinity,
@@ -83,8 +96,13 @@ class _GenerationConfigSection extends StatelessWidget {
                   child: SelectableText(
                     config.config.isEmpty
                         ? 'No configuration data'
-                        : const JsonEncoder.withIndent('  ').convert(config.config),
-                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                        : const JsonEncoder.withIndent(
+                            '  ',
+                          ).convert(config.config),
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -141,7 +159,12 @@ class _MetadataSection extends StatelessWidget {
           ? const Text('No custom metadata available')
           : Column(
               children: metadata.entries
-                  .map((entry) => _ConfigRow(label: entry.key, value: entry.value.toString()))
+                  .map(
+                    (entry) => _ConfigRow(
+                      label: entry.key,
+                      value: entry.value.toString(),
+                    ),
+                  )
                   .toList(),
             ),
     );
@@ -163,7 +186,10 @@ class _ConfigRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 120,
-            child: Text('$label:', style: const TextStyle(fontWeight: FontWeight.w500)),
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
           ),
           Expanded(child: SelectableText(value)),
         ],
@@ -185,10 +211,14 @@ class _TokenCostSectionState extends State<_TokenCostSection> {
   void initState() {
     super.initState();
     _inputCostController = TextEditingController(
-      text: KaiDebugTracker.instance.getInputTokenCostPerMillion().toStringAsFixed(2),
+      text: KaiDebugTracker.instance
+          .getInputTokenCostPerMillion()
+          .toStringAsFixed(2),
     );
     _outputCostController = TextEditingController(
-      text: KaiDebugTracker.instance.getOutputTokenCostPerMillion().toStringAsFixed(2),
+      text: KaiDebugTracker.instance
+          .getOutputTokenCostPerMillion()
+          .toStringAsFixed(2),
     );
   }
 

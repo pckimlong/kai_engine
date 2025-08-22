@@ -14,7 +14,8 @@ sealed class ToolingConfig with _$ToolingConfig {
   const ToolingConfig._();
 
   const factory ToolingConfig.auto() = _ToolingConfigAuto;
-  const factory ToolingConfig.any(Set<String> allowedFunctionNames) = _ToolingConfigAny;
+  const factory ToolingConfig.any(Set<String> allowedFunctionNames) =
+      _ToolingConfigAny;
   const factory ToolingConfig.none() = _ToolingConfigNone;
 }
 
@@ -27,7 +28,7 @@ abstract interface class GenerationServiceBase {
     IList<CoreMessage> prompts, {
     CancelToken? cancelToken,
     List<ToolSchema> tools = const [],
-    ToolingConfig toolingConfig = const ToolingConfig.auto(),
+    ToolingConfig? toolingConfig,
     Map<String, dynamic>? config,
   });
 

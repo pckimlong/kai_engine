@@ -113,4 +113,51 @@ mixin PostResponseEngineDebugMixin on PostResponseEngineBase implements DebugTra
   @override
   void debugAddMetadata(String messageId, String key, dynamic value) =>
       emitDebugEvent(MetadataAddedEvent(messageId, key, value));
+
+  // Post-response step tracking methods
+  @override
+  void debugStartPostResponseStep(
+    String messageId,
+    String stepName, {
+    String? description,
+    Map<String, dynamic>? data,
+  }) => emitDebugEvent(
+    PostResponseStepStartedEvent(messageId, stepName, description: description, data: data),
+  );
+
+  @override
+  void debugCompletePostResponseStep(
+    String messageId,
+    String stepName,
+    Duration duration, {
+    Map<String, dynamic>? result,
+    String? status,
+  }) => emitDebugEvent(
+    PostResponseStepCompletedEvent(messageId, stepName, duration, result: result, status: status),
+  );
+
+  @override
+  void debugFailPostResponseStep(
+    String messageId,
+    String stepName,
+    Duration duration,
+    Exception error, {
+    String? errorDetails,
+  }) => emitDebugEvent(
+    PostResponseStepFailedEvent(messageId, stepName, duration, error, errorDetails: errorDetails),
+  );
+
+  @override
+  void debugLogPostResponse(
+    String messageId,
+    String stepName,
+    String level,
+    String message, {
+    Map<String, dynamic>? data,
+  }) => emitDebugEvent(PostResponseLogEvent(messageId, stepName, level, message, data: data));
+
+  /// Create a convenient logger for this engine's post-response processing
+  PostResponseLogger createLogger(String messageId) {
+    return PostResponseLogger(messageId);
+  }
 }

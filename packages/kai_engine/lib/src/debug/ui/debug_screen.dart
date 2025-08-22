@@ -8,6 +8,7 @@ import '../debug_system.dart';
 import 'widgets/config_tab.dart';
 import 'widgets/messages_tab.dart';
 import 'widgets/metrics_tab.dart';
+import 'widgets/post_response_tab.dart';
 import 'widgets/timeline_tab.dart';
 
 /// Comprehensive debug screen for message analysis
@@ -20,14 +21,15 @@ class MessageDebugScreen extends StatefulWidget {
   State<MessageDebugScreen> createState() => _MessageDebugScreenState();
 }
 
-class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProviderStateMixin {
+class _MessageDebugScreenState extends State<MessageDebugScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   MessageDebugInfo? _debugInfo;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _loadDebugInfo();
   }
 
@@ -48,7 +50,9 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
     if (kReleaseMode) {
       return Scaffold(
         appBar: AppBar(title: const Text('Debug')),
-        body: const Center(child: Text('Debug information not available in release mode')),
+        body: const Center(
+          child: Text('Debug information not available in release mode'),
+        ),
       );
     }
 
@@ -76,8 +80,10 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
         ],
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
           tabs: const [
             Tab(text: 'Timeline'),
+            Tab(text: 'Post-Response'),
             Tab(text: 'Messages'),
             Tab(text: 'Config'),
             Tab(text: 'Metrics'),
@@ -88,6 +94,7 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
         controller: _tabController,
         children: [
           TimelineTab(debugInfo: _debugInfo!),
+          PostResponseTab(debugInfo: _debugInfo!),
           MessagesTab(debugInfo: _debugInfo!),
           ConfigTab(debugInfo: _debugInfo!),
           MetricsTab(debugInfo: _debugInfo!),
@@ -130,13 +137,39 @@ class _MessageDebugScreenState extends State<MessageDebugScreen> with TickerProv
         'chunkCount': info.streaming.chunks.length,
         'fullText': info.streaming.fullText,
       },
+      'postResponseSteps': info.postResponseSteps.map(
+        (key, step) => MapEntry(key, {
+          'name': step.name,
+          'description': step.description,
+          'startTime': step.startTime.toIso8601String(),
+          'endTime': step.endTime?.toIso8601String(),
+          'duration': step.duration?.inMilliseconds,
+          'isComplete': step.isComplete,
+          'hasError': step.hasError,
+          'error': step.error?.toString(),
+          'errorDetails': step.errorDetails,
+          'status': step.status,
+          'result': step.result,
+          'metadata': step.metadata,
+          'logs': step.logs
+              .map(
+                (log) => {
+                  'timestamp': log.timestamp.toIso8601String(),
+                  'level': log.level,
+                  'message': log.message,
+                  'data': log.data,
+                },
+              )
+              .toList(),
+        }),
+      ),
       'metadata': info.metadata,
     };
 
     final jsonString = const JsonEncoder.withIndent('  ').convert(exportData);
     Clipboard.setData(ClipboardData(text: jsonString));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Debug info exported to clipboard')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Debug info exported to clipboard')),
+    );
   }
 }

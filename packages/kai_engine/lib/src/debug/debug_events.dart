@@ -66,3 +66,57 @@ class MetadataAddedEvent extends DebugEvent {
   final dynamic value;
   MetadataAddedEvent(super.messageId, this.key, this.value);
 }
+
+class PostResponseStepStartedEvent extends DebugEvent {
+  final String stepName;
+  final String? description;
+  final Map<String, dynamic>? data;
+  PostResponseStepStartedEvent(
+    super.messageId,
+    this.stepName, {
+    this.description,
+    this.data,
+  });
+}
+
+class PostResponseStepCompletedEvent extends DebugEvent {
+  final String stepName;
+  final Duration duration;
+  final Map<String, dynamic>? result;
+  final String? status;
+  PostResponseStepCompletedEvent(
+    super.messageId,
+    this.stepName,
+    this.duration, {
+    this.result,
+    this.status,
+  });
+}
+
+class PostResponseStepFailedEvent extends DebugEvent {
+  final String stepName;
+  final Duration duration;
+  final Exception error;
+  final String? errorDetails;
+  PostResponseStepFailedEvent(
+    super.messageId,
+    this.stepName,
+    this.duration,
+    this.error, {
+    this.errorDetails,
+  });
+}
+
+class PostResponseLogEvent extends DebugEvent {
+  final String stepName;
+  final String level; // 'info', 'warning', 'error', 'debug'
+  final String message;
+  final Map<String, dynamic>? data;
+  PostResponseLogEvent(
+    super.messageId,
+    this.stepName,
+    this.level,
+    this.message, {
+    this.data,
+  });
+}

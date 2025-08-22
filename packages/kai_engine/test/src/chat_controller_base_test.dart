@@ -23,16 +23,19 @@ GenerationResult createTestGenerationResult({
 // We'll use registerFallbackValue with a real instance instead
 
 // Mock classes
-final class MockConversationManager extends Mock implements ConversationManager<TestMessage> {
+final class MockConversationManager extends Mock
+    implements ConversationManager<TestMessage> {
   @override
-  ConversationSession get session => const ConversationSession(id: 'test_session');
+  ConversationSession get session =>
+      const ConversationSession(id: 'test_session');
 }
 
 class MockGenerationService extends Mock implements GenerationServiceBase {}
 
 class MockQueryEngine extends Mock implements QueryEngineBase {}
 
-final class MockPostResponseEngine extends Mock implements PostResponseEngineBase {}
+final class MockPostResponseEngine extends Mock
+    implements PostResponseEngineBase {}
 
 class MockKaiLogger extends Mock implements KaiLogger {}
 
@@ -90,7 +93,10 @@ final class TestContextEngine extends ContextEngine {
     final userMessage =
         providedUserMessage?.copyWith(content: inputQuery.processedQuery) ??
         CoreMessage.user(content: inputQuery.processedQuery);
-    return Future.value((userMessage: userMessage, prompts: IList([userMessage])));
+    return Future.value((
+      userMessage: userMessage,
+      prompts: IList([userMessage]),
+    ));
   }
 }
 
@@ -151,7 +157,9 @@ void main() {
     registerFallbackValue(CancelToken());
     registerFallbackValue(CoreMessage.user(content: 'test'));
     registerFallbackValue(
-      createTestGenerationResult(messages: IList([CoreMessage.ai(content: 'test')])),
+      createTestGenerationResult(
+        messages: IList([CoreMessage.ai(content: 'test')]),
+      ),
     );
     registerFallbackValue(<ToolSchema>[]);
     registerFallbackValue(<String, dynamic>{});
@@ -176,7 +184,9 @@ void main() {
       testContextEngine = TestContextEngine();
 
       // Setup default mocks BEFORE creating controller
-      when(() => mockLogger.logInfo(any(), data: any(named: 'data'))).thenAnswer((_) async {});
+      when(
+        () => mockLogger.logInfo(any(), data: any(named: 'data')),
+      ).thenAnswer((_) async {});
       when(
         () => mockLogger.logError(
           any(),
@@ -244,9 +254,11 @@ void main() {
                 CoreMessage? providedUserMessage,
               }) async => (
                 userMessage:
-                    providedUserMessage ?? CoreMessage.user(messageId: 'user-1', content: 'Hello'),
+                    providedUserMessage ??
+                    CoreMessage.user(messageId: 'user-1', content: 'Hello'),
                 prompts: IList([
-                  providedUserMessage ?? CoreMessage.user(messageId: 'user-1', content: 'Hello'),
+                  providedUserMessage ??
+                      CoreMessage.user(messageId: 'user-1', content: 'Hello'),
                 ]),
               ),
         );
@@ -259,9 +271,12 @@ void main() {
             config: any(named: 'config'),
           ),
         ).thenAnswer((_) {
-          final controller = StreamController<GenerationState<GenerationResult>>();
+          final controller =
+              StreamController<GenerationState<GenerationResult>>();
           final result = createTestGenerationResult(
-            messages: IList([CoreMessage.ai(messageId: 'ai-1', content: 'Hi there')]),
+            messages: IList([
+              CoreMessage.ai(messageId: 'ai-1', content: 'Hi there'),
+            ]),
           );
 
           Future.microtask(() {
@@ -272,7 +287,9 @@ void main() {
           return controller.stream;
         });
 
-        when(() => mockConversationManager.addMessages(any())).thenAnswer((_) async {
+        when(() => mockConversationManager.addMessages(any())).thenAnswer((
+          _,
+        ) async {
           return const IList.empty();
         });
 
@@ -293,9 +310,14 @@ void main() {
 
         // Verify logging
         verify(
-          () => mockLogger.logInfo('Chat submission started', data: any(named: 'data')),
+          () => mockLogger.logInfo(
+            'Chat submission started',
+            data: any(named: 'data'),
+          ),
         ).called(1);
-        verify(() => mockLogger.logInfo('Chat submission completed successfully')).called(1);
+        verify(
+          () => mockLogger.logInfo('Chat submission completed successfully'),
+        ).called(1);
 
         // Verify flow
         verify(
@@ -315,7 +337,9 @@ void main() {
           ),
         ).called(1);
         // Should call addMessages twice - once for user message, once for AI response
-        verify(() => mockConversationManager.addMessages(any())).called(equals(2));
+        verify(
+          () => mockConversationManager.addMessages(any()),
+        ).called(equals(2));
         verify(
           () => mockPostResponseEngine.process(
             input: any(named: 'input'),
@@ -335,9 +359,14 @@ void main() {
           ),
         ).thenThrow(Exception('Query processing failed'));
 
-        when(() => mockConversationManager.removeMessages(any())).thenAnswer((_) async {});
+        when(
+          () => mockConversationManager.removeMessages(any()),
+        ).thenAnswer((_) async {});
 
-        final result = await controller.submit('Hello', revertInputOnError: true);
+        final result = await controller.submit(
+          'Hello',
+          revertInputOnError: true,
+        );
 
         expect(result, isA<GenerationErrorState<CoreMessage>>());
 
@@ -385,9 +414,14 @@ void main() {
           testContextEngine: failingContextEngine,
         );
 
-        when(() => mockConversationManager.removeMessages(any())).thenAnswer((_) async {});
+        when(
+          () => mockConversationManager.removeMessages(any()),
+        ).thenAnswer((_) async {});
 
-        final result = await failingController.submit('Hello', revertInputOnError: true);
+        final result = await failingController.submit(
+          'Hello',
+          revertInputOnError: true,
+        );
 
         expect(result, isA<GenerationErrorState<CoreMessage>>());
 
@@ -413,7 +447,8 @@ void main() {
             config: any(named: 'config'),
           ),
         ).thenAnswer((_) {
-          final controller = StreamController<GenerationState<GenerationResult>>();
+          final controller =
+              StreamController<GenerationState<GenerationResult>>();
 
           Future.microtask(() {
             controller.addError(Exception('Generation failed'));
@@ -422,9 +457,14 @@ void main() {
           return controller.stream;
         });
 
-        when(() => mockConversationManager.removeMessages(any())).thenAnswer((_) async {});
+        when(
+          () => mockConversationManager.removeMessages(any()),
+        ).thenAnswer((_) async {});
 
-        final result = await controller.submit('Hello', revertInputOnError: true);
+        final result = await controller.submit(
+          'Hello',
+          revertInputOnError: true,
+        );
 
         expect(result, isA<GenerationErrorState<CoreMessage>>());
 
@@ -450,7 +490,8 @@ void main() {
             config: any(named: 'config'),
           ),
         ).thenAnswer((_) {
-          final controller = StreamController<GenerationState<GenerationResult>>();
+          final controller =
+              StreamController<GenerationState<GenerationResult>>();
 
           Future.microtask(() {
             controller.close(); // Close without emitting final state
@@ -459,9 +500,14 @@ void main() {
           return controller.stream;
         });
 
-        when(() => mockConversationManager.removeMessages(any())).thenAnswer((_) async {});
+        when(
+          () => mockConversationManager.removeMessages(any()),
+        ).thenAnswer((_) async {});
 
-        final result = await controller.submit('Hello', revertInputOnError: true);
+        final result = await controller.submit(
+          'Hello',
+          revertInputOnError: true,
+        );
 
         expect(result, isA<GenerationErrorState<CoreMessage>>());
         final errorState = result as GenerationErrorState<CoreMessage>;
@@ -506,75 +552,100 @@ void main() {
         ).called(1);
       });
 
-      test('should revert input on error when revertInputOnError is true', () async {
-        when(
-          () => mockQueryEngine.process(
-            any(),
-            session: any(named: 'session'),
-            onStageStart: any(named: 'onStageStart'),
-          ),
-        ).thenThrow(Exception('Query failed'));
+      test(
+        'should revert input on error when revertInputOnError is true',
+        () async {
+          when(
+            () => mockQueryEngine.process(
+              any(),
+              session: any(named: 'session'),
+              onStageStart: any(named: 'onStageStart'),
+            ),
+          ).thenThrow(Exception('Query failed'));
 
-        when(() => mockConversationManager.removeMessages(any())).thenAnswer((_) async {});
+          when(
+            () => mockConversationManager.removeMessages(any()),
+          ).thenAnswer((_) async {});
 
-        final result = await controller.submit('Hello', revertInputOnError: true);
+          final result = await controller.submit(
+            'Hello',
+            revertInputOnError: true,
+          );
 
-        expect(result, isA<GenerationErrorState<CoreMessage>>());
+          expect(result, isA<GenerationErrorState<CoreMessage>>());
 
-        // Should remove placeholder
-        verify(() => mockConversationManager.removeMessages(any())).called(1);
-      });
+          // Should remove placeholder
+          verify(() => mockConversationManager.removeMessages(any())).called(1);
+        },
+      );
 
-      test('should revert persisted message on error when revertInputOnError is true', () async {
-        // Setup successful flow up to generation failure
-        when(
-          () => mockGenerationService.stream(
-            any(),
-            cancelToken: any(named: 'cancelToken'),
-            tools: any(named: 'tools'),
-            config: any(named: 'config'),
-          ),
-        ).thenThrow(Exception('Generation failed'));
+      test(
+        'should revert persisted message on error when revertInputOnError is true',
+        () async {
+          // Setup successful flow up to generation failure
+          when(
+            () => mockGenerationService.stream(
+              any(),
+              cancelToken: any(named: 'cancelToken'),
+              tools: any(named: 'tools'),
+              config: any(named: 'config'),
+            ),
+          ).thenThrow(Exception('Generation failed'));
 
-        when(() => mockConversationManager.removeMessages(any())).thenAnswer((_) async {});
+          when(
+            () => mockConversationManager.removeMessages(any()),
+          ).thenAnswer((_) async {});
 
-        final result = await controller.submit('Hello', revertInputOnError: true);
+          final result = await controller.submit(
+            'Hello',
+            revertInputOnError: true,
+          );
 
-        expect(result, isA<GenerationErrorState<CoreMessage>>());
+          expect(result, isA<GenerationErrorState<CoreMessage>>());
 
-        // Should remove persisted user message
-        verify(() => mockConversationManager.removeMessages(any())).called(1);
-      });
+          // Should remove persisted user message
+          verify(() => mockConversationManager.removeMessages(any())).called(1);
+        },
+      );
 
-      test('should not revert input on error when revertInputOnError is false', () async {
-        when(
-          () => mockQueryEngine.process(
-            any(),
-            session: any(named: 'session'),
-            onStageStart: any(named: 'onStageStart'),
-          ),
-        ).thenThrow(Exception('Query failed'));
+      test(
+        'should not revert input on error when revertInputOnError is false',
+        () async {
+          when(
+            () => mockQueryEngine.process(
+              any(),
+              session: any(named: 'session'),
+              onStageStart: any(named: 'onStageStart'),
+            ),
+          ).thenThrow(Exception('Query failed'));
 
-        final result = await controller.submit('Hello', revertInputOnError: false);
+          final result = await controller.submit(
+            'Hello',
+            revertInputOnError: false,
+          );
 
-        expect(result, isA<GenerationErrorState<CoreMessage>>());
+          expect(result, isA<GenerationErrorState<CoreMessage>>());
 
-        // Should not remove messages
-        verifyNever(() => mockConversationManager.removeMessages(any()));
-      });
+          // Should not remove messages
+          verifyNever(() => mockConversationManager.removeMessages(any()));
+        },
+      );
 
-      test('should pass custom generative configs to generation service', () async {
-        await controller.submit('Hello');
+      test(
+        'should pass custom generative configs to generation service',
+        () async {
+          await controller.submit('Hello');
 
-        verify(
-          () => mockGenerationService.stream(
-            any(),
-            cancelToken: any(named: 'cancelToken'),
-            tools: [],
-            config: {'temperature': 0.7},
-          ),
-        ).called(1);
-      });
+          verify(
+            () => mockGenerationService.stream(
+              any(),
+              cancelToken: any(named: 'cancelToken'),
+              tools: [],
+              config: {'temperature': 0.7},
+            ),
+          ).called(1);
+        },
+      );
 
       test(
         'should handle stream error states and revert input when revertInputOnError is true',
@@ -587,11 +658,14 @@ void main() {
               config: any(named: 'config'),
             ),
           ).thenAnswer((_) {
-            final controller = StreamController<GenerationState<GenerationResult>>();
+            final controller =
+                StreamController<GenerationState<GenerationResult>>();
 
             Future.microtask(() {
               controller.add(
-                GenerationState.error(KaiException.exception('Stream generation failed')),
+                GenerationState.error(
+                  KaiException.exception('Stream generation failed'),
+                ),
               );
               controller.close();
             });
@@ -599,15 +673,23 @@ void main() {
             return controller.stream;
           });
 
-          when(() => mockConversationManager.removeMessages(any())).thenAnswer((_) async {});
+          when(
+            () => mockConversationManager.removeMessages(any()),
+          ).thenAnswer((_) async {});
 
-          final result = await controller.submit('Hello', revertInputOnError: true);
+          final result = await controller.submit(
+            'Hello',
+            revertInputOnError: true,
+          );
 
           expect(result, isA<GenerationErrorState<CoreMessage>>());
 
           // Should log stream error
           verify(
-            () => mockLogger.logError('Generation stream error', error: any(named: 'error')),
+            () => mockLogger.logError(
+              'Generation stream error',
+              error: any(named: 'error'),
+            ),
           ).called(1);
 
           // Should revert user message (not placeholder since userMessage is set by this point)
@@ -626,11 +708,14 @@ void main() {
               config: any(named: 'config'),
             ),
           ).thenAnswer((_) {
-            final controller = StreamController<GenerationState<GenerationResult>>();
+            final controller =
+                StreamController<GenerationState<GenerationResult>>();
 
             Future.microtask(() {
               controller.add(
-                GenerationState.error(KaiException.exception('Stream generation failed')),
+                GenerationState.error(
+                  KaiException.exception('Stream generation failed'),
+                ),
               );
               controller.close();
             });
@@ -638,13 +723,19 @@ void main() {
             return controller.stream;
           });
 
-          final result = await controller.submit('Hello', revertInputOnError: false);
+          final result = await controller.submit(
+            'Hello',
+            revertInputOnError: false,
+          );
 
           expect(result, isA<GenerationErrorState<CoreMessage>>());
 
           // Should log stream error
           verify(
-            () => mockLogger.logError('Generation stream error', error: any(named: 'error')),
+            () => mockLogger.logError(
+              'Generation stream error',
+              error: any(named: 'error'),
+            ),
           ).called(1);
 
           // Should not revert messages
@@ -654,7 +745,9 @@ void main() {
 
       test('should emit states through stream during submission', () async {
         final states = <GenerationState<CoreMessage>>[];
-        final subscription = controller.generationStateStream.listen(states.add);
+        final subscription = controller.generationStateStream.listen(
+          states.add,
+        );
 
         await controller.submit('Hello');
 
@@ -665,136 +758,151 @@ void main() {
         await subscription.cancel();
       });
 
-      test('should not have duplicate user input in prompt sent to stream', () async {
-        // Track the prompts sent to the generation service
-        IList<CoreMessage>? capturedPrompts;
+      test(
+        'should not have duplicate user input in prompt sent to stream',
+        () async {
+          // Track the prompts sent to the generation service
+          IList<CoreMessage>? capturedPrompts;
 
-        // Create new mocks for this specific test
-        final mockConversationManager = MockConversationManager();
+          // Create new mocks for this specific test
+          final mockConversationManager = MockConversationManager();
 
-        final mockGenerationService = MockGenerationService();
-        final mockQueryEngine = MockQueryEngine();
-        final mockPostResponseEngine = MockPostResponseEngine();
-        final mockLogger = MockKaiLogger();
+          final mockGenerationService = MockGenerationService();
+          final mockQueryEngine = MockQueryEngine();
+          final mockPostResponseEngine = MockPostResponseEngine();
+          final mockLogger = MockKaiLogger();
 
-        // Setup basic mocks
-        when(() => mockLogger.logInfo(any(), data: any(named: 'data'))).thenAnswer((_) async {});
-        when(
-          () => mockLogger.logError(
-            any(),
-            error: any(named: 'error'),
-            stackTrace: any(named: 'stackTrace'),
-          ),
-        ).thenAnswer((_) async {});
+          // Setup basic mocks
+          when(
+            () => mockLogger.logInfo(any(), data: any(named: 'data')),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLogger.logError(
+              any(),
+              error: any(named: 'error'),
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).thenAnswer((_) async {});
 
-        // Setup conversation manager to return existing messages
-        when(() => mockConversationManager.getMessages()).thenAnswer(
-          (_) async => IList([
-            CoreMessage.user(content: 'Previous message'),
-            CoreMessage.ai(content: 'Previous response'),
-          ]),
-        );
-
-        when(() => mockConversationManager.addMessages(any())).thenAnswer((_) async {
-          return const IList.empty();
-        });
-
-        // Setup query engine
-        when(
-          () => mockQueryEngine.process(
-            any(),
-            session: any(named: 'session'),
-            onStageStart: any(named: 'onStageStart'),
-          ),
-        ).thenAnswer(
-          (_) async => const QueryContext(
-            originalQuery: 'Hello',
-            processedQuery: 'Hello',
-            session: ConversationSession(id: 'test_session'),
-          ),
-        );
-
-        // Setup post response engine
-        when(
-          () => mockPostResponseEngine.process(
-            input: any(named: 'input'),
-            requestMessages: any(named: 'requestMessages'),
-            result: any(named: 'result'),
-            conversationManager: any(named: 'conversationManager'),
-          ),
-        ).thenAnswer((_) async {});
-
-        // Capture the prompts passed to the generation service
-        when(
-          () => mockGenerationService.stream(
-            captureAny(that: isA<IList<CoreMessage>>()),
-            cancelToken: any(named: 'cancelToken'),
-            tools: any(named: 'tools'),
-            config: any(named: 'config'),
-          ),
-        ).thenAnswer((invocation) {
-          // Capture the prompts argument
-          capturedPrompts = invocation.positionalArguments[0] as IList<CoreMessage>;
-
-          final controller = StreamController<GenerationState<GenerationResult>>();
-          final result = createTestGenerationResult(
-            messages: IList([CoreMessage.ai(messageId: 'ai-1', content: 'Hi there')]),
+          // Setup conversation manager to return existing messages
+          when(() => mockConversationManager.getMessages()).thenAnswer(
+            (_) async => IList([
+              CoreMessage.user(content: 'Previous message'),
+              CoreMessage.ai(content: 'Previous response'),
+            ]),
           );
 
-          Future.microtask(() {
-            controller.add(GenerationState.complete(result));
-            controller.close();
+          when(() => mockConversationManager.addMessages(any())).thenAnswer((
+            _,
+          ) async {
+            return const IList.empty();
           });
 
-          return controller.stream;
-        });
+          // Setup query engine
+          when(
+            () => mockQueryEngine.process(
+              any(),
+              session: any(named: 'session'),
+              onStageStart: any(named: 'onStageStart'),
+            ),
+          ).thenAnswer(
+            (_) async => const QueryContext(
+              originalQuery: 'Hello',
+              processedQuery: 'Hello',
+              session: ConversationSession(id: 'test_session'),
+            ),
+          );
 
-        // Setup context engine to return the user message
-        final testContextEngine = TestContextEngine(
-          generateFunction:
-              ({
-                required IList<CoreMessage> source,
-                required QueryContext inputQuery,
-                void Function(String name)? onStageStart,
-                CoreMessage? providedUserMessage,
-              }) async => (
-                userMessage:
-                    providedUserMessage ?? CoreMessage.user(messageId: 'user-1', content: 'Hello'),
-                prompts: IList([
-                  CoreMessage.user(content: 'Previous message'),
-                  CoreMessage.ai(content: 'Previous response'),
-                  providedUserMessage ?? CoreMessage.user(messageId: 'user-1', content: 'Hello'),
-                ]),
-              ),
-        );
+          // Setup post response engine
+          when(
+            () => mockPostResponseEngine.process(
+              input: any(named: 'input'),
+              requestMessages: any(named: 'requestMessages'),
+              result: any(named: 'result'),
+              conversationManager: any(named: 'conversationManager'),
+            ),
+          ).thenAnswer((_) async {});
 
-        // Create a new controller for this test
-        final controller = TestChatController(
-          conversationManager: mockConversationManager,
-          generationService: mockGenerationService,
-          queryEngine: mockQueryEngine,
-          postResponseEngine: mockPostResponseEngine,
-          logger: mockLogger,
-          testContextEngine: testContextEngine,
-        );
+          // Capture the prompts passed to the generation service
+          when(
+            () => mockGenerationService.stream(
+              captureAny(that: isA<IList<CoreMessage>>()),
+              cancelToken: any(named: 'cancelToken'),
+              tools: any(named: 'tools'),
+              config: any(named: 'config'),
+            ),
+          ).thenAnswer((invocation) {
+            // Capture the prompts argument
+            capturedPrompts =
+                invocation.positionalArguments[0] as IList<CoreMessage>;
 
-        await controller.submit('Hello');
+            final controller =
+                StreamController<GenerationState<GenerationResult>>();
+            final result = createTestGenerationResult(
+              messages: IList([
+                CoreMessage.ai(messageId: 'ai-1', content: 'Hi there'),
+              ]),
+            );
 
-        // Verify that the captured prompts don't have duplicate user input
-        expect(capturedPrompts, isNotNull);
-        expect(capturedPrompts!.length, equals(3));
+            Future.microtask(() {
+              controller.add(GenerationState.complete(result));
+              controller.close();
+            });
 
-        // Check that we have the expected messages in order
-        expect(capturedPrompts![0].content, equals('Previous message'));
-        expect(capturedPrompts![1].content, equals('Previous response'));
-        expect(capturedPrompts![2].content, equals('Hello'));
+            return controller.stream;
+          });
 
-        // Verify no duplicate 'Hello' messages
-        final helloMessages = capturedPrompts!.where((msg) => msg.content == 'Hello').toList();
-        expect(helloMessages.length, equals(1));
-        // The messageId will be generated by the chat controller, so we just check it's not empty
-        expect(helloMessages[0].messageId, isNotEmpty);
-      });
+          // Setup context engine to return the user message
+          final testContextEngine = TestContextEngine(
+            generateFunction:
+                ({
+                  required IList<CoreMessage> source,
+                  required QueryContext inputQuery,
+                  void Function(String name)? onStageStart,
+                  CoreMessage? providedUserMessage,
+                }) async => (
+                  userMessage:
+                      providedUserMessage ??
+                      CoreMessage.user(messageId: 'user-1', content: 'Hello'),
+                  prompts: IList([
+                    CoreMessage.user(content: 'Previous message'),
+                    CoreMessage.ai(content: 'Previous response'),
+                    providedUserMessage ??
+                        CoreMessage.user(messageId: 'user-1', content: 'Hello'),
+                  ]),
+                ),
+          );
+
+          // Create a new controller for this test
+          final controller = TestChatController(
+            conversationManager: mockConversationManager,
+            generationService: mockGenerationService,
+            queryEngine: mockQueryEngine,
+            postResponseEngine: mockPostResponseEngine,
+            logger: mockLogger,
+            testContextEngine: testContextEngine,
+          );
+
+          await controller.submit('Hello');
+
+          // Verify that the captured prompts don't have duplicate user input
+          expect(capturedPrompts, isNotNull);
+          expect(capturedPrompts!.length, equals(3));
+
+          // Check that we have the expected messages in order
+          expect(capturedPrompts![0].content, equals('Previous message'));
+          expect(capturedPrompts![1].content, equals('Previous response'));
+          expect(capturedPrompts![2].content, equals('Hello'));
+
+          // Verify no duplicate 'Hello' messages
+          final helloMessages = capturedPrompts!
+              .where((msg) => msg.content == 'Hello')
+              .toList();
+          expect(helloMessages.length, equals(1));
+          // The messageId will be generated by the chat controller, so we just check it's not empty
+          expect(helloMessages[0].messageId, isNotEmpty);
+        },
+      );
     });
 
     group('streams', () {

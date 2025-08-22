@@ -6,7 +6,8 @@ import 'package:kai_engine/kai_engine.dart';
 import 'package:kai_engine_firebase_ai/kai_engine_firebase_ai.dart';
 
 // Test FirebaseAiToolSchema for testing
-base class TestFirebaseAiToolSchema extends FirebaseAiToolSchema<FunctionCall, String> {
+base class TestFirebaseAiToolSchema
+    extends FirebaseAiToolSchema<FunctionCall, String> {
   final String _response;
 
   TestFirebaseAiToolSchema([this._response = 'test result'])
@@ -27,7 +28,8 @@ base class TestFirebaseAiToolSchema extends FirebaseAiToolSchema<FunctionCall, S
 }
 
 // Test FirebaseAiToolSchema that returns empty response
-base class EmptyResponseToolSchema extends FirebaseAiToolSchema<FunctionCall, String> {
+base class EmptyResponseToolSchema
+    extends FirebaseAiToolSchema<FunctionCall, String> {
   EmptyResponseToolSchema()
     : super(
         parser: (Map<String, Object?> json) =>
@@ -52,7 +54,10 @@ base class TestGenericToolSchema
     : super(
         name: 'testGenericTool',
         parser: (Map<String, Object?> json) => Map<String, dynamic>.from(json),
-        declaration: {'name': 'testGenericTool', 'description': 'A generic tool'},
+        declaration: {
+          'name': 'testGenericTool',
+          'description': 'A generic tool',
+        },
       );
 
   @override
@@ -73,7 +78,10 @@ List<FirebaseAiToolSchema> testEffectiveTools(
   List<FirebaseAiToolSchema>? configTools,
 ) {
   final firebaseTools = tools.whereType<FirebaseAiToolSchema>().toList();
-  final merged = <FirebaseAiToolSchema>[...firebaseTools, if (configTools != null) ...configTools];
+  final merged = <FirebaseAiToolSchema>[
+    ...firebaseTools,
+    if (configTools != null) ...configTools,
+  ];
   return merged..removeDuplicates(by: (item) => item.name);
 }
 
@@ -208,14 +216,20 @@ void main() {
 
     group('GenerativeConfig', () {
       test('creates config with system prompt', () {
-        const config = GenerativeConfig(model: 'gemini-1.5-flash', systemPrompt: 'Test prompt');
+        const config = GenerativeConfig(
+          model: 'gemini-1.5-flash',
+          systemPrompt: 'Test prompt',
+        );
 
         expect(config.model, equals('gemini-1.5-flash'));
         expect(config.systemPrompt, equals('Test prompt'));
       });
 
       test('creates config without system prompt', () {
-        const config = GenerativeConfig(model: 'gemini-1.5-flash', systemPrompt: null);
+        const config = GenerativeConfig(
+          model: 'gemini-1.5-flash',
+          systemPrompt: null,
+        );
 
         expect(config.model, equals('gemini-1.5-flash'));
         expect(config.systemPrompt, isNull);
@@ -231,44 +245,50 @@ void main() {
   });
 
   group('FirebaseAiGenerationService - Generation Result Structure', () {
-    test('generatedMessages contains only newly generated content, excluding existing history', () {
-      // Test the logic that ensures generatedMessages field only contains
-      // newly generated content during the current generation cycle
+    test(
+      'generatedMessages contains only newly generated content, excluding existing history',
+      () {
+        // Test the logic that ensures generatedMessages field only contains
+        // newly generated content during the current generation cycle
 
-      // 2. New content generated during this cycle (including function calls if any)
-      final newlyGeneratedContent = [
-        Content.model([
-          FunctionCall('weather_tool', {'location': 'NYC'}),
-        ]), // AI makes function call
-        Content.functionResponses([
-          FunctionResponse('weather_tool', {'temp': '72F'}),
-        ]), // Function response
-        Content.model([
-          TextPart('Based on the weather data, it\'s 72F in NYC today!'),
-        ]), // Final AI response
-      ];
+        // 2. New content generated during this cycle (including function calls if any)
+        final newlyGeneratedContent = [
+          Content.model([
+            FunctionCall('weather_tool', {'location': 'NYC'}),
+          ]), // AI makes function call
+          Content.functionResponses([
+            FunctionResponse('weather_tool', {'temp': '72F'}),
+          ]), // Function response
+          Content.model([
+            TextPart('Based on the weather data, it\'s 72F in NYC today!'),
+          ]), // Final AI response
+        ];
 
-      // 3. Simulate extracting only newly generated content
-      final adapter = FirebaseAiContentAdapter();
-      final generatedMessages = newlyGeneratedContent.map((content) {
-        return adapter.toCoreMessage(content);
-      }).toIList();
+        // 3. Simulate extracting only newly generated content
+        final adapter = FirebaseAiContentAdapter();
+        final generatedMessages = newlyGeneratedContent.map((content) {
+          return adapter.toCoreMessage(content);
+        }).toIList();
 
-      // Verify that generatedMessages contains all newly generated content
-      expect(generatedMessages.length, equals(3));
+        // Verify that generatedMessages contains all newly generated content
+        expect(generatedMessages.length, equals(3));
 
-      // First message should be the function call
-      expect(generatedMessages[0].type, equals(CoreMessageType.ai));
+        // First message should be the function call
+        expect(generatedMessages[0].type, equals(CoreMessageType.ai));
 
-      // Second message should be the function response
-      expect(generatedMessages[1].type, equals(CoreMessageType.function));
+        // Second message should be the function response
+        expect(generatedMessages[1].type, equals(CoreMessageType.function));
 
-      // Third message should be the final AI response (with usage data)
-      expect(generatedMessages[2].content, contains('Based on the weather data'));
-      expect(generatedMessages[2].type, equals(CoreMessageType.ai));
-      // Note: The actual generationUsage attachment is tested separately
-      // Here we focus on the core logic of including all generated content
-    });
+        // Third message should be the final AI response (with usage data)
+        expect(
+          generatedMessages[2].content,
+          contains('Based on the weather data'),
+        );
+        expect(generatedMessages[2].type, equals(CoreMessageType.ai));
+        // Note: The actual generationUsage attachment is tested separately
+        // Here we focus on the core logic of including all generated content
+      },
+    );
 
     test('generatedMessages for simple response without function calls', () {
       // Test simple case without function calling
@@ -282,7 +302,10 @@ void main() {
       }).toIList();
 
       expect(generatedMessages.length, equals(1));
-      expect(generatedMessages.first.content, equals('This is a simple AI response'));
+      expect(
+        generatedMessages.first.content,
+        equals('This is a simple AI response'),
+      );
       expect(generatedMessages.first.type, equals(CoreMessageType.ai));
       // Note: The actual generationUsage attachment is tested separately
     });
@@ -318,7 +341,10 @@ void main() {
 
         // Since both tools have the same name, duplicates are removed
         expect(effectiveTools.length, equals(1));
-        expect(effectiveTools.every((tool) => tool is TestFirebaseAiToolSchema), isTrue);
+        expect(
+          effectiveTools.every((tool) => tool is TestFirebaseAiToolSchema),
+          isTrue,
+        );
       });
 
       test('handles list with only generic ToolSchema instances', () {
@@ -352,7 +378,10 @@ void main() {
     setUp(() {
       mockFirebaseAI = MockFirebaseAI();
       const config = GenerativeConfig(model: 'gemini-1.5-flash');
-      service = FirebaseAiGenerationService(firebaseAi: mockFirebaseAI, config: config);
+      service = FirebaseAiGenerationService(
+        firebaseAi: mockFirebaseAI,
+        config: config,
+      );
     });
 
     test('throws assertion error when tools list is empty', () async {
@@ -360,7 +389,11 @@ void main() {
       final tools = <ToolSchema>[];
 
       expect(
-        () => service.tooling(prompts: messages, tools: tools, toolingConfig: ToolingConfig.auto()),
+        () => service.tooling(
+          prompts: messages,
+          tools: tools,
+          toolingConfig: ToolingConfig.auto(),
+        ),
         throwsA(isA<AssertionError>()),
       );
     });
@@ -371,7 +404,11 @@ void main() {
 
       // Test that the method can be called and throws the expected error due to mocking limitations
       expect(
-        () => service.tooling(prompts: messages, tools: tools, toolingConfig: ToolingConfig.auto()),
+        () => service.tooling(
+          prompts: messages,
+          tools: tools,
+          toolingConfig: ToolingConfig.auto(),
+        ),
         throwsA(predicate((e) => e.toString().contains('UnimplementedError'))),
       );
     });

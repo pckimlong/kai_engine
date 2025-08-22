@@ -41,7 +41,10 @@ class MessageDebugWidget extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   'Debug: ${messageId.substring(0, 8)}...',
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Spacer(),
                 if (debugInfo.totalDuration != null)
@@ -52,7 +55,10 @@ class MessageDebugWidget extends StatelessWidget {
               ],
             ),
             if (debugInfo.usage?.tokenCount != null)
-              Text('Tokens: ${debugInfo.usage!.tokenCount}', style: const TextStyle(fontSize: 10)),
+              Text(
+                'Tokens: ${debugInfo.usage!.tokenCount}',
+                style: const TextStyle(fontSize: 10),
+              ),
             if (debugInfo.usage != null)
               Text(
                 'Usage: ${debugInfo.usage!.inputToken ?? 0} in, ${debugInfo.usage!.outputToken ?? 0} out',
@@ -103,7 +109,11 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
     if (kReleaseMode) return widget.child;
 
     return Stack(
-      children: [widget.child, if (_showDebug) _buildDebugPanel(), _buildToggleButton()],
+      children: [
+        widget.child,
+        if (_showDebug) _buildDebugPanel(),
+        _buildToggleButton(),
+      ],
     );
   }
 
@@ -128,7 +138,10 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.red.withValues(alpha: 0.3), width: 2),
+          border: Border.all(
+            color: Colors.red.withValues(alpha: 0.3),
+            width: 2,
+          ),
           color: Theme.of(context).scaffoldBackgroundColor,
         ),
         child: Column(
@@ -145,7 +158,10 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
                   SizedBox(width: 8),
                   Text(
                     'Debug Messages',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -162,7 +178,8 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
 
                   return ListView.builder(
                     itemCount: recentMessages.length,
-                    itemBuilder: (context, index) => _buildMessageItem(recentMessages[index]),
+                    itemBuilder: (context, index) =>
+                        _buildMessageItem(recentMessages[index]),
                   );
                 },
               ),
@@ -221,11 +238,18 @@ class _DebugFloatingOverlayState extends State<DebugFloatingOverlay> {
                   '${info.usage!.inputToken ?? 0} in, ${info.usage!.outputToken ?? 0} out',
                 ),
               if (info.generationConfig?.availableTools.isNotEmpty == true)
-                _buildInfoRow('Tools', info.generationConfig!.availableTools.join(', ')),
-              _buildInfoRow('Streaming Events', info.streaming.eventCount.toString()),
+                _buildInfoRow(
+                  'Tools',
+                  info.generationConfig!.availableTools.join(', '),
+                ),
+              _buildInfoRow(
+                'Streaming Events',
+                info.streaming.eventCount.toString(),
+              ),
               if (info.generationConfig?.usedEmbedding == true)
                 _buildInfoRow('Used Embedding', 'Yes'),
-              if (info.error != null) _buildInfoRow('Error', info.error.toString()),
+              if (info.error != null)
+                _buildInfoRow('Error', info.error.toString()),
               const Divider(height: 16),
               const Text(
                 'Phase Durations:',
@@ -307,7 +331,10 @@ class DebugStatsWidget extends StatelessWidget {
                 'Messages: ${messages.length} | '
                 'Avg: ${avgDuration.round()}ms | '
                 'Errors: ${errorMessages.length}',
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),

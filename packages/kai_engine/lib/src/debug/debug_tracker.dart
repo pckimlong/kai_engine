@@ -136,6 +136,51 @@ class KaiDebugTracker implements DebugTrackerInterface {
           info.metadata[event.key] = event.value;
           _debugInfoController.add(info);
         }
+
+      case PostResponseStepStartedEvent():
+        final info = _debugInfo[event.messageId];
+        if (info != null) {
+          info.startPostResponseStep(
+            event.stepName,
+            description: event.description,
+            data: event.data,
+          );
+          _debugInfoController.add(info);
+        }
+
+      case PostResponseStepCompletedEvent():
+        final info = _debugInfo[event.messageId];
+        if (info != null) {
+          info.completePostResponseStep(
+            event.stepName,
+            result: event.result,
+            status: event.status,
+          );
+          _debugInfoController.add(info);
+        }
+
+      case PostResponseStepFailedEvent():
+        final info = _debugInfo[event.messageId];
+        if (info != null) {
+          info.failPostResponseStep(
+            event.stepName,
+            event.error,
+            errorDetails: event.errorDetails,
+          );
+          _debugInfoController.add(info);
+        }
+
+      case PostResponseLogEvent():
+        final info = _debugInfo[event.messageId];
+        if (info != null) {
+          info.logToStep(
+            event.stepName,
+            event.level,
+            event.message,
+            data: event.data,
+          );
+          _debugInfoController.add(info);
+        }
     }
 
     _cleanup();

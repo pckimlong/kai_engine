@@ -42,7 +42,9 @@ class _ContextMessagesSection extends StatelessWidget {
     final contextMessages = debugInfo.contextMessages;
     return ExpandableSectionCard(
       title: 'Context Messages',
-      subtitle: contextMessages != null ? '${contextMessages.length} messages' : 'Not available',
+      subtitle: contextMessages != null
+          ? '${contextMessages.length} messages'
+          : 'Not available',
       icon: Icons.history,
       initiallyExpanded: true,
       child: contextMessages != null
@@ -62,7 +64,9 @@ class _FinalPromptsSection extends StatelessWidget {
     final finalPrompts = debugInfo.finalPrompts;
     return ExpandableSectionCard(
       title: 'Final Prompts',
-      subtitle: finalPrompts != null ? '${finalPrompts.length} prompts' : 'Not available',
+      subtitle: finalPrompts != null
+          ? '${finalPrompts.length} prompts'
+          : 'Not available',
       icon: Icons.edit_note,
       child: finalPrompts != null
           ? _MessagesList(messages: finalPrompts)
@@ -81,8 +85,9 @@ class _GeneratedMessagesSection extends StatelessWidget {
     final generatedMessages = debugInfo.generatedMessages;
     return ExpandableSectionCard(
       title: 'Generated Messages',
-      subtitle:
-          generatedMessages != null ? '${generatedMessages.length} messages' : 'Not available',
+      subtitle: generatedMessages != null
+          ? '${generatedMessages.length} messages'
+          : 'Not available',
       icon: Icons.auto_awesome,
       child: generatedMessages != null
           ? _MessagesList(messages: generatedMessages)
@@ -101,7 +106,8 @@ class _StreamingSection extends StatelessWidget {
     final streaming = debugInfo.streaming;
     return ExpandableSectionCard(
       title: 'Streaming Data',
-      subtitle: '${streaming.eventCount} events, ${streaming.chunks.length} chunks',
+      subtitle:
+          '${streaming.eventCount} events, ${streaming.chunks.length} chunks',
       icon: Icons.stream,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,7 +130,10 @@ class _StreamingSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (streaming.fullText.isNotEmpty) ...[
-            const Text('Full Streaming Text:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Full Streaming Text:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
@@ -134,7 +143,10 @@ class _StreamingSection extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey[300]!),
               ),
-              child: Text(streaming.fullText, style: const TextStyle(fontFamily: 'monospace')),
+              child: Text(
+                streaming.fullText,
+                style: const TextStyle(fontFamily: 'monospace'),
+              ),
             ),
           ],
         ],
@@ -151,7 +163,9 @@ class _MessagesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: messages.map((message) => _MessageCard(message: message)).toList(),
+      children: messages
+          .map((message) => _MessageCard(message: message))
+          .toList(),
     );
   }
 }
@@ -196,12 +210,17 @@ class _MessageCard extends StatelessWidget {
                     InfoChip(
                       label: 'Background',
                       value: message.isBackgroundContext ? 'Yes' : 'No',
-                      color: message.isBackgroundContext ? Colors.orange : Colors.green,
+                      color: message.isBackgroundContext
+                          ? Colors.orange
+                          : Colors.green,
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Text('Content:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Content:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 Container(
                   width: double.infinity,
@@ -213,12 +232,18 @@ class _MessageCard extends StatelessWidget {
                   ),
                   child: SelectableText(
                     message.content,
-                    style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 13,
+                    ),
                   ),
                 ),
                 if (message.extensions.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  const Text('Extensions:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Extensions:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
@@ -229,8 +254,13 @@ class _MessageCard extends StatelessWidget {
                       border: Border.all(color: Colors.blue[200]!),
                     ),
                     child: SelectableText(
-                      const JsonEncoder.withIndent('  ').convert(message.extensions),
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                      const JsonEncoder.withIndent(
+                        '  ',
+                      ).convert(message.extensions),
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ],
@@ -240,7 +270,8 @@ class _MessageCard extends StatelessWidget {
                   runSpacing: 4,
                   children: [
                     TextButton.icon(
-                      onPressed: () => _copyToClipboard(context, message.content),
+                      onPressed: () =>
+                          _copyToClipboard(context, message.content),
                       icon: const Icon(Icons.copy, size: 16),
                       label: const Text('Copy'),
                     ),
@@ -261,8 +292,9 @@ class _MessageCard extends StatelessWidget {
 
   void _copyToClipboard(BuildContext context, String text) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Copied to clipboard')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Copied to clipboard')));
   }
 
   void _showMessageDetail(BuildContext context, CoreMessage message) {

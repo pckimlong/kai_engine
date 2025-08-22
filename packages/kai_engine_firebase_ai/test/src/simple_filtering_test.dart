@@ -49,7 +49,7 @@ void main() {
 
       // This is the safe approach we implemented
       final filtered = tools.whereType<SpecialTool>().toList();
-      
+
       expect(filtered.length, equals(1));
       expect(filtered.first, same(specialTool));
     });
@@ -64,7 +64,7 @@ void main() {
       final tool1 = GenericTool('generic1');
       final tool2 = GenericTool('generic2');
       final tools = <BaseTool>[tool1, tool2];
-      
+
       final filtered = filterSpecialTools(tools);
       expect(filtered, isEmpty);
     });
@@ -73,7 +73,7 @@ void main() {
       final tool1 = SpecialTool('special1');
       final tool2 = SpecialTool('special2');
       final tools = <BaseTool>[tool1, tool2];
-      
+
       final filtered = filterSpecialTools(tools);
       expect(filtered.length, equals(2));
       // Verify the specific instances are returned

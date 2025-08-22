@@ -13,11 +13,15 @@ abstract interface class SequentialContextBuilder implements ContextBuilder {
   /// you can override that list to pass to next, eg build summarization etc
   /// return of [build] will be used as context for next step, return empty will
   /// effect overall next sequence and final prompt
-  Future<NextSequentialContext> build(QueryContext input, List<CoreMessage> previous);
+  Future<NextSequentialContext> build(
+    QueryContext input,
+    List<CoreMessage> previous,
+  );
 }
 
 /// Enhanced SequentialContextBuilder with debug tracking
-mixin SequentialContextBuilderDebugMixin on SequentialContextBuilder implements DebugTrackingMixin {
+mixin SequentialContextBuilderDebugMixin on SequentialContextBuilder
+    implements DebugTrackingMixin {
   @override
   DebugTrackerInterface get debugTracker => KaiDebugTracker.instance;
 
@@ -63,10 +67,14 @@ mixin SequentialContextBuilderDebugMixin on SequentialContextBuilder implements 
     String messageId,
     IList<CoreMessage> contextMessages,
     IList<CoreMessage> finalPrompts,
-  ) => emitDebugEvent(ContextBuiltEvent(messageId, contextMessages, finalPrompts));
+  ) => emitDebugEvent(
+    ContextBuiltEvent(messageId, contextMessages, finalPrompts),
+  );
   @override
-  void debugGenerationConfigured(String messageId, DebugGenerationConfig config) =>
-      emitDebugEvent(GenerationConfiguredEvent(messageId, config));
+  void debugGenerationConfigured(
+    String messageId,
+    DebugGenerationConfig config,
+  ) => emitDebugEvent(GenerationConfiguredEvent(messageId, config));
   @override
   void debugStreamingChunk(String messageId, String chunk) =>
       emitDebugEvent(StreamingChunkEvent(messageId, chunk));
@@ -75,7 +83,9 @@ mixin SequentialContextBuilderDebugMixin on SequentialContextBuilder implements 
     String messageId,
     IList<CoreMessage> generatedMessages, [
     GenerationUsage? usage,
-  ]) => emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages, usage));
+  ]) => emitDebugEvent(
+    MessageCompletedEvent(messageId, generatedMessages, usage),
+  );
   @override
   void debugMessageFailed(String messageId, Exception error, String phase) =>
       emitDebugEvent(MessageFailedEvent(messageId, error, phase));
@@ -90,11 +100,15 @@ abstract interface class ParallelContextBuilder implements ContextBuilder {
   /// return empty will only ignore it from final template
   /// unlike SequentialContextBuilder, return value will not be used for next step
   /// previous context will be use just for reference
-  Future<List<CoreMessage>> build(QueryContext input, IList<CoreMessage> context);
+  Future<List<CoreMessage>> build(
+    QueryContext input,
+    IList<CoreMessage> context,
+  );
 }
 
 /// Enhanced ParallelContextBuilder with debug tracking
-mixin ParallelContextBuilderDebugMixin on ParallelContextBuilder implements DebugTrackingMixin {
+mixin ParallelContextBuilderDebugMixin on ParallelContextBuilder
+    implements DebugTrackingMixin {
   @override
   DebugTrackerInterface get debugTracker => KaiDebugTracker.instance;
 
@@ -140,10 +154,14 @@ mixin ParallelContextBuilderDebugMixin on ParallelContextBuilder implements Debu
     String messageId,
     IList<CoreMessage> contextMessages,
     IList<CoreMessage> finalPrompts,
-  ) => emitDebugEvent(ContextBuiltEvent(messageId, contextMessages, finalPrompts));
+  ) => emitDebugEvent(
+    ContextBuiltEvent(messageId, contextMessages, finalPrompts),
+  );
   @override
-  void debugGenerationConfigured(String messageId, DebugGenerationConfig config) =>
-      emitDebugEvent(GenerationConfiguredEvent(messageId, config));
+  void debugGenerationConfigured(
+    String messageId,
+    DebugGenerationConfig config,
+  ) => emitDebugEvent(GenerationConfiguredEvent(messageId, config));
   @override
   void debugStreamingChunk(String messageId, String chunk) =>
       emitDebugEvent(StreamingChunkEvent(messageId, chunk));
@@ -152,7 +170,9 @@ mixin ParallelContextBuilderDebugMixin on ParallelContextBuilder implements Debu
     String messageId,
     IList<CoreMessage> generatedMessages, [
     GenerationUsage? usage,
-  ]) => emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages, usage));
+  ]) => emitDebugEvent(
+    MessageCompletedEvent(messageId, generatedMessages, usage),
+  );
   @override
   void debugMessageFailed(String messageId, Exception error, String phase) =>
       emitDebugEvent(MessageFailedEvent(messageId, error, phase));
@@ -164,5 +184,8 @@ mixin ParallelContextBuilderDebugMixin on ParallelContextBuilder implements Debu
 /// Prebuilt history context
 class HistoryContext implements SequentialContextBuilder {
   @override
-  Future<List<CoreMessage>> build(QueryContext input, List<CoreMessage> previous) async => previous;
+  Future<List<CoreMessage>> build(
+    QueryContext input,
+    List<CoreMessage> previous,
+  ) async => previous;
 }

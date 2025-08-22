@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-
-
 class InfoChip extends StatelessWidget {
   final String label;
   final String value;
@@ -21,7 +19,11 @@ class InfoChip extends StatelessWidget {
         backgroundColor: color.withAlpha((255 * 0.2).round()),
         child: Text(
           label[0],
-          style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       label: Text('$label: $value'),
@@ -54,12 +56,7 @@ class ExpandableSectionCard extends StatelessWidget {
         leading: Icon(icon),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: child,
-          )
-        ],
+        children: [Padding(padding: const EdgeInsets.all(16), child: child)],
       ),
     );
   }

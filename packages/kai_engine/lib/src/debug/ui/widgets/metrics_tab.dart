@@ -48,7 +48,10 @@ class _PerformanceMetrics extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Performance Metrics', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Performance Metrics',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -132,7 +135,11 @@ class _MetricCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -162,7 +169,10 @@ class _PhaseBreakdown extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Phase Breakdown', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Phase Breakdown',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 16),
             if (phases.isEmpty)
               const Text('No phase information available')
@@ -189,15 +199,26 @@ class _PhaseMetricRow extends StatelessWidget {
           Container(
             width: 12,
             height: 12,
-            decoration: BoxDecoration(color: getPhaseColor(phase.name), shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: getPhaseColor(phase.name),
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(phase.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+            child: Text(
+              phase.name,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
           ),
           Text(
-            phase.duration != null ? '${phase.duration!.inMilliseconds}ms' : 'In Progress...',
-            style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.bold),
+            phase.duration != null
+                ? '${phase.duration!.inMilliseconds}ms'
+                : 'In Progress...',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -231,7 +252,10 @@ class _TokenBreakdown extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Token Breakdown', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  'Token Breakdown',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 IconButton(
                   icon: const Icon(Icons.settings),
                   onPressed: () {
@@ -345,7 +369,9 @@ class _CostBreakdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalCost = KaiDebugTracker.instance.calculateTotalCost(debugInfo.usage);
+    final totalCost = KaiDebugTracker.instance.calculateTotalCost(
+      debugInfo.usage,
+    );
     final inputTokens = debugInfo.usage?.inputToken ?? 0;
     final outputTokens = debugInfo.usage?.outputToken ?? 0;
     final inputCost = KaiDebugTracker.instance.getInputTokenCostPerMillion();
@@ -357,7 +383,10 @@ class _CostBreakdown extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Cost Breakdown', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Cost Breakdown',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 16),
             _TokenMetricRow(
               label: 'Input Token Cost',
@@ -422,7 +451,11 @@ class _TokenMetricRow extends StatelessWidget {
   final String value;
   final IconData icon;
 
-  const _TokenMetricRow({required this.label, required this.value, required this.icon});
+  const _TokenMetricRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -433,11 +466,17 @@ class _TokenMetricRow extends StatelessWidget {
           Icon(icon, size: 20, color: Colors.blue),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
           ),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
           ),
         ],
       ),
@@ -462,7 +501,9 @@ class _ErrorSection extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 'No Errors',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.green),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(color: Colors.green),
               ),
             ],
           ),
@@ -482,7 +523,9 @@ class _ErrorSection extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   'Error Information',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.red),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: Colors.red),
                 ),
               ],
             ),
@@ -494,14 +537,22 @@ class _ErrorSection extends StatelessWidget {
                 children: [
                   const SizedBox(
                     width: 120,
-                    child: Text('Error Phase:', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text(
+                      'Error Phase:',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
                   ),
-                  Expanded(child: SelectableText(debugInfo.errorPhase ?? 'Unknown')),
+                  Expanded(
+                    child: SelectableText(debugInfo.errorPhase ?? 'Unknown'),
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 8),
-            const Text('Error Details:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Error Details:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             Container(
               width: double.infinity,

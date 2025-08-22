@@ -13,5 +13,6 @@ sealed class KaiException with _$KaiException implements Exception {
 
   const factory KaiException.cancelled() = _KaiExceptionCancelled;
   const factory KaiException.noResponse() = _KaiExceptionNoResponse;
-  const factory KaiException.toolFailure([String? reason]) = _KaiExceptionToolFailure;
+  const factory KaiException.toolFailure([String? reason]) =
+      _KaiExceptionToolFailure;
 }

@@ -171,7 +171,8 @@ abstract base class ToolSchema<TDeclaration, TCall, TResponse> {
   ///
   /// This method packages the tool's name and declaration into a format that
   /// can be registered with the AI provider.
-  ToolDeclaration toKaiTool() => ToolDeclaration(name: name, declaration: declaration);
+  ToolDeclaration toKaiTool() =>
+      ToolDeclaration(name: name, declaration: declaration);
 
   /// Executes the tool's business logic with the provided call parameters.
   ///

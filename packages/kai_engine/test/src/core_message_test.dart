@@ -28,7 +28,10 @@ void main() {
       test('creates user message with custom messageId', () {
         const messageId = 'custom-id';
         const content = 'Hello with custom ID';
-        final message = CoreMessage.user(messageId: messageId, content: content);
+        final message = CoreMessage.user(
+          messageId: messageId,
+          content: content,
+        );
 
         expect(message.messageId, equals(messageId));
         expect(message.content, equals(content));
@@ -99,7 +102,11 @@ void main() {
         const type = CoreMessageType.function;
         final extensions = {'key': 'value', 'number': 42};
 
-        final message = CoreMessage.create(content: content, type: type, extensions: extensions);
+        final message = CoreMessage.create(
+          content: content,
+          type: type,
+          extensions: extensions,
+        );
 
         expect(message.content, equals(content));
         expect(message.type, equals(type));
@@ -220,7 +227,10 @@ void main() {
         content: 'Test',
       ).copyWith(extensions: {'existing': 'value'});
 
-      final updated = original.copyWithExtensions({'existing': 'updated', 'new_key': 'new_value'});
+      final updated = original.copyWithExtensions({
+        'existing': 'updated',
+        'new_key': 'new_value',
+      });
 
       expect(updated.extensions['existing'], equals('updated'));
       expect(updated.extensions['new_key'], equals('new_value'));

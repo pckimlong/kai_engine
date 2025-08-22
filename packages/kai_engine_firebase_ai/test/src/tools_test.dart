@@ -4,13 +4,12 @@ import 'package:kai_engine/kai_engine.dart';
 import 'package:kai_engine_firebase_ai/src/tools.dart';
 
 // Concrete implementation of FirebaseAiToolSchema for testing
-final class TestFirebaseAiToolSchema extends FirebaseAiToolSchema<FunctionCall, String> {
+final class TestFirebaseAiToolSchema
+    extends FirebaseAiToolSchema<FunctionCall, String> {
   TestFirebaseAiToolSchema()
     : super(
-        parser: (Map<String, Object?> json) => FunctionCall(
-          'testFirebaseTool',
-          Map<String, Object?>.from(json),
-        ),
+        parser: (Map<String, Object?> json) =>
+            FunctionCall('testFirebaseTool', Map<String, Object?>.from(json)),
         declaration: FunctionDeclaration(
           'testFirebaseTool',
           'A test Firebase tool',
@@ -41,7 +40,8 @@ final class TestFirebaseAiToolSchema extends FirebaseAiToolSchema<FunctionCall, 
 }
 
 // Failing tool for error testing
-final class FailingFirebaseAiToolSchema extends FirebaseAiToolSchema<FunctionCall, String> {
+final class FailingFirebaseAiToolSchema
+    extends FirebaseAiToolSchema<FunctionCall, String> {
   FailingFirebaseAiToolSchema()
     : super(
         parser: (Map<String, Object?> json) => FunctionCall(
@@ -51,9 +51,7 @@ final class FailingFirebaseAiToolSchema extends FirebaseAiToolSchema<FunctionCal
         declaration: FunctionDeclaration(
           'failingFirebaseTool',
           'A failing Firebase tool',
-          parameters: {
-            'query': Schema.string(),
-          },
+          parameters: {'query': Schema.string()},
         ),
       );
 
@@ -114,21 +112,24 @@ void main() {
       );
     });
 
-    test('toFunctionResponse converts FunctionCall to FunctionResponse for success', () async {
-      final functionCall = FunctionCall('testFirebaseTool', {
-        'query': 'test query',
-        'limit': 3,
-      });
+    test(
+      'toFunctionResponse converts FunctionCall to FunctionResponse for success',
+      () async {
+        final functionCall = FunctionCall('testFirebaseTool', {
+          'query': 'test query',
+          'limit': 3,
+        });
 
-      final response = await toolSchema.toFunctionResponse(functionCall);
+        final response = await toolSchema.toFunctionResponse(functionCall);
 
-      expect(response.name, equals('testFirebaseTool'));
-      expect(response.response, isA<Map<String, dynamic>>());
-      final responseData = response.response as Map<String, dynamic>;
-      expect(responseData['query'], equals('test query'));
-      expect(responseData['limit'], equals(3));
-      expect(responseData['result'], contains('test query'));
-    });
+        expect(response.name, equals('testFirebaseTool'));
+        expect(response.response, isA<Map<String, dynamic>>());
+        final responseData = response.response as Map<String, dynamic>;
+        expect(responseData['query'], equals('test query'));
+        expect(responseData['limit'], equals(3));
+        expect(responseData['result'], contains('test query'));
+      },
+    );
 
     test('toFunctionResponse handles execution failure', () async {
       final functionCall = FunctionCall('testFirebaseTool', {
@@ -180,10 +181,7 @@ void main() {
 
     test('executes handles successful tool execution', () async {
       final functionCalls = [
-        FunctionCall('testFirebaseTool', {
-          'query': 'test query',
-          'limit': 5,
-        }),
+        FunctionCall('testFirebaseTool', {'query': 'test query', 'limit': 5}),
       ];
 
       final responses = await toolSchemas.executes(functionCalls);
@@ -198,10 +196,7 @@ void main() {
 
     test('executes handles tool execution failure', () async {
       final functionCalls = [
-        FunctionCall('testFirebaseTool', {
-          'query': '',
-          'limit': 5,
-        }),
+        FunctionCall('testFirebaseTool', {'query': '', 'limit': 5}),
       ];
 
       final responses = await toolSchemas.executes(functionCalls);
@@ -215,16 +210,16 @@ void main() {
 
     test('executes throws KaiException for tool not found', () async {
       final functionCalls = [
-        FunctionCall('nonexistentTool', {
-          'query': 'test',
-        }),
+        FunctionCall('nonexistentTool', {'query': 'test'}),
       ];
 
       expect(
         () => toolSchemas.executes(functionCalls),
         throwsA(
           predicate(
-            (e) => e is KaiException && e.toString().contains('Tool not found: nonexistentTool'),
+            (e) =>
+                e is KaiException &&
+                e.toString().contains('Tool not found: nonexistentTool'),
           ),
         ),
       );
@@ -232,29 +227,25 @@ void main() {
 
     test('executes throws KaiException for unexpected tool failures', () async {
       final functionCalls = [
-        FunctionCall('failingFirebaseTool', {
-          'query': 'test',
-        }),
+        FunctionCall('failingFirebaseTool', {'query': 'test'}),
       ];
 
       expect(
         () => toolSchemas.executes(functionCalls),
         throwsA(
-          predicate((e) => e is KaiException && e.toString().contains('Tool execution failed')),
+          predicate(
+            (e) =>
+                e is KaiException &&
+                e.toString().contains('Tool execution failed'),
+          ),
         ),
       );
     });
 
     test('executes handles multiple tool calls', () async {
       final functionCalls = [
-        FunctionCall('testFirebaseTool', {
-          'query': 'first query',
-          'limit': 3,
-        }),
-        FunctionCall('testFirebaseTool', {
-          'query': 'second query',
-          'limit': 7,
-        }),
+        FunctionCall('testFirebaseTool', {'query': 'first query', 'limit': 3}),
+        FunctionCall('testFirebaseTool', {'query': 'second query', 'limit': 7}),
       ];
 
       final responses = await toolSchemas.executes(functionCalls);
@@ -276,14 +267,8 @@ void main() {
 
     test('executes handles mixed success and failure calls', () async {
       final functionCalls = [
-        FunctionCall('testFirebaseTool', {
-          'query': 'valid query',
-          'limit': 5,
-        }),
-        FunctionCall('testFirebaseTool', {
-          'query': '',
-          'limit': 3,
-        }),
+        FunctionCall('testFirebaseTool', {'query': 'valid query', 'limit': 5}),
+        FunctionCall('testFirebaseTool', {'query': '', 'limit': 3}),
       ];
 
       final responses = await toolSchemas.executes(functionCalls);

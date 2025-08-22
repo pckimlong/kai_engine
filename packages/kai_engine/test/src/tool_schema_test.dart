@@ -9,9 +9,11 @@ part 'tool_schema_test.g.dart';
 sealed class TestToolCall with _$TestToolCall {
   const TestToolCall._();
 
-  const factory TestToolCall({required String query, @Default(10) int limit}) = _TestToolCall;
+  const factory TestToolCall({required String query, @Default(10) int limit}) =
+      _TestToolCall;
 
-  factory TestToolCall.fromJson(Map<String, dynamic> json) => _$TestToolCallFromJson(json);
+  factory TestToolCall.fromJson(Map<String, dynamic> json) =>
+      _$TestToolCallFromJson(json);
 }
 
 class TestToolDeclaration {
@@ -26,7 +28,8 @@ class TestToolDeclaration {
   });
 }
 
-final class TestToolSchema extends ToolSchema<TestToolDeclaration, TestToolCall, String> {
+final class TestToolSchema
+    extends ToolSchema<TestToolDeclaration, TestToolCall, String> {
   TestToolSchema()
     : super(
         name: 'test_tool',
@@ -53,7 +56,8 @@ final class TestToolSchema extends ToolSchema<TestToolDeclaration, TestToolCall,
   }
 }
 
-final class TestFailingToolSchema extends ToolSchema<TestToolDeclaration, TestToolCall, String> {
+final class TestFailingToolSchema
+    extends ToolSchema<TestToolDeclaration, TestToolCall, String> {
   TestFailingToolSchema()
     : super(
         name: 'failing_tool',

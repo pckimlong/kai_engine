@@ -51,7 +51,9 @@ void main() {
 
       test('should create clean Content from system message', () {
         // Arrange
-        final originalMessage = CoreMessage.system('You are a helpful assistant.');
+        final originalMessage = CoreMessage.system(
+          'You are a helpful assistant.',
+        );
 
         // Act
         final content = adapter.fromCoreMessage(originalMessage);
@@ -97,7 +99,10 @@ void main() {
         // Assert
         expect(message.type, equals(CoreMessageType.user));
         expect(message.content, equals('Hello from user'));
-        expect(message.messageId, isNotEmpty); // New messages get auto-generated ID
+        expect(
+          message.messageId,
+          isNotEmpty,
+        ); // New messages get auto-generated ID
       });
 
       test('should handle model role correctly', () {
@@ -133,7 +138,11 @@ void main() {
 
           final content = adapter.fromCoreMessage(message);
 
-          expect(content.role, equals(expectedRole), reason: 'Failed for type $messageType');
+          expect(
+            content.role,
+            equals(expectedRole),
+            reason: 'Failed for type $messageType',
+          );
         }
       });
 
@@ -152,7 +161,11 @@ void main() {
 
           final message = adapter.toCoreMessage(content);
 
-          expect(message.type, equals(expectedType), reason: 'Failed for role $role');
+          expect(
+            message.type,
+            equals(expectedType),
+            reason: 'Failed for role $role',
+          );
         }
       });
     });
@@ -165,7 +178,10 @@ void main() {
           'param2': 42,
         }, id: 'call-123');
 
-        final content = Content('model', [TextPart('I will call a function'), functionCall]);
+        final content = Content('model', [
+          TextPart('I will call a function'),
+          functionCall,
+        ]);
 
         // Act - Convert to CoreMessage and back to Content
         final message = adapter.toCoreMessage(content);
@@ -182,12 +198,16 @@ void main() {
         final textParts = reconstructedContent.parts.whereType<TextPart>();
         expect(textParts.first.text, equals('I will call a function'));
 
-        final functionCalls = reconstructedContent.parts.whereType<FunctionCall>();
+        final functionCalls = reconstructedContent.parts
+            .whereType<FunctionCall>();
         expect(functionCalls, hasLength(1));
 
         final reconstructedCall = functionCalls.first;
         expect(reconstructedCall.name, equals('test_function'));
-        expect(reconstructedCall.args, equals({'param1': 'value1', 'param2': 42}));
+        expect(
+          reconstructedCall.args,
+          equals({'param1': 'value1', 'param2': 42}),
+        );
         expect(reconstructedCall.id, equals('call-123'));
       });
 
@@ -215,7 +235,8 @@ void main() {
         expect(reconstructedContent.role, equals('function'));
         expect(reconstructedContent.parts, hasLength(2));
 
-        final responses = reconstructedContent.parts.whereType<FunctionResponse>();
+        final responses = reconstructedContent.parts
+            .whereType<FunctionResponse>();
         expect(responses, hasLength(1));
 
         final reconstructedResponse = responses.first;
@@ -230,38 +251,45 @@ void main() {
         expect(reconstructedResponse.id, equals('resp-456'));
       });
 
-      test('should handle multiple function calls and responses via JSON storage', () {
-        // Arrange
-        final content = Content('model', [
-          TextPart('Processing multiple functions'),
-          FunctionCall('func1', {'a': 1}, id: 'call1'),
-          FunctionCall('func2', {'b': 2}), // No ID
-          FunctionResponse('func1', {'result': 'done'}, id: 'resp1'),
-        ]);
+      test(
+        'should handle multiple function calls and responses via JSON storage',
+        () {
+          // Arrange
+          final content = Content('model', [
+            TextPart('Processing multiple functions'),
+            FunctionCall('func1', {'a': 1}, id: 'call1'),
+            FunctionCall('func2', {'b': 2}), // No ID
+            FunctionResponse('func1', {'result': 'done'}, id: 'resp1'),
+          ]);
 
-        // Act - Convert to CoreMessage and back to Content
-        final message = adapter.toCoreMessage(content);
-        final reconstructedContent = adapter.fromCoreMessage(message);
+          // Act - Convert to CoreMessage and back to Content
+          final message = adapter.toCoreMessage(content);
+          final reconstructedContent = adapter.fromCoreMessage(message);
 
-        // Assert
-        expect(message.content, equals('Processing multiple functions'));
-        expect(message.extensions.containsKey('_originalContent'), isTrue);
+          // Assert
+          expect(message.content, equals('Processing multiple functions'));
+          expect(message.extensions.containsKey('_originalContent'), isTrue);
 
-        // Check reconstructed content preserves all parts
-        expect(reconstructedContent.parts, hasLength(4));
+          // Check reconstructed content preserves all parts
+          expect(reconstructedContent.parts, hasLength(4));
 
-        final calls = reconstructedContent.parts.whereType<FunctionCall>().toList();
-        expect(calls, hasLength(2));
-        expect(calls[0].name, equals('func1'));
-        expect(calls[0].id, equals('call1'));
-        expect(calls[1].name, equals('func2'));
-        expect(calls[1].id, isNull);
+          final calls = reconstructedContent.parts
+              .whereType<FunctionCall>()
+              .toList();
+          expect(calls, hasLength(2));
+          expect(calls[0].name, equals('func1'));
+          expect(calls[0].id, equals('call1'));
+          expect(calls[1].name, equals('func2'));
+          expect(calls[1].id, isNull);
 
-        final responses = reconstructedContent.parts.whereType<FunctionResponse>().toList();
-        expect(responses, hasLength(1));
-        expect(responses[0].name, equals('func1'));
-        expect(responses[0].id, equals('resp1'));
-      });
+          final responses = reconstructedContent.parts
+              .whereType<FunctionResponse>()
+              .toList();
+          expect(responses, hasLength(1));
+          expect(responses[0].name, equals('func1'));
+          expect(responses[0].id, equals('resp1'));
+        },
+      );
     });
 
     group('Edge cases', () {
@@ -281,7 +309,10 @@ void main() {
         // Assert
         expect(convertedMessage.type, equals(CoreMessageType.user));
         expect(convertedMessage.content, equals(''));
-        expect(convertedMessage.messageId, isNotEmpty); // New messages get auto-generated ID
+        expect(
+          convertedMessage.messageId,
+          isNotEmpty,
+        ); // New messages get auto-generated ID
       });
 
       test('should handle whitespace-only content', () {
@@ -300,7 +331,10 @@ void main() {
         // Assert
         expect(convertedMessage.type, equals(CoreMessageType.user));
         expect(convertedMessage.content, equals('')); // Whitespace gets trimmed
-        expect(convertedMessage.messageId, isNotEmpty); // New messages get auto-generated ID
+        expect(
+          convertedMessage.messageId,
+          isNotEmpty,
+        ); // New messages get auto-generated ID
       });
 
       test('should handle multiple text parts', () {
@@ -343,7 +377,9 @@ void main() {
         // Assert - Should combine all text parts normally
         expect(
           message.content,
-          equals('Regular content\nSpecial characters: __METADATA__invalid-json{'),
+          equals(
+            'Regular content\nSpecial characters: __METADATA__invalid-json{',
+          ),
         );
         expect(message.type, equals(CoreMessageType.user));
       });
@@ -393,7 +429,10 @@ void main() {
         final reconstructedContent = adapter.fromCoreMessage(message);
 
         // Assert - Text should be combined, entire structure preserved via JSON
-        expect(message.content, equals('Starting response\nMiddle text\nFinal text'));
+        expect(
+          message.content,
+          equals('Starting response\nMiddle text\nFinal text'),
+        );
         expect(message.extensions.containsKey('_originalContent'), isTrue);
         expect(message.type, equals(CoreMessageType.ai));
 
@@ -403,7 +442,10 @@ void main() {
 
         // Check that all parts are preserved in order
         expect(reconstructedContent.parts[0], isA<TextPart>());
-        expect((reconstructedContent.parts[0] as TextPart).text, equals('Starting response'));
+        expect(
+          (reconstructedContent.parts[0] as TextPart).text,
+          equals('Starting response'),
+        );
 
         expect(reconstructedContent.parts[1], isA<FunctionCall>());
         final call = reconstructedContent.parts[1] as FunctionCall;
@@ -411,7 +453,10 @@ void main() {
         expect(call.args, equals({'x': 10, 'y': 20}));
 
         expect(reconstructedContent.parts[2], isA<TextPart>());
-        expect((reconstructedContent.parts[2] as TextPart).text, equals('Middle text'));
+        expect(
+          (reconstructedContent.parts[2] as TextPart).text,
+          equals('Middle text'),
+        );
 
         expect(reconstructedContent.parts[3], isA<FunctionResponse>());
         final response = reconstructedContent.parts[3] as FunctionResponse;
@@ -419,7 +464,10 @@ void main() {
         expect(response.response, equals({'result': 30}));
 
         expect(reconstructedContent.parts[4], isA<TextPart>());
-        expect((reconstructedContent.parts[4] as TextPart).text, equals('Final text'));
+        expect(
+          (reconstructedContent.parts[4] as TextPart).text,
+          equals('Final text'),
+        );
       });
 
       test('should ensure Content is ready for AI model consumption', () {
@@ -456,28 +504,31 @@ void main() {
         }
       });
 
-      test('should correctly handle CoreMessage without original content (fallback)', () {
-        // Arrange - Create a CoreMessage without the _originalContent extension (legacy case)
-        final messageWithoutOriginal = CoreMessage(
-          messageId: '',
-          type: CoreMessageType.ai,
-          content: 'I will call some functions',
-          extensions: {'someOtherKey': 'someValue'},
-          timestamp: DateTime.now(),
-        );
+      test(
+        'should correctly handle CoreMessage without original content (fallback)',
+        () {
+          // Arrange - Create a CoreMessage without the _originalContent extension (legacy case)
+          final messageWithoutOriginal = CoreMessage(
+            messageId: '',
+            type: CoreMessageType.ai,
+            content: 'I will call some functions',
+            extensions: {'someOtherKey': 'someValue'},
+            timestamp: DateTime.now(),
+          );
 
-        // Act
-        final content = adapter.fromCoreMessage(messageWithoutOriginal);
+          // Act
+          final content = adapter.fromCoreMessage(messageWithoutOriginal);
 
-        // Assert - Should fall back to simple text content
-        expect(content.role, equals('model'));
-        expect(content.parts.length, equals(1)); // Just the text part
+          // Assert - Should fall back to simple text content
+          expect(content.role, equals('model'));
+          expect(content.parts.length, equals(1)); // Just the text part
 
-        // Check text part
-        final textParts = content.parts.whereType<TextPart>();
-        expect(textParts, hasLength(1));
-        expect(textParts.first.text, equals('I will call some functions'));
-      });
+          // Check text part
+          final textParts = content.parts.whereType<TextPart>();
+          expect(textParts, hasLength(1));
+          expect(textParts.first.text, equals('I will call some functions'));
+        },
+      );
 
       test(
         'should handle perfect round-trip with all accessible part types using JSON storage',
@@ -490,7 +541,11 @@ void main() {
               'results': ['sunny', 'warm'],
             }, id: 'search-1'),
             TextPart('Based on the search results'),
-            InlineDataPart('image/png', Uint8List.fromList([137, 80, 78, 71]), willContinue: false),
+            InlineDataPart(
+              'image/png',
+              Uint8List.fromList([137, 80, 78, 71]),
+              willContinue: false,
+            ),
             FileData('image/jpeg', 'gs://bucket/image.jpg'),
           ]);
 
@@ -503,13 +558,17 @@ void main() {
           expect(reconstructedContent.parts.length, equals(6));
 
           // Check text parts are preserved
-          final textParts = reconstructedContent.parts.whereType<TextPart>().toList();
+          final textParts = reconstructedContent.parts
+              .whereType<TextPart>()
+              .toList();
           expect(textParts, hasLength(2));
           expect(textParts[0].text, equals('Processing your request'));
           expect(textParts[1].text, equals('Based on the search results'));
 
           // Check function call is preserved
-          final functionCalls = reconstructedContent.parts.whereType<FunctionCall>().toList();
+          final functionCalls = reconstructedContent.parts
+              .whereType<FunctionCall>()
+              .toList();
           expect(functionCalls, hasLength(1));
           final call = functionCalls.first;
           expect(call.name, equals('search'));
@@ -517,7 +576,9 @@ void main() {
           expect(call.id, equals('search-1'));
 
           // Check function response is preserved
-          final responses = reconstructedContent.parts.whereType<FunctionResponse>().toList();
+          final responses = reconstructedContent.parts
+              .whereType<FunctionResponse>()
+              .toList();
           expect(responses, hasLength(1));
           final response = responses.first;
           expect(response.name, equals('search'));
@@ -530,15 +591,22 @@ void main() {
           expect(response.id, equals('search-1'));
 
           // Check inline data is preserved
-          final inlineDataParts = reconstructedContent.parts.whereType<InlineDataPart>().toList();
+          final inlineDataParts = reconstructedContent.parts
+              .whereType<InlineDataPart>()
+              .toList();
           expect(inlineDataParts, hasLength(1));
           final inlineData = inlineDataParts.first;
           expect(inlineData.mimeType, equals('image/png'));
-          expect(inlineData.bytes, equals(Uint8List.fromList([137, 80, 78, 71])));
+          expect(
+            inlineData.bytes,
+            equals(Uint8List.fromList([137, 80, 78, 71])),
+          );
           expect(inlineData.willContinue, equals(false));
 
           // Check file data is preserved
-          final fileDataParts = reconstructedContent.parts.whereType<FileData>().toList();
+          final fileDataParts = reconstructedContent.parts
+              .whereType<FileData>()
+              .toList();
           expect(fileDataParts, hasLength(1));
           final fileData = fileDataParts.first;
           expect(fileData.mimeType, equals('image/jpeg'));
