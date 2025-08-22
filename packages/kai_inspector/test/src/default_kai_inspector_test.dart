@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:kai_engine/kai_engine.dart';
+import 'package:kai_inspector/kai_inspector.dart';
 import 'package:test/test.dart';
 
 void main() {

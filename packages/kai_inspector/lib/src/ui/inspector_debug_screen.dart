@@ -3,15 +3,16 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'package:kai_engine/src/inspector/kai_inspector.dart';
 import 'package:kai_engine/src/inspector/models/timeline_session.dart';
+
 import 'debug_data_adapter.dart';
+import 'message_input_debug_screen.dart';
 import 'session_metrics_calculator.dart';
-import 'widgets/session_dashboard_tab.dart';
-import 'widgets/enhanced_timeline_tab.dart';
-import 'widgets/token_analytics_tab.dart';
 import 'widgets/advanced_logs_tab.dart';
+import 'widgets/enhanced_timeline_tab.dart';
+import 'widgets/session_dashboard_tab.dart';
+import 'widgets/token_analytics_tab.dart';
 
 /// Comprehensive debug screen using the new inspector system
 /// Replaces the old MessageDebugScreen with session-based debugging
@@ -150,7 +151,12 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Debug Session'),
+        title: Text(
+          'Debug Session',
+          style: TextStyle(
+            fontSize: MediaQuery.of(context).size.width < 600 ? 16 : 20,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -180,38 +186,95 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
             ],
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabs: const [
-            Tab(text: 'Session Dashboard'),
-            Tab(text: 'Timeline Analysis'),
-            Tab(text: 'Token Analytics'),
-            Tab(text: 'Logs & Events'),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width,
+            ),
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              indicatorSize: TabBarIndicatorSize.tab,
+              tabs: [
+                Tab(
+                  child: Text(
+                    'Dashboard',
+                    style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
+                    ),
+                  ),
+                ),
+                Tab(
+                  child: Text(
+                    'Timeline',
+                    style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
+                    ),
+                  ),
+                ),
+                Tab(
+                  child: Text(
+                    'Tokens',
+                    style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
+                    ),
+                  ),
+                ),
+                Tab(
+                  child: Text(
+                    'Logs',
+                    style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          SessionDashboardTab(
-            session: _session!,
-            sessionOverview: _sessionOverview!,
-            sessionMetrics: _sessionMetrics!,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).scaffoldBackgroundColor,
+              Theme.of(context).scaffoldBackgroundColor.withAlpha(240),
+            ],
           ),
-          EnhancedTimelineTab(
-            session: _session!,
-            sessionOverview: _sessionOverview!,
-          ),
-          TokenAnalyticsTab(
-            session: _session!,
-            sessionMetrics: _sessionMetrics!,
-          ),
-          AdvancedLogsTab(
-            session: _session!,
-            sessionOverview: _sessionOverview!,
-          ),
-        ],
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return TabBarView(
+              controller: _tabController,
+              children: [
+                SessionDashboardTab(
+                  session: _session!,
+                  sessionOverview: _sessionOverview!,
+                  sessionMetrics: _sessionMetrics!,
+                ),
+                EnhancedTimelineTab(
+                  session: _session!,
+                  sessionOverview: _sessionOverview!,
+                  onNavigateToMessage: _navigateToMessage,
+                ),
+                TokenAnalyticsTab(
+                  session: _session!,
+                  sessionMetrics: _sessionMetrics!,
+                  isSmallScreen: constraints.maxWidth < 600,
+                ),
+                AdvancedLogsTab(
+                  session: _session!,
+                  sessionOverview: _sessionOverview!,
+                  isSmallScreen: constraints.maxWidth < 600,
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -225,6 +288,19 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
         _exportSessionData(); // Use the existing export method
         break;
     }
+  }
+
+  void _navigateToMessage(String sessionId, String messageId, String? userInput) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => MessageInputDebugScreen(
+          sessionId: sessionId,
+          messageId: messageId,
+          inspector: widget.inspector,
+          userInput: userInput,
+        ),
+      ),
+    );
   }
 
   void _exportSessionData() {
@@ -254,7 +330,6 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
       );
     }
   }
-
 
   String _generateSessionSummary() {
     if (_session == null || _sessionOverview == null || _sessionMetrics == null) {
@@ -343,7 +418,7 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
       buffer.writeln('Message ${i + 1}:');
       buffer.writeln(
           '  Input: ${timeline.userMessage.length > 100 ? timeline.userMessage.substring(0, 100) + '...' : timeline.userMessage}');
-      
+
       // Show AI response if available
       if (timeline.aiResponse != null) {
         buffer.writeln(
@@ -351,7 +426,7 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
       } else {
         buffer.writeln('  Response: Not available');
       }
-      
+
       buffer.writeln('  Duration: ${timelineData.duration?.inMilliseconds ?? 'N/A'}ms');
       buffer.writeln('  Tokens: ${timelineData.totalTokens}');
       buffer.writeln('  Phases: ${timelineData.phaseCount}');

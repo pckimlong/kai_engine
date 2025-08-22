@@ -156,13 +156,9 @@ abstract base class ChatControllerBase<TEntity> {
 
       // Extract AI response text from the generation result
       final aiResponse = generationResult.displayMessage.content;
-      
-      await _inspector.endTimeline(
-        sessionId, 
-        timelineId, 
-        aiResponse: aiResponse,
-      );
 
+      await _inspector.endTimeline(sessionId, timelineId, aiResponse: aiResponse);
+      await _inspector.endSession(sessionId);
       final generationState = GenerationState<GenerationResult>.complete(generationResult);
       _generationStateController.add(generationState);
       return _mapGenerationState(generationState);

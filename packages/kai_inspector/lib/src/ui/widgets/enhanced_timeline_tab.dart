@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
-
 import 'package:kai_engine/src/inspector/models/timeline_session.dart';
 import 'package:kai_engine/src/inspector/models/timeline_types.dart';
+
 import '../debug_data_adapter.dart';
 
 /// Enhanced timeline visualization with mobile-first responsive design
 class EnhancedTimelineTab extends StatefulWidget {
   final TimelineSession session;
   final SessionOverviewData sessionOverview;
+  final Function(String sessionId, String messageId, String? userInput)? onNavigateToMessage;
 
   const EnhancedTimelineTab({
     super.key,
     required this.session,
     required this.sessionOverview,
+    this.onNavigateToMessage,
   });
 
   @override
@@ -50,21 +52,25 @@ class _EnhancedTimelineTabState extends State<EnhancedTimelineTab> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       itemCount: timelines.length,
       itemBuilder: (context, index) {
         final timeline = timelines[index];
         final isExpanded = _expandedTimelineIndex == index;
-        
-        return _TimelineCard(
-          timeline: timeline,
-          index: index,
-          isExpanded: isExpanded,
-          onToggle: () {
-            setState(() {
-              _expandedTimelineIndex = isExpanded ? null : index;
-            });
-          },
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _TimelineCard(
+            timeline: timeline,
+            index: index,
+            isExpanded: isExpanded,
+            onToggle: () {
+              setState(() {
+                _expandedTimelineIndex = isExpanded ? null : index;
+              });
+            },
+            onNavigateToMessage: widget.onNavigateToMessage,
+          ),
         );
       },
     );
@@ -76,81 +82,165 @@ class _TimelineCard extends StatelessWidget {
   final int index;
   final bool isExpanded;
   final VoidCallback onToggle;
+  final Function(String sessionId, String messageId, String? userInput)? onNavigateToMessage;
 
   const _TimelineCard({
     required this.timeline,
     required this.index,
     required this.isExpanded,
     required this.onToggle,
+    this.onNavigateToMessage,
   });
 
   @override
   Widget build(BuildContext context) {
     final timelineData = DebugDataAdapter.convertTimelineOverview(timeline);
-    
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.zero,
+      elevation: isExpanded ? 4 : 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: _getStatusColor(timelineData.status).withAlpha(51),
+          width: 1,
+        ),
+      ),
       child: Column(
         children: [
           // Header (always visible)
           InkWell(
             onTap: onToggle,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-            child: Padding(
+            borderRadius: BorderRadius.vertical(
+              top: const Radius.circular(12),
+              bottom: Radius.circular(isExpanded ? 0 : 12),
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    _getStatusColor(timelineData.status).withAlpha(13),
+                    Colors.transparent,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.vertical(
+                  top: const Radius.circular(12),
+                  bottom: Radius.circular(isExpanded ? 0 : 12),
+                ),
+              ),
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   Row(
                     children: [
                       // Message number with status color
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor: _getStatusColor(timelineData.status),
-                        child: Text(
-                          '${index + 1}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _getStatusColor(timelineData.status),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _getStatusColor(timelineData.status).withAlpha(77),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 16),
                       // Message preview
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _truncateText(timeline.userMessage, 50),
+                              _truncateText(timeline.userMessage, 60),
                               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.2,
+                                  ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _getStatusText(timelineData.status),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: _getStatusColor(timelineData.status),
-                                fontWeight: FontWeight.w500,
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(timelineData.status).withAlpha(26),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _getStatusColor(timelineData.status).withAlpha(51),
+                                ),
+                              ),
+                              child: Text(
+                                _getStatusText(timelineData.status),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: _getStatusColor(timelineData.status),
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      // Expand/collapse icon
-                      Icon(
-                        isExpanded ? Icons.expand_less : Icons.expand_more,
-                        color: Colors.grey[600],
+                      const SizedBox(width: 12),
+                      // Action buttons
+                      Row(
+                        children: [
+                          // Navigation button to view message details
+                          if (onNavigateToMessage != null)
+                            IconButton(
+                              icon: Icon(
+                                Icons.visibility,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              onPressed: () => onNavigateToMessage!(
+                                timeline.id,
+                                timeline.id,
+                                timeline.userMessage,
+                              ),
+                              tooltip: 'View Message Details',
+                              iconSize: 20,
+                              padding: const EdgeInsets.all(8),
+                              constraints: const BoxConstraints(),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Theme.of(context).primaryColor.withAlpha(13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          const SizedBox(width: 4),
+                          // Expand/collapse icon
+                          Icon(
+                            isExpanded ? Icons.expand_less : Icons.expand_more,
+                            color: Colors.grey[600],
+                            size: 20,
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   // Quick stats row
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       _InfoChip(
                         icon: Icons.schedule,
@@ -159,26 +249,22 @@ class _TimelineCard extends StatelessWidget {
                             : 'Running',
                         color: Colors.blue,
                       ),
-                      const SizedBox(width: 8),
                       _InfoChip(
                         icon: Icons.token,
                         label: '${timelineData.totalTokens}',
                         color: Colors.green,
                       ),
-                      const SizedBox(width: 8),
                       _InfoChip(
                         icon: Icons.layers,
                         label: '${timelineData.phaseCount}',
                         color: Colors.purple,
                       ),
-                      if (timelineData.errorCount > 0) ...[
-                        const SizedBox(width: 8),
+                      if (timelineData.errorCount > 0)
                         _InfoChip(
                           icon: Icons.error_outline,
                           label: '${timelineData.errorCount}',
                           color: Colors.red,
                         ),
-                      ],
                     ],
                   ),
                 ],
@@ -187,10 +273,15 @@ class _TimelineCard extends StatelessWidget {
           ),
           // Expanded content
           if (isExpanded) ...[
-            const Divider(height: 1),
-            _ExpandedContent(
-              timeline: timeline,
-              timelineData: timelineData,
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+              ),
+              child: _ExpandedContent(
+                timeline: timeline,
+                timelineData: timelineData,
+              ),
             ),
           ],
         ],
@@ -240,11 +331,21 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withAlpha(26),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withAlpha(77)),
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withAlpha(51),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withAlpha(13),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -252,15 +353,16 @@ class _InfoChip extends StatelessWidget {
           Icon(
             icon,
             size: 14,
-            color: color,
+            color: color.withAlpha(204),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
-              color: color,
-              fontWeight: FontWeight.w500,
+              fontSize: 11,
+              color: color.withAlpha(204),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
             ),
           ),
         ],
@@ -295,8 +397,7 @@ class _ExpandedContent extends StatelessWidget {
           _MetricsSection(timelineData: timelineData),
           const SizedBox(height: 16),
           // Phases
-          if (timelineData.phases.isNotEmpty)
-            _PhasesSection(phases: timelineData.phases),
+          if (timelineData.phases.isNotEmpty) _PhasesSection(phases: timelineData.phases),
         ],
       ),
     );
@@ -356,22 +457,17 @@ class _MessageBubbleState extends State<_MessageBubble> {
   @override
   Widget build(BuildContext context) {
     final isLongMessage = widget.message.length > 100;
-    final displayMessage = isLongMessage && !_isExpanded
-        ? '${widget.message.substring(0, 100)}...'
-        : widget.message;
+    final displayMessage =
+        isLongMessage && !_isExpanded ? '${widget.message.substring(0, 100)}...' : widget.message;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: widget.isUser 
-            ? Colors.blue[50] 
-            : Colors.grey[50],
+        color: widget.isUser ? Colors.blue[50] : Colors.grey[50],
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: widget.isUser 
-              ? Colors.blue[200]! 
-              : Colors.grey[300]!,
+          color: widget.isUser ? Colors.blue[200]! : Colors.grey[300]!,
         ),
       ),
       child: Column(
@@ -426,8 +522,8 @@ class _MetricsSection extends StatelessWidget {
         Text(
           'Performance Metrics',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+                fontWeight: FontWeight.bold,
+              ),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -540,8 +636,8 @@ class _PhasesSection extends StatelessWidget {
         Text(
           'Execution Phases',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+                fontWeight: FontWeight.bold,
+              ),
         ),
         const SizedBox(height: 8),
         ListView.separated(

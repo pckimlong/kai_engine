@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-
 import 'package:kai_engine/src/inspector/models/timeline_session.dart';
+
 import '../session_metrics_calculator.dart';
 import 'shared_widgets.dart';
 
@@ -10,45 +10,131 @@ import 'shared_widgets.dart';
 class TokenAnalyticsTab extends StatelessWidget {
   final TimelineSession session;
   final SessionMetrics sessionMetrics;
+  final bool isSmallScreen;
 
   const TokenAnalyticsTab({
     super.key,
     required this.session,
     required this.sessionMetrics,
+    this.isSmallScreen = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final tokenUsageTrend = SessionMetricsCalculator.calculateTokenUsageTrend(session);
     final phaseComparison = SessionMetricsCalculator.calculatePhasePerformanceComparison(session);
-    final costAnalysis = SessionMetricsCalculator.calculateCostAnalysis(session, costPerToken: 0.0001);
+    final costAnalysis =
+        SessionMetricsCalculator.calculateCostAnalysis(session, costPerToken: 0.0001);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _TokenOverviewCards(sessionMetrics: sessionMetrics),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _TokenUsageTrendChart(tokenUsageTrend: tokenUsageTrend),
+          // Header section
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).primaryColor.withAlpha(13),
+                  Colors.transparent,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _TokenEfficiencyInsights(
-                  sessionMetrics: sessionMetrics,
-                  phaseComparison: phaseComparison,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context).primaryColor.withAlpha(26),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.analytics,
+                  size: 28,
+                  color: Theme.of(context).primaryColor,
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Token Analytics',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                      ),
+                      Text(
+                        'Detailed token usage and cost analysis',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          _PhaseTokenAnalysis(phaseComparison: phaseComparison),
-          const SizedBox(height: 16),
-          _CostAnalysisSection(costAnalysis: costAnalysis),
+          const SizedBox(height: 20),
+          _TokenOverviewCards(
+            sessionMetrics: sessionMetrics,
+            isSmallScreen: isSmallScreen,
+          ),
+          const SizedBox(height: 20),
+          if (isSmallScreen) ...[
+            // Stack vertically on small screens
+            Container(
+              width: double.infinity,
+              child: _TokenUsageTrendChart(tokenUsageTrend: tokenUsageTrend),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              width: double.infinity,
+              child: _TokenEfficiencyInsights(
+                sessionMetrics: sessionMetrics,
+                phaseComparison: phaseComparison,
+              ),
+            ),
+          ] else ...[
+            // Use Row layout on larger screens
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _TokenUsageTrendChart(tokenUsageTrend: tokenUsageTrend),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: _TokenEfficiencyInsights(
+                    sessionMetrics: sessionMetrics,
+                    phaseComparison: phaseComparison,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: _PhaseTokenAnalysis(phaseComparison: phaseComparison),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            width: double.infinity,
+            child: _CostAnalysisSection(
+              costAnalysis: costAnalysis,
+              isSmallScreen: isSmallScreen,
+            ),
+          ),
         ],
       ),
     );
@@ -57,18 +143,23 @@ class TokenAnalyticsTab extends StatelessWidget {
 
 class _TokenOverviewCards extends StatelessWidget {
   final SessionMetrics sessionMetrics;
+  final bool isSmallScreen;
 
-  const _TokenOverviewCards({required this.sessionMetrics});
+  const _TokenOverviewCards({
+    required this.sessionMetrics,
+    this.isSmallScreen = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final tokens = sessionMetrics.tokenEconomics;
     final performance = sessionMetrics.performanceMetrics;
 
-    return Row(
-      children: [
-        Expanded(
-          child: Card(
+    if (isSmallScreen) {
+      // Stack vertically on small screens
+      return Column(
+        children: [
+          Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -81,23 +172,23 @@ class _TokenOverviewCards extends StatelessWidget {
                       Text(
                         'Token Usage',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _buildTokenStat('Total Tokens', '${_formatNumber(tokens.totalTokensUsed)}', Colors.green),
+                  _buildTokenStat(
+                      'Total Tokens', '${_formatNumber(tokens.totalTokensUsed)}', Colors.green),
                   _buildTokenStat('Avg/Message', '${tokens.averageTokensPerMessage}', Colors.blue),
-                  _buildTokenStat('Min/Max', '${tokens.minTokensPerMessage}/${tokens.maxTokensPerMessage}', Colors.purple),
+                  _buildTokenStat('Min/Max',
+                      '${tokens.minTokensPerMessage}/${tokens.maxTokensPerMessage}', Colors.purple),
                 ],
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Card(
+          const SizedBox(height: 16),
+          Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -110,22 +201,94 @@ class _TokenOverviewCards extends StatelessWidget {
                       Text(
                         'Performance',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   _buildTokenStat('Tokens/Min', '${tokens.tokensPerMinute}', Colors.orange),
-                  _buildTokenStat('Efficiency', '${tokens.efficiency.toStringAsFixed(3)}/ms', Colors.red),
-                  _buildTokenStat('Avg Response', '${performance.averageResponseTimeMs}ms', Colors.blue),
+                  _buildTokenStat(
+                      'Efficiency', '${tokens.efficiency.toStringAsFixed(3)}/ms', Colors.red),
+                  _buildTokenStat(
+                      'Avg Response', '${performance.averageResponseTimeMs}ms', Colors.blue),
                 ],
               ),
             ),
           ),
-        ),
-      ],
-    );
+        ],
+      );
+    } else {
+      // Use Row layout on larger screens
+      return Row(
+        children: [
+          Expanded(
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.token, color: Colors.green, size: 24),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Token Usage',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTokenStat(
+                        'Total Tokens', '${_formatNumber(tokens.totalTokensUsed)}', Colors.green),
+                    _buildTokenStat(
+                        'Avg/Message', '${tokens.averageTokensPerMessage}', Colors.blue),
+                    _buildTokenStat(
+                        'Min/Max',
+                        '${tokens.minTokensPerMessage}/${tokens.maxTokensPerMessage}',
+                        Colors.purple),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.speed, color: Colors.orange, size: 24),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Performance',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTokenStat('Tokens/Min', '${tokens.tokensPerMinute}', Colors.orange),
+                    _buildTokenStat(
+                        'Efficiency', '${tokens.efficiency.toStringAsFixed(3)}/ms', Colors.red),
+                    _buildTokenStat(
+                        'Avg Response', '${performance.averageResponseTimeMs}ms', Colors.blue),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
   }
 
   Widget _buildTokenStat(String label, String value, Color color) {
@@ -171,33 +334,59 @@ class _TokenUsageTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Token Usage Trend',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withAlpha(51)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(13),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.show_chart, size: 20, color: Theme.of(context).primaryColor),
+              const SizedBox(width: 8),
+              Text(
+                'Token Usage Trend',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).primaryColor,
+                    ),
               ),
-            ),
-            const SizedBox(height: 12),
-            if (tokenUsageTrend.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text('No token usage data available'),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (tokenUsageTrend.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    Icon(Icons.data_usage, size: 48, color: Colors.grey),
+                    SizedBox(height: 12),
+                    Text(
+                      'No token usage data available',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
                 ),
-              )
-            else
-              SizedBox(
-                height: 200,
-                child: _TokenTrendChart(points: tokenUsageTrend),
               ),
-          ],
-        ),
+            )
+          else
+            SizedBox(
+              height: 200,
+              child: _TokenTrendChart(points: tokenUsageTrend),
+            ),
+        ],
       ),
     );
   }
@@ -237,8 +426,7 @@ class _TokenTrendPainter extends CustomPainter {
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 
-    final fillPaint = Paint()
-      ..style = PaintingStyle.fill;
+    final fillPaint = Paint()..style = PaintingStyle.fill;
 
     // Draw cumulative line
     paint.color = Colors.blue;
@@ -257,12 +445,12 @@ class _TokenTrendPainter extends CustomPainter {
     // Draw individual message bars
     fillPaint.color = Colors.green.withAlpha(128);
     final barWidth = size.width / points.length * 0.6;
-    
+
     for (int i = 0; i < points.length; i++) {
       final x = (i / (points.length - 1)) * size.width - barWidth / 2;
       final barHeight = (points[i].timelineTokens / maxTimelineTokens) * size.height * 0.3;
       final y = size.height - barHeight;
-      
+
       canvas.drawRect(
         Rect.fromLTWH(x, y, barWidth, barHeight),
         fillPaint,
@@ -295,25 +483,52 @@ class _TokenEfficiencyInsights extends StatelessWidget {
   Widget build(BuildContext context) {
     final insights = _generateEfficiencyInsights();
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Efficiency Insights',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 200), // Match the height of the trend chart
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withAlpha(51)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(13),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb, size: 20, color: Theme.of(context).primaryColor),
+              const SizedBox(width: 8),
+              Text(
+                'Efficiency Insights',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).primaryColor,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...insights.map((insight) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: _EfficiencyInsightItem(insight: insight),
+                      )),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            ...insights.map((insight) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: _EfficiencyInsightItem(insight: insight),
-            )),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -354,10 +569,8 @@ class _TokenEfficiencyInsights extends StatelessWidget {
     }
 
     // Phase efficiency
-    final mostExpensivePhase = phaseComparison.isNotEmpty 
-        ? phaseComparison.first
-        : null;
-    
+    final mostExpensivePhase = phaseComparison.isNotEmpty ? phaseComparison.first : null;
+
     if (mostExpensivePhase != null && mostExpensivePhase.totalTokenUsage > 0) {
       insights.add(EfficiencyInsight(
         icon: Icons.analytics,
@@ -448,36 +661,67 @@ class _PhaseTokenAnalysis extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Text(
-              'Token Usage by Phase',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+            Icon(Icons.pie_chart, size: 24, color: Theme.of(context).primaryColor),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Token Usage by Phase',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                  ),
+                  Text(
+                    'Detailed breakdown of token consumption across processing phases',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            if (phaseComparison.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text('No phase token data available'),
-                ),
-              )
-            else
-              Column(
-                children: phaseComparison.map((phase) => _PhaseTokenItem(
-                  phase: phase, 
-                  maxValue: phaseComparison.isNotEmpty ? phaseComparison.first.totalTokenUsage : phase.totalTokenUsage,
-                )).toList(),
-              ),
           ],
         ),
-      ),
+        const SizedBox(height: 20),
+        if (phaseComparison.isEmpty)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: Column(
+                children: [
+                  Icon(Icons.data_usage, size: 48, color: Colors.grey),
+                  SizedBox(height: 12),
+                  Text(
+                    'No phase token data available',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Column(
+            children: phaseComparison
+                .map((phase) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _PhaseTokenItem(
+                        phase: phase,
+                        maxValue: phaseComparison.isNotEmpty
+                            ? phaseComparison.first.totalTokenUsage
+                            : phase.totalTokenUsage,
+                      ),
+                    ))
+                .toList(),
+          ),
+      ],
     );
   }
 }
@@ -497,10 +741,18 @@ class _PhaseTokenItem extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
+        color: Colors.white,
         border: Border.all(color: Colors.grey.withAlpha(51)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(13),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -511,67 +763,80 @@ class _PhaseTokenItem extends StatelessWidget {
                 child: Text(
                   phaseName,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
                   ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.green.withAlpha(51),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.green.withAlpha(77)),
                 ),
                 child: Text(
                   '${phase.totalTokenUsage} total',
                   style: const TextStyle(
                     fontSize: 12,
                     color: Colors.green,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Row(
+          const SizedBox(height: 12),
+          Column(
             children: [
-              Expanded(
-                child: _PhaseTokenBar(
-                  value: phase.totalTokenUsage,
-                  maxValue: maxValue,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: _PhaseTokenBar(
+                      value: phase.totalTokenUsage,
+                      maxValue: maxValue,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  SizedBox(
+                    width: 70,
+                    child: Text(
+                      '${phase.averageTokenUsage} avg',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Text(
-                '${phase.averageTokenUsage} avg',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: [
+                  InfoChip(
+                    label: 'Executions',
+                    value: '${phase.executionCount}',
+                    color: Colors.blue,
+                  ),
+                  InfoChip(
+                    label: 'Avg Duration',
+                    value: '${phase.averageDurationMs}ms',
+                    color: Colors.purple,
+                  ),
+                  if (phase.errorRate > 0)
+                    InfoChip(
+                      label: 'Error Rate',
+                      value: '${(phase.errorRate * 100).toStringAsFixed(1)}%',
+                      color: Colors.red,
+                    ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            children: [
-              InfoChip(
-                label: 'Executions',
-                value: '${phase.executionCount}',
-                color: Colors.blue,
-              ),
-              InfoChip(
-                label: 'Avg Duration',
-                value: '${phase.averageDurationMs}ms',
-                color: Colors.purple,
-              ),
-              if (phase.errorRate > 0)
-                InfoChip(
-                  label: 'Error Rate',
-                  value: '${(phase.errorRate * 100).toStringAsFixed(1)}%',
-                  color: Colors.red,
-                ),
             ],
           ),
         ],
@@ -615,39 +880,99 @@ class _PhaseTokenBar extends StatelessWidget {
 
 class _CostAnalysisSection extends StatelessWidget {
   final CostAnalysis costAnalysis;
+  final bool isSmallScreen;
 
-  const _CostAnalysisSection({required this.costAnalysis});
+  const _CostAnalysisSection({
+    required this.costAnalysis,
+    this.isSmallScreen = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.attach_money, color: Colors.green, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  'Cost Analysis',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withAlpha(51)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(13),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.attach_money, color: Theme.of(context).primaryColor, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                'Cost Analysis',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).primaryColor,
+                    ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.withAlpha(51)),
+                ),
+                child: Text(
+                  'Rate: \$${costAnalysis.costPerToken.toStringAsFixed(4)}/token',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.green,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const Spacer(),
-                Text(
-                  'Rate: \$${costAnalysis.costPerToken.toStringAsFixed(4)}/token',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (isSmallScreen) ...[
+            // Stack vertically on small screens
+            Column(
+              children: [
+                Center(
+                  child: _CostMetricCard(
+                    title: 'Total Cost',
+                    value: '\$${costAnalysis.totalCost.toStringAsFixed(4)}',
+                    icon: Icons.monetization_on,
+                    color: Colors.green,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: _CostMetricCard(
+                    title: 'Avg/Message',
+                    value: '\$${costAnalysis.averageCostPerMessage.toStringAsFixed(4)}',
+                    icon: Icons.message,
+                    color: Colors.blue,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: _CostMetricCard(
+                    title: 'Total Tokens',
+                    value: '${costAnalysis.totalTokens}',
+                    icon: Icons.token,
+                    color: Colors.purple,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+          ] else ...[
+            // Use Row layout on larger screens
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Expanded(
                   child: _CostMetricCard(
@@ -677,19 +1002,19 @@ class _CostAnalysisSection extends StatelessWidget {
                 ),
               ],
             ),
-            if (costAnalysis.phaseCostBreakdown.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Cost Breakdown by Phase',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...costAnalysis.phaseCostBreakdown.take(5).map((phase) => _PhaseCostItem(phase: phase)),
-            ],
           ],
-        ),
+          if (costAnalysis.phaseCostBreakdown.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Cost Breakdown by Phase',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            ...costAnalysis.phaseCostBreakdown.take(5).map((phase) => _PhaseCostItem(phase: phase)),
+          ],
+        ],
       ),
     );
   }
@@ -711,31 +1036,48 @@ class _CostMetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
+      constraints: const BoxConstraints(
+        minWidth: 100,
+        maxWidth: 200,
+      ),
       decoration: BoxDecoration(
-        color: color.withAlpha(26),
-        borderRadius: BorderRadius.circular(8),
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withAlpha(51)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withAlpha(13),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 4),
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
               color: color,
             ),
+            textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 4),
           Text(
             title,
             style: TextStyle(
               fontSize: 11,
               color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

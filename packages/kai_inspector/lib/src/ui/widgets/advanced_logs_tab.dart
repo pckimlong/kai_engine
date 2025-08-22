@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'package:kai_engine/src/inspector/models/timeline_session.dart';
 import 'package:kai_engine/src/inspector/models/timeline_types.dart';
+
 import '../debug_data_adapter.dart';
 
 /// Advanced logging interface with filtering, search, and export capabilities
 class AdvancedLogsTab extends StatefulWidget {
   final TimelineSession session;
   final SessionOverviewData sessionOverview;
+  final bool isSmallScreen;
 
   const AdvancedLogsTab({
     super.key,
     required this.session,
     required this.sessionOverview,
+    this.isSmallScreen = false,
   });
 
   @override
@@ -29,6 +31,7 @@ class _AdvancedLogsTabState extends State<AdvancedLogsTab> {
   Set<String> _selectedTimelines = <String>{};
   String _searchQuery = '';
   bool _autoScroll = true;
+  bool _isFilterPanelExpanded = false;
   List<LogEntryWithContext> _allLogs = [];
   List<LogEntryWithContext> _filteredLogs = [];
 
@@ -48,10 +51,10 @@ class _AdvancedLogsTabState extends State<AdvancedLogsTab> {
 
   void _loadLogs() {
     final logs = <LogEntryWithContext>[];
-    
+
     for (final timeline in widget.session.timelines) {
       final timelineData = DebugDataAdapter.convertTimelineOverview(timeline);
-      
+
       for (final phase in timelineData.phases) {
         for (final log in phase.logs) {
           logs.add(LogEntryWithContext(
@@ -64,7 +67,7 @@ class _AdvancedLogsTabState extends State<AdvancedLogsTab> {
             phaseName: phase.phaseName,
           ));
         }
-        
+
         for (final step in phase.steps) {
           for (final log in step.logs) {
             logs.add(LogEntryWithContext(
@@ -121,8 +124,8 @@ class _AdvancedLogsTabState extends State<AdvancedLogsTab> {
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
         return logEntry.log.message.toLowerCase().contains(query) ||
-               logEntry.phaseName.toLowerCase().contains(query) ||
-               (logEntry.stepName?.toLowerCase().contains(query) ?? false);
+            logEntry.phaseName.toLowerCase().contains(query) ||
+            (logEntry.stepName?.toLowerCase().contains(query) ?? false);
       }
 
       return true;
@@ -143,66 +146,134 @@ class _AdvancedLogsTabState extends State<AdvancedLogsTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _LogsControlPanel(
-          searchController: _searchController,
-          selectedSeverities: _selectedSeverities,
-          selectedPhases: _selectedPhases,
-          selectedTimelines: _selectedTimelines,
-          autoScroll: _autoScroll,
-          totalLogs: _allLogs.length,
-          filteredLogs: _filteredLogs.length,
-          onSeverityChanged: (severity, selected) {
-            setState(() {
-              if (selected) {
-                _selectedSeverities.add(severity);
-              } else {
-                _selectedSeverities.remove(severity);
-              }
-              _applyFilters();
-            });
-          },
-          onPhaseChanged: (phase, selected) {
-            setState(() {
-              if (selected) {
-                _selectedPhases.add(phase);
-              } else {
-                _selectedPhases.remove(phase);
-              }
-              _applyFilters();
-            });
-          },
-          onTimelineChanged: (timeline, selected) {
-            setState(() {
-              if (selected) {
-                _selectedTimelines.add(timeline);
-              } else {
-                _selectedTimelines.remove(timeline);
-              }
-              _applyFilters();
-            });
-          },
-          onAutoScrollChanged: (value) {
-            setState(() {
-              _autoScroll = value;
-            });
-          },
-          onClearFilters: () {
-            setState(() {
-              _selectedSeverities = TimelineLogSeverity.values.toSet();
-              _selectedPhases = _allLogs.map((e) => e.phaseName).toSet();
-              _selectedTimelines = _allLogs.map((e) => e.timelineId).toSet();
-              _searchController.clear();
-              _applyFilters();
-            });
-          },
-          onExportLogs: _exportLogs,
+        // Collapsible filter panel header
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+          ),
+          child: InkWell(
+            onTap: () => setState(() => _isFilterPanelExpanded = !_isFilterPanelExpanded),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    _isFilterPanelExpanded ? Icons.expand_less : Icons.expand_more,
+                    size: 20,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Filters & Search',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${_filteredLogs.length} / ${_allLogs.length} logs',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.clear_all, size: 18),
+                    onPressed: () {
+                      setState(() {
+                        _selectedSeverities = TimelineLogSeverity.values.toSet();
+                        _selectedPhases = _allLogs.map((e) => e.phaseName).toSet();
+                        _selectedTimelines = _allLogs.map((e) => e.timelineId).toSet();
+                        _searchController.clear();
+                        _applyFilters();
+                      });
+                    },
+                    tooltip: 'Clear Filters',
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.download, size: 18),
+                    onPressed: _exportLogs,
+                    tooltip: 'Export Logs',
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-        const Divider(height: 1),
+        // Collapsible filter panel content
+        if (_isFilterPanelExpanded) ...[
+          _LogsControlPanel(
+            searchController: _searchController,
+            selectedSeverities: _selectedSeverities,
+            selectedPhases: _selectedPhases,
+            selectedTimelines: _selectedTimelines,
+            autoScroll: _autoScroll,
+            totalLogs: _allLogs.length,
+            filteredLogs: _filteredLogs.length,
+            onSeverityChanged: (severity, selected) {
+              setState(() {
+                if (selected) {
+                  _selectedSeverities.add(severity);
+                } else {
+                  _selectedSeverities.remove(severity);
+                }
+                _applyFilters();
+              });
+            },
+            onPhaseChanged: (phase, selected) {
+              setState(() {
+                if (selected) {
+                  _selectedPhases.add(phase);
+                } else {
+                  _selectedPhases.remove(phase);
+                }
+                _applyFilters();
+              });
+            },
+            onTimelineChanged: (timeline, selected) {
+              setState(() {
+                if (selected) {
+                  _selectedTimelines.add(timeline);
+                } else {
+                  _selectedTimelines.remove(timeline);
+                }
+                _applyFilters();
+              });
+            },
+            onAutoScrollChanged: (value) {
+              setState(() {
+                _autoScroll = value;
+              });
+            },
+            onClearFilters: () {
+              setState(() {
+                _selectedSeverities = TimelineLogSeverity.values.toSet();
+                _selectedPhases = _allLogs.map((e) => e.phaseName).toSet();
+                _selectedTimelines = _allLogs.map((e) => e.timelineId).toSet();
+                _searchController.clear();
+                _applyFilters();
+              });
+            },
+            onExportLogs: _exportLogs,
+          ),
+          const Divider(height: 1),
+        ],
         Expanded(
-          child: _LogsListView(
-            logs: _filteredLogs,
-            scrollController: _scrollController,
-            session: widget.session,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: _LogsListView(
+              logs: _filteredLogs,
+              scrollController: _scrollController,
+              session: widget.session,
+            ),
           ),
         ),
       ],
@@ -219,10 +290,10 @@ class _AdvancedLogsTabState extends State<AdvancedLogsTab> {
 
     for (final logEntry in _filteredLogs) {
       buffer.writeln('[${_formatTimestamp(logEntry.log.timestamp)}] '
-                   '[${logEntry.log.severity.toString().split('.').last.toUpperCase()}] '
-                   '[${logEntry.phaseName}${logEntry.stepName != null ? '/${logEntry.stepName}' : ''}] '
-                   '${logEntry.log.message}');
-      
+          '[${logEntry.log.severity.toString().split('.').last.toUpperCase()}] '
+          '[${logEntry.phaseName}${logEntry.stepName != null ? '/${logEntry.stepName}' : ''}] '
+          '${logEntry.log.message}');
+
       if (logEntry.log.metadata.isNotEmpty) {
         for (final entry in logEntry.log.metadata.entries) {
           buffer.writeln('  ${entry.key}: ${entry.value}');
@@ -239,9 +310,9 @@ class _AdvancedLogsTabState extends State<AdvancedLogsTab> {
 
   String _formatTimestamp(DateTime timestamp) {
     return '${timestamp.hour.toString().padLeft(2, '0')}:'
-           '${timestamp.minute.toString().padLeft(2, '0')}:'
-           '${timestamp.second.toString().padLeft(2, '0')}'
-           '.${timestamp.millisecond.toString().padLeft(3, '0')}';
+        '${timestamp.minute.toString().padLeft(2, '0')}:'
+        '${timestamp.second.toString().padLeft(2, '0')}'
+        '.${timestamp.millisecond.toString().padLeft(3, '0')}';
   }
 }
 
@@ -286,6 +357,7 @@ class _LogsControlPanel extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // Search and controls row
           Row(
             children: [
               Expanded(
@@ -301,34 +373,30 @@ class _LogsControlPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                '$filteredLogs / $totalLogs logs',
-                style: Theme.of(context).textTheme.bodySmall,
+              Switch(
+                value: autoScroll,
+                onChanged: onAutoScrollChanged,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.clear_all),
-                onPressed: onClearFilters,
-                tooltip: 'Clear Filters',
-              ),
-              IconButton(
-                icon: const Icon(Icons.download),
-                onPressed: onExportLogs,
-                tooltip: 'Export Logs',
-              ),
+              const Text('Auto Scroll', style: TextStyle(fontSize: 12)),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          // Severity filters
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Severity:',
-                style: Theme.of(context).textTheme.labelMedium,
+              SizedBox(
+                width: 60,
+                child: Text(
+                  'Severity:',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
               ),
-              const SizedBox(width: 8),
               Expanded(
                 child: Wrap(
                   spacing: 4,
+                  runSpacing: 4,
                   children: TimelineLogSeverity.values.map((severity) {
                     final isSelected = selectedSeverities.contains(severity);
                     return FilterChip(
@@ -340,43 +408,48 @@ class _LogsControlPanel extends StatelessWidget {
                       onSelected: (selected) => onSeverityChanged(severity, selected),
                       backgroundColor: _getSeverityColor(severity).withAlpha(26),
                       selectedColor: _getSeverityColor(severity).withAlpha(77),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     );
                   }).toList(),
                 ),
               ),
-              Switch(
-                value: autoScroll,
-                onChanged: onAutoScrollChanged,
-              ),
-              const Text('Auto Scroll', style: TextStyle(fontSize: 12)),
             ],
           ),
-          const SizedBox(height: 4),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
+          const SizedBox(height: 8),
+          // Phase filters
+          if (selectedPhases.isNotEmpty) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Phases:',
-                  style: Theme.of(context).textTheme.labelMedium,
+                SizedBox(
+                  width: 60,
+                  child: Text(
+                    'Phases:',
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
                 ),
-                const SizedBox(width: 8),
-                ...selectedPhases.take(10).map((phase) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: FilterChip(
-                      label: Text(
-                        _formatPhaseName(phase),
-                        style: const TextStyle(fontSize: 10),
-                      ),
-                      selected: true,
-                      onSelected: (selected) => onPhaseChanged(phase, selected),
-                    ),
-                  );
-                }),
-                if (selectedPhases.length > 10)
+                Expanded(
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: selectedPhases.take(8).map((phase) {
+                      return FilterChip(
+                        label: Text(
+                          _formatPhaseName(phase),
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                        selected: true,
+                        onSelected: (selected) => onPhaseChanged(phase, selected),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                if (selectedPhases.length > 8)
                   Text(
-                    '... +${selectedPhases.length - 10} more',
+                    '... +${selectedPhases.length - 8} more',
                     style: TextStyle(
                       fontSize: 10,
                       color: Colors.grey[600],
@@ -384,7 +457,7 @@ class _LogsControlPanel extends StatelessWidget {
                   ),
               ],
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -452,8 +525,7 @@ class _LogsListView extends StatelessWidget {
       itemCount: logs.length,
       itemBuilder: (context, index) {
         final logEntry = logs[index];
-        final isFirstOfTimeline = index == 0 ||
-            logs[index - 1].timelineId != logEntry.timelineId;
+        final isFirstOfTimeline = index == 0 || logs[index - 1].timelineId != logEntry.timelineId;
 
         return Column(
           children: [
@@ -628,33 +700,33 @@ class _LogEntryItemState extends State<_LogEntryItem> {
                     ),
                     const SizedBox(height: 4),
                     ...log.metadata.entries.map((entry) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 1),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 120,
-                            child: Text(
-                              '${entry.key}:',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey[600],
+                          padding: const EdgeInsets.symmetric(vertical: 1),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 120,
+                                child: Text(
+                                  '${entry.key}:',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              entry.value.toString(),
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontFamily: 'monospace',
+                              Expanded(
+                                child: Text(
+                                  entry.value.toString(),
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                    )),
+                        )),
                   ],
                 ),
               ),
@@ -680,9 +752,9 @@ class _LogEntryItemState extends State<_LogEntryItem> {
 
   String _formatTimestamp(DateTime timestamp) {
     return '${timestamp.hour.toString().padLeft(2, '0')}:'
-           '${timestamp.minute.toString().padLeft(2, '0')}:'
-           '${timestamp.second.toString().padLeft(2, '0')}'
-           '.${timestamp.millisecond.toString().padLeft(3, '0')}';
+        '${timestamp.minute.toString().padLeft(2, '0')}:'
+        '${timestamp.second.toString().padLeft(2, '0')}'
+        '.${timestamp.millisecond.toString().padLeft(3, '0')}';
   }
 
   String _formatPhaseName(String phaseName) {
