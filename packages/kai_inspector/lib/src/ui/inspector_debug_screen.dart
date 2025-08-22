@@ -150,39 +150,31 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Session'),
+        title: const Text('Debug Session'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadSessionData,
             tooltip: 'Refresh Session',
           ),
-          IconButton(
-            icon: const Icon(Icons.copy),
-            onPressed: _exportSessionData,
-            tooltip: 'Export Session Data',
-          ),
           PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
             onSelected: _handleMenuAction,
             itemBuilder: (context) => [
               const PopupMenuItem(
-                value: 'export_json',
-                child: Row(
-                  children: [
-                    Icon(Icons.download),
-                    SizedBox(width: 8),
-                    Text('Export as JSON'),
-                  ],
+                value: 'export_summary',
+                child: ListTile(
+                  leading: Icon(Icons.copy),
+                  title: Text('Copy Summary'),
+                  dense: true,
                 ),
               ),
               const PopupMenuItem(
-                value: 'export_summary',
-                child: Row(
-                  children: [
-                    Icon(Icons.summarize),
-                    SizedBox(width: 8),
-                    Text('Export Summary'),
-                  ],
+                value: 'export_json',
+                child: ListTile(
+                  leading: Icon(Icons.download),
+                  title: Text('Export as JSON'),
+                  dense: true,
                 ),
               ),
             ],
@@ -230,7 +222,7 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
         _exportFullSessionJson();
         break;
       case 'export_summary':
-        _exportSessionSummary();
+        _exportSessionData(); // Use the existing export method
         break;
     }
   }
@@ -263,14 +255,6 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
     }
   }
 
-  void _exportSessionSummary() {
-    final summary = _generateSessionSummary();
-    Clipboard.setData(ClipboardData(text: summary));
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Session summary exported to clipboard')),
-    );
-  }
 
   String _generateSessionSummary() {
     if (_session == null || _sessionOverview == null || _sessionMetrics == null) {
@@ -359,6 +343,15 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
       buffer.writeln('Message ${i + 1}:');
       buffer.writeln(
           '  Input: ${timeline.userMessage.length > 100 ? timeline.userMessage.substring(0, 100) + '...' : timeline.userMessage}');
+      
+      // Show AI response if available
+      if (timeline.aiResponse != null) {
+        buffer.writeln(
+            '  Response: ${timeline.aiResponse!.length > 100 ? timeline.aiResponse!.substring(0, 100) + '...' : timeline.aiResponse}');
+      } else {
+        buffer.writeln('  Response: Not available');
+      }
+      
       buffer.writeln('  Duration: ${timelineData.duration?.inMilliseconds ?? 'N/A'}ms');
       buffer.writeln('  Tokens: ${timelineData.totalTokens}');
       buffer.writeln('  Phases: ${timelineData.phaseCount}');

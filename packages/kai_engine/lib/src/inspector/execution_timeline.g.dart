@@ -10,6 +10,7 @@ _ExecutionTimeline _$ExecutionTimelineFromJson(Map<String, dynamic> json) =>
     _ExecutionTimeline(
       id: json['id'] as String,
       userMessage: json['userMessage'] as String,
+      aiResponse: json['aiResponse'] as String?,
       startTime: DateTime.parse(json['startTime'] as String),
       endTime: json['endTime'] == null
           ? null
@@ -29,6 +30,7 @@ Map<String, dynamic> _$ExecutionTimelineToJson(_ExecutionTimeline instance) =>
     <String, dynamic>{
       'id': instance.id,
       'userMessage': instance.userMessage,
+      'aiResponse': instance.aiResponse,
       'startTime': instance.startTime.toIso8601String(),
       'endTime': instance.endTime?.toIso8601String(),
       'status': _$TimelineStatusEnumMap[instance.status]!,

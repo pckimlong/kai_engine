@@ -33,22 +33,14 @@ class SessionDashboardTab extends StatelessWidget {
           const SizedBox(height: 16),
           _MetricsOverviewGrid(sessionMetrics: sessionMetrics),
           const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _MessagesTimelineCard(
-                  session: session,
-                  sessionOverview: sessionOverview,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _PhasePerformanceCard(
-                  phaseStatistics: sessionOverview.phaseStatistics,
-                ),
-              ),
-            ],
+          // Changed from Row to Column for better mobile layout
+          _MessagesTimelineCard(
+            session: session,
+            sessionOverview: sessionOverview,
+          ),
+          const SizedBox(height: 16),
+          _PhasePerformanceCard(
+            phaseStatistics: sessionOverview.phaseStatistics,
           ),
           const SizedBox(height: 16),
           _QualityInsightsCard(
@@ -247,11 +239,14 @@ class _MetricsOverviewGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount = screenWidth < 600 ? 2 : 4; // 2 columns on mobile, 4 on wider screens
+    
     return GridView.count(
-      crossAxisCount: 4,
+      crossAxisCount: crossAxisCount,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.2,
+      childAspectRatio: screenWidth < 600 ? 1.4 : 1.2, // Adjust aspect ratio for mobile
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
       children: [

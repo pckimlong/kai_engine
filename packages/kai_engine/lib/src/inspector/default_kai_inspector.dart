@@ -53,6 +53,11 @@ class DefaultKaiInspector implements KaiInspector {
 
   @override
   Future<void> startSession(String sessionId) async {
+    // Only create a new session if one doesn't already exist
+    if (_sessions.containsKey(sessionId)) {
+      return; // Session already exists, don't overwrite it
+    }
+
     final session = TimelineSession(
       id: sessionId,
       startTime: DateTime.now(),
@@ -100,6 +105,7 @@ class DefaultKaiInspector implements KaiInspector {
     String sessionId,
     String timelineId, {
     TimelineStatus status = TimelineStatus.completed,
+    String? aiResponse,
   }) async {
     final session = _sessions[sessionId];
     if (session == null) return;
@@ -108,7 +114,7 @@ class DefaultKaiInspector implements KaiInspector {
     if (timelineIndex == -1) return;
 
     final timeline = session.timelines[timelineIndex];
-    final updatedTimeline = timeline.complete(status: status);
+    final updatedTimeline = timeline.complete(status: status, aiResponse: aiResponse);
 
     final updatedTimelines = List<ExecutionTimeline>.from(session.timelines);
     updatedTimelines[timelineIndex] = updatedTimeline;

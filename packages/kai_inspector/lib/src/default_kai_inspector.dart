@@ -54,7 +54,7 @@ class DefaultKaiInspector implements KaiInspector {
     );
 
     _sessions[sessionId] = session;
-    
+
     // Use existing controller if available, otherwise create new one
     if (_sessionStreams.containsKey(sessionId) && !_sessionStreams[sessionId]!.isClosed) {
       _sessionStreams[sessionId]!.add(session);
@@ -101,6 +101,7 @@ class DefaultKaiInspector implements KaiInspector {
     String sessionId,
     String timelineId, {
     TimelineStatus status = TimelineStatus.completed,
+    String? aiResponse,
   }) async {
     final session = _sessions[sessionId];
     if (session == null) return;
@@ -109,7 +110,7 @@ class DefaultKaiInspector implements KaiInspector {
     if (timelineIndex == -1) return;
 
     final timeline = session.timelines[timelineIndex];
-    final updatedTimeline = timeline.complete(status: status);
+    final updatedTimeline = timeline.complete(status: status, aiResponse: aiResponse);
 
     final updatedTimelines = List<ExecutionTimeline>.from(session.timelines);
     updatedTimelines[timelineIndex] = updatedTimeline;
@@ -292,17 +293,17 @@ class DefaultKaiInspector implements KaiInspector {
     if (_disposed) {
       return Stream.error(StateError('Inspector has been disposed'));
     }
-    
+
     // Always create a BehaviorSubject if it doesn't exist
     if (!_sessionStreams.containsKey(sessionId)) {
       _sessionStreams[sessionId] = BehaviorSubject<TimelineSession>();
     }
-    
+
     final controller = _sessionStreams[sessionId]!;
     if (controller.isClosed) {
       return Stream.error(StateError('Stream has been closed'));
     }
-    
+
     return controller.stream;
   }
 

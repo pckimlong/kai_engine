@@ -30,6 +30,7 @@ abstract class KaiInspector {
     String sessionId,
     String timelineId, {
     TimelineStatus status = TimelineStatus.completed,
+    String? aiResponse,
   });
 
   /// Starts a new phase within the given timeline.
@@ -145,6 +146,7 @@ class NoOpKaiInspector implements KaiInspector {
     String sessionId,
     String timelineId, {
     TimelineStatus status = TimelineStatus.completed,
+    String? aiResponse,
   }) async {}
 
   @override

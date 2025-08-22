@@ -40,8 +40,7 @@ sealed class TimelineStep with _$TimelineStep {
   }) = _TimelineStep;
 
   /// Creates a TimelineStep from JSON.
-  factory TimelineStep.fromJson(Map<String, dynamic> json) =>
-      _$TimelineStepFromJson(json);
+  factory TimelineStep.fromJson(Map<String, dynamic> json) => _$TimelineStepFromJson(json);
 
   const TimelineStep._();
 
@@ -54,6 +53,11 @@ sealed class TimelineStep with _$TimelineStep {
   /// Creates a copy of this step with a new log entry added.
   TimelineStep addLog(TimelineLog log) {
     return copyWith(logs: [...logs, log]);
+  }
+
+  TimelineStep addLogMessage(String message) {
+    final log = TimelineLog(message: message, timestamp: DateTime.now());
+    return addLog(log);
   }
 
   /// Creates a copy of this step marked as completed.

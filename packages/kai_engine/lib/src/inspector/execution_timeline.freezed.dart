@@ -17,7 +17,8 @@ mixin _$ExecutionTimeline {
 
 /// Unique identifier for this timeline.
  String get id;/// The user's original message that started this timeline.
- String get userMessage;/// When this timeline started.
+ String get userMessage;/// The AI's response message (null if still running or failed).
+ String? get aiResponse;/// When this timeline started.
  DateTime get startTime;/// When this timeline completed (null if still running).
  DateTime? get endTime;/// Current status of the timeline.
  TimelineStatus get status;/// Additional metadata about the timeline.
@@ -35,16 +36,16 @@ $ExecutionTimelineCopyWith<ExecutionTimeline> get copyWith => _$ExecutionTimelin
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ExecutionTimeline&&(identical(other.id, id) || other.id == id)&&(identical(other.userMessage, userMessage) || other.userMessage == userMessage)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.metadata, metadata)&&const DeepCollectionEquality().equals(other.phases, phases));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ExecutionTimeline&&(identical(other.id, id) || other.id == id)&&(identical(other.userMessage, userMessage) || other.userMessage == userMessage)&&(identical(other.aiResponse, aiResponse) || other.aiResponse == aiResponse)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.metadata, metadata)&&const DeepCollectionEquality().equals(other.phases, phases));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userMessage,startTime,endTime,status,const DeepCollectionEquality().hash(metadata),const DeepCollectionEquality().hash(phases));
+int get hashCode => Object.hash(runtimeType,id,userMessage,aiResponse,startTime,endTime,status,const DeepCollectionEquality().hash(metadata),const DeepCollectionEquality().hash(phases));
 
 @override
 String toString() {
-  return 'ExecutionTimeline(id: $id, userMessage: $userMessage, startTime: $startTime, endTime: $endTime, status: $status, metadata: $metadata, phases: $phases)';
+  return 'ExecutionTimeline(id: $id, userMessage: $userMessage, aiResponse: $aiResponse, startTime: $startTime, endTime: $endTime, status: $status, metadata: $metadata, phases: $phases)';
 }
 
 
@@ -55,7 +56,7 @@ abstract mixin class $ExecutionTimelineCopyWith<$Res>  {
   factory $ExecutionTimelineCopyWith(ExecutionTimeline value, $Res Function(ExecutionTimeline) _then) = _$ExecutionTimelineCopyWithImpl;
 @useResult
 $Res call({
- String id, String userMessage, DateTime startTime, DateTime? endTime, TimelineStatus status, Map<String, dynamic> metadata, List<TimelinePhase> phases
+ String id, String userMessage, String? aiResponse, DateTime startTime, DateTime? endTime, TimelineStatus status, Map<String, dynamic> metadata, List<TimelinePhase> phases
 });
 
 
@@ -72,11 +73,12 @@ class _$ExecutionTimelineCopyWithImpl<$Res>
 
 /// Create a copy of ExecutionTimeline
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userMessage = null,Object? startTime = null,Object? endTime = freezed,Object? status = null,Object? metadata = null,Object? phases = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userMessage = null,Object? aiResponse = freezed,Object? startTime = null,Object? endTime = freezed,Object? status = null,Object? metadata = null,Object? phases = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userMessage: null == userMessage ? _self.userMessage : userMessage // ignore: cast_nullable_to_non_nullable
-as String,startTime: null == startTime ? _self.startTime : startTime // ignore: cast_nullable_to_non_nullable
+as String,aiResponse: freezed == aiResponse ? _self.aiResponse : aiResponse // ignore: cast_nullable_to_non_nullable
+as String?,startTime: null == startTime ? _self.startTime : startTime // ignore: cast_nullable_to_non_nullable
 as DateTime,endTime: freezed == endTime ? _self.endTime : endTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TimelineStatus,metadata: null == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
@@ -163,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userMessage,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelinePhase> phases)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userMessage,  String? aiResponse,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelinePhase> phases)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ExecutionTimeline() when $default != null:
-return $default(_that.id,_that.userMessage,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.phases);case _:
+return $default(_that.id,_that.userMessage,_that.aiResponse,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.phases);case _:
   return orElse();
 
 }
@@ -184,10 +186,10 @@ return $default(_that.id,_that.userMessage,_that.startTime,_that.endTime,_that.s
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userMessage,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelinePhase> phases)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userMessage,  String? aiResponse,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelinePhase> phases)  $default,) {final _that = this;
 switch (_that) {
 case _ExecutionTimeline():
-return $default(_that.id,_that.userMessage,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.phases);}
+return $default(_that.id,_that.userMessage,_that.aiResponse,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.phases);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -201,10 +203,10 @@ return $default(_that.id,_that.userMessage,_that.startTime,_that.endTime,_that.s
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userMessage,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelinePhase> phases)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userMessage,  String? aiResponse,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelinePhase> phases)?  $default,) {final _that = this;
 switch (_that) {
 case _ExecutionTimeline() when $default != null:
-return $default(_that.id,_that.userMessage,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.phases);case _:
+return $default(_that.id,_that.userMessage,_that.aiResponse,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.phases);case _:
   return null;
 
 }
@@ -216,13 +218,15 @@ return $default(_that.id,_that.userMessage,_that.startTime,_that.endTime,_that.s
 @JsonSerializable()
 
 class _ExecutionTimeline extends ExecutionTimeline {
-  const _ExecutionTimeline({required this.id, required this.userMessage, required this.startTime, this.endTime, this.status = TimelineStatus.running, final  Map<String, dynamic> metadata = const {}, final  List<TimelinePhase> phases = const []}): _metadata = metadata,_phases = phases,super._();
+  const _ExecutionTimeline({required this.id, required this.userMessage, this.aiResponse, required this.startTime, this.endTime, this.status = TimelineStatus.running, final  Map<String, dynamic> metadata = const {}, final  List<TimelinePhase> phases = const []}): _metadata = metadata,_phases = phases,super._();
   factory _ExecutionTimeline.fromJson(Map<String, dynamic> json) => _$ExecutionTimelineFromJson(json);
 
 /// Unique identifier for this timeline.
 @override final  String id;
 /// The user's original message that started this timeline.
 @override final  String userMessage;
+/// The AI's response message (null if still running or failed).
+@override final  String? aiResponse;
 /// When this timeline started.
 @override final  DateTime startTime;
 /// When this timeline completed (null if still running).
@@ -261,16 +265,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ExecutionTimeline&&(identical(other.id, id) || other.id == id)&&(identical(other.userMessage, userMessage) || other.userMessage == userMessage)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other._metadata, _metadata)&&const DeepCollectionEquality().equals(other._phases, _phases));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ExecutionTimeline&&(identical(other.id, id) || other.id == id)&&(identical(other.userMessage, userMessage) || other.userMessage == userMessage)&&(identical(other.aiResponse, aiResponse) || other.aiResponse == aiResponse)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other._metadata, _metadata)&&const DeepCollectionEquality().equals(other._phases, _phases));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userMessage,startTime,endTime,status,const DeepCollectionEquality().hash(_metadata),const DeepCollectionEquality().hash(_phases));
+int get hashCode => Object.hash(runtimeType,id,userMessage,aiResponse,startTime,endTime,status,const DeepCollectionEquality().hash(_metadata),const DeepCollectionEquality().hash(_phases));
 
 @override
 String toString() {
-  return 'ExecutionTimeline(id: $id, userMessage: $userMessage, startTime: $startTime, endTime: $endTime, status: $status, metadata: $metadata, phases: $phases)';
+  return 'ExecutionTimeline(id: $id, userMessage: $userMessage, aiResponse: $aiResponse, startTime: $startTime, endTime: $endTime, status: $status, metadata: $metadata, phases: $phases)';
 }
 
 
@@ -281,7 +285,7 @@ abstract mixin class _$ExecutionTimelineCopyWith<$Res> implements $ExecutionTime
   factory _$ExecutionTimelineCopyWith(_ExecutionTimeline value, $Res Function(_ExecutionTimeline) _then) = __$ExecutionTimelineCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String userMessage, DateTime startTime, DateTime? endTime, TimelineStatus status, Map<String, dynamic> metadata, List<TimelinePhase> phases
+ String id, String userMessage, String? aiResponse, DateTime startTime, DateTime? endTime, TimelineStatus status, Map<String, dynamic> metadata, List<TimelinePhase> phases
 });
 
 
@@ -298,11 +302,12 @@ class __$ExecutionTimelineCopyWithImpl<$Res>
 
 /// Create a copy of ExecutionTimeline
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userMessage = null,Object? startTime = null,Object? endTime = freezed,Object? status = null,Object? metadata = null,Object? phases = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userMessage = null,Object? aiResponse = freezed,Object? startTime = null,Object? endTime = freezed,Object? status = null,Object? metadata = null,Object? phases = null,}) {
   return _then(_ExecutionTimeline(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userMessage: null == userMessage ? _self.userMessage : userMessage // ignore: cast_nullable_to_non_nullable
-as String,startTime: null == startTime ? _self.startTime : startTime // ignore: cast_nullable_to_non_nullable
+as String,aiResponse: freezed == aiResponse ? _self.aiResponse : aiResponse // ignore: cast_nullable_to_non_nullable
+as String?,startTime: null == startTime ? _self.startTime : startTime // ignore: cast_nullable_to_non_nullable
 as DateTime,endTime: freezed == endTime ? _self.endTime : endTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TimelineStatus,metadata: null == metadata ? _self._metadata : metadata // ignore: cast_nullable_to_non_nullable

@@ -21,13 +21,6 @@ sealed class QueryEngineInput with _$QueryEngineInput {
   }) = _QueryEngineInput;
 }
 
-/// Output type for QueryEngine phase
-@freezed
-sealed class QueryEngineOutput with _$QueryEngineOutput {
-  const factory QueryEngineOutput({required QueryContext queryContext}) =
-      _QueryEngineOutput;
-}
-
 /// Input type for ContextEngine phase
 @freezed
 sealed class ContextEngineInput with _$ContextEngineInput {
@@ -40,8 +33,7 @@ sealed class ContextEngineInput with _$ContextEngineInput {
 /// Output type for ContextEngine phase
 @freezed
 sealed class ContextEngineOutput with _$ContextEngineOutput {
-  const factory ContextEngineOutput({required IList<CoreMessage> prompts}) =
-      _ContextEngineOutput;
+  const factory ContextEngineOutput({required IList<CoreMessage> prompts}) = _ContextEngineOutput;
 }
 
 /// Input type for GenerationService phase
@@ -71,13 +63,4 @@ sealed class PostResponseEngineInput with _$PostResponseEngineInput {
     required GenerationResult result,
     required ConversationManager conversationManager,
   }) = _PostResponseEngineInput;
-}
-
-/// Output type for PostResponseEngine phase
-@freezed
-sealed class PostResponseEngineOutput with _$PostResponseEngineOutput {
-  const factory PostResponseEngineOutput({
-    // Post-response engines typically don't return values
-    @Default({}) Map<String, dynamic> metadata,
-  }) = _PostResponseEngineOutput;
 }

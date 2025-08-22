@@ -22,6 +22,9 @@ sealed class ExecutionTimeline with _$ExecutionTimeline {
     /// The user's original message that started this timeline.
     required String userMessage,
 
+    /// The AI's response message (null if still running or failed).
+    String? aiResponse,
+
     /// When this timeline started.
     required DateTime startTime,
 
@@ -58,7 +61,12 @@ sealed class ExecutionTimeline with _$ExecutionTimeline {
   /// Creates a copy of this timeline marked as completed.
   ExecutionTimeline complete({
     TimelineStatus status = TimelineStatus.completed,
+    String? aiResponse,
   }) {
-    return copyWith(status: status, endTime: DateTime.now());
+    return copyWith(
+      status: status, 
+      endTime: DateTime.now(),
+      aiResponse: aiResponse,
+    );
   }
 }

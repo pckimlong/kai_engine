@@ -1,23 +1,9 @@
 import 'dart:async';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:kai_engine/src/post_response_engine_base.dart';
-import 'package:kai_engine/src/tool_schema.dart';
 import 'package:rxdart/rxdart.dart';
 
-import 'ai_generation_phase.dart';
-import 'conversation_manager.dart';
-import 'generation_service_base.dart';
-import 'inspector/kai_inspector.dart';
-import 'inspector/models/timeline_types.dart';
-import 'inspector/phase_types.dart';
-import 'models/cancel_token.dart';
-import 'models/core_message.dart';
-import 'models/generation_result.dart';
-import 'models/generation_state.dart';
-import 'models/kai_exception.dart';
-import 'prompt_engine.dart';
-import 'query_engine_base.dart';
+import '../kai_engine.dart';
 
 typedef GenerationExecuteConfig = ({List<ToolSchema> tools, Map<String, dynamic>? config});
 
@@ -105,7 +91,7 @@ abstract base class ChatControllerBase<TEntity> {
       // Phase 1: Query Processing
       _setLoadingPhase(LoadingPhase.processingQuery());
       final queryInput = QueryEngineInput(rawInput: input, session: _conversationManager.session);
-      final inputQuery = await _inspector.inspectPhase<QueryEngineInput, QueryEngineOutput>(
+      final queryContext = await _inspector.inspectPhase<QueryEngineInput, QueryContext>(
         sessionId,
         timelineId,
         'Query Processing',
@@ -116,7 +102,7 @@ abstract base class ChatControllerBase<TEntity> {
       // Phase 2: Context Building
       _setLoadingPhase(LoadingPhase.buildContext());
       final contextInput = ContextEngineInput(
-        inputQuery: inputQuery.queryContext,
+        inputQuery: queryContext,
         conversationMessages: await _conversationManager.getMessages(),
       );
       final contextResult = await _inspector.inspectPhase(
@@ -154,7 +140,7 @@ abstract base class ChatControllerBase<TEntity> {
 
       // Phase 4: Post-Response Processing
       final postResponseInput = PostResponseEngineInput(
-        input: inputQuery.queryContext,
+        input: queryContext,
         requestMessages: contextResult.prompts,
         result: generationResult,
         conversationManager: _conversationManager,
@@ -168,7 +154,14 @@ abstract base class ChatControllerBase<TEntity> {
         postResponseInput,
       );
 
-      await _inspector.endTimeline(sessionId, timelineId);
+      // Extract AI response text from the generation result
+      final aiResponse = generationResult.displayMessage.content;
+      
+      await _inspector.endTimeline(
+        sessionId, 
+        timelineId, 
+        aiResponse: aiResponse,
+      );
 
       final generationState = GenerationState<GenerationResult>.complete(generationResult);
       _generationStateController.add(generationState);

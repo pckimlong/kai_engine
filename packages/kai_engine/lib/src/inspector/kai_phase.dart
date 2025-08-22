@@ -110,18 +110,11 @@ abstract class KaiPhase<Input, Output> {
   void updateAggregates({int? tokenUsage, double? cost}) {
     if (_phaseController == null) return;
 
-    _phaseController!.updateSessionAggregates(
-      tokenUsage: tokenUsage,
-      cost: cost,
-    );
+    _phaseController!.updateSessionAggregates(tokenUsage: tokenUsage, cost: cost);
   }
 
   /// Creates a dummy step for when no inspector is active.
-  TimelineStep _createDummyStep(
-    String name,
-    String? description,
-    Map<String, dynamic>? metadata,
-  ) {
+  TimelineStep _createDummyStep(String name, String? description, Map<String, dynamic>? metadata) {
     return TimelineStep(
       id: 'dummy',
       name: name,
