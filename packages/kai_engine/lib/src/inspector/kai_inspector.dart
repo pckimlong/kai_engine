@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'kai_phase.dart';
 import 'models/timeline_session.dart';
 import 'models/timeline_step.dart';
 import 'models/timeline_types.dart';
+import 'phase_controller.dart';
 
 /// Role: The central Service Contract. This is the main "plug-in point" for the
 /// entire inspection system.
@@ -68,6 +70,53 @@ abstract class KaiInspector {
 
   /// Updates aggregate data for the session (e.g., total token usage, cost).
   Future<void> updateSessionAggregates(String sessionId, {int? tokenUsage, double? cost});
+
+  /// Helper method to run a KaiPhase with full inspection.
+  ///
+  /// This method encapsulates all the complexity of:
+  /// 1. Starting a phase
+  /// 2. Creating a PhaseController
+  /// 3. Running the phase with inspection
+  /// 4. Ending the phase with proper error handling
+  ///
+  /// Usage:
+  /// ```dart
+  /// final result = await _inspector.inspectPhase(
+  ///   sessionId, timelineId, 'Query Processing', _queryEngine, input
+  /// );
+  /// ```
+  Future<Output> inspectPhase<Input, Output>(
+    String sessionId,
+    String timelineId,
+    String phaseName,
+    KaiPhase<Input, Output> phaseToRun,
+    Input input, {
+    String? description,
+  }) async {
+    final phaseId =
+        '${phaseName.toLowerCase().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}';
+
+    await startPhase(sessionId, timelineId, phaseId, phaseName, description: description);
+
+    try {
+      final result = await phaseToRun.run(
+        input,
+        PhaseController(
+          inspector: this,
+          sessionId: sessionId,
+          timelineId: timelineId,
+          phaseId: phaseId,
+          phaseName: phaseName,
+        ),
+      );
+
+      await endPhase(sessionId, timelineId, phaseId);
+      return result;
+    } catch (error) {
+      await endPhase(sessionId, timelineId, phaseId, status: TimelineStatus.failed);
+      rethrow;
+    }
+  }
 }
 
 /// Role: The default "do-nothing" implementation of the KaiInspector.
@@ -148,4 +197,17 @@ class NoOpKaiInspector implements KaiInspector {
 
   @override
   Future<void> updateSessionAggregates(String sessionId, {int? tokenUsage, double? cost}) async {}
+
+  @override
+  Future<Output> inspectPhase<Input, Output>(
+    String sessionId,
+    String timelineId,
+    String phaseName,
+    KaiPhase<Input, Output> phaseToRun,
+    Input input, {
+    String? description,
+  }) async {
+    // For NoOpKaiInspector, just run the phase without inspection
+    return phaseToRun.execute(input);
+  }
 }
