@@ -4,7 +4,9 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'context_builder.dart';
-import 'debug/debug_system.dart';
+import 'inspector/kai_phase.dart';
+import 'inspector/models/timeline_types.dart';
+import 'inspector/phase_types.dart';
 import 'models/core_message.dart';
 import 'models/query_context.dart';
 
@@ -16,12 +18,22 @@ part 'prompt_engine.freezed.dart';
 /// system prompts, historical context, and user input according to a defined template structure.
 /// It supports both parallel and sequential context building strategies to optimize performance
 /// while maintaining logical ordering where required.
-abstract base class ContextEngine with DebugTrackingMixin {
+abstract base class ContextEngine
+    extends KaiPhase<ContextEngineInput, ContextEngineOutput> {
   /// Defines the template structure for building prompts.
   ///
   /// This list specifies what components should be included in the final prompt and in what order.
   /// It must contain exactly one [PromptTemplate.input] element.
   List<PromptTemplate> get promptBuilder;
+
+  @override
+  Future<ContextEngineOutput> execute(ContextEngineInput input) async {
+    final result = await generate(
+      source: input.conversationMessages,
+      inputQuery: input.inputQuery,
+    );
+    return ContextEngineOutput(prompts: result.prompts);
+  }
 
   /// Generates a complete contextual prompt ready for AI consumption.
   ///
@@ -54,10 +66,19 @@ abstract base class ContextEngine with DebugTrackingMixin {
         CoreMessage.user(content: inputQuery.originalQuery);
     final messageId = userMessage.messageId;
 
-    // Track context building phase start
-    debugStartPhase(messageId, 'context-engine-processing');
-    debugAddMetadata(messageId, 'prompt-templates', promptBuilder.length);
-    debugAddMetadata(messageId, 'source-messages', source.length);
+    // Use inspector logging instead of debug methods
+    await withStep(
+      'context-engine-processing',
+      operation: (step) async {
+        addLog(
+          'Processing prompt templates',
+          metadata: {
+            'prompt-templates': promptBuilder.length,
+            'source-messages': source.length,
+          },
+        );
+      },
+    );
 
     assert(
       promptBuilder.whereType<InputPromptTemplate>().length == 1,
@@ -80,9 +101,19 @@ abstract base class ContextEngine with DebugTrackingMixin {
         .where((item) => item.builder is _BuildSequentialPromptTemplate)
         .toList();
 
-    // Track builder distribution
-    debugAddMetadata(messageId, 'parallel-builders', parallelItems.length);
-    debugAddMetadata(messageId, 'sequential-builders', sequentialItems.length);
+    // Use inspector logging
+    await withStep(
+      'builder-distribution',
+      operation: (step) async {
+        addLog(
+          'Builder distribution',
+          metadata: {
+            'parallel-builders': parallelItems.length,
+            'sequential-builders': sequentialItems.length,
+          },
+        );
+      },
+    );
 
     // Process both concurrently
     final parallelFuture = _buildParallelWithIndex(
@@ -145,14 +176,19 @@ abstract base class ContextEngine with DebugTrackingMixin {
         inputQuery.originalQuery;
     final finalUserMessage = userMessage.copyWith(content: overriddenMessage);
 
-    // Track final results
-    debugAddMetadata(messageId, 'final-context-messages', finalContexts.length);
-    debugAddMetadata(
-      messageId,
-      'total-prompt-messages',
-      finalContexts.length + 1,
+    // Use inspector logging for final results
+    await withStep(
+      'final-results',
+      operation: (step) async {
+        addLog(
+          'Final context results',
+          metadata: {
+            'final-context-messages': finalContexts.length,
+            'total-prompt-messages': finalContexts.length + 1,
+          },
+        );
+      },
     );
-    debugEndPhase(messageId, 'context-engine-processing');
 
     return (
       userMessage: finalUserMessage,
@@ -185,21 +221,27 @@ abstract base class ContextEngine with DebugTrackingMixin {
         final builder = parallelBuilder.builder;
         final builderName = 'parallel-${builder.runtimeType}';
 
-        debugStartPhase(messageId, builderName);
-        onStageStart?.call('${builder.runtimeType}');
+        return await withStep(
+          builderName,
+          operation: (step) async {
+            onStageStart?.call('${builder.runtimeType}');
 
-        try {
-          final result = await (builder is ParallelContextBuilderDebugMixin
-              ? builder.buildWithDebug(inputQuery, source, messageId)
-              : builder.build(inputQuery, source));
+            try {
+              final result = await (builder is ParallelContextBuilderDebugMixin
+                  ? builder.buildWithDebug(inputQuery, source, messageId)
+                  : builder.build(inputQuery, source));
 
-          debugAddMetadata(messageId, '${builderName}-messages', result.length);
-          debugEndPhase(messageId, builderName);
-          return (index: item.index, result: result);
-        } catch (e) {
-          debugMessageFailed(messageId, Exception(e.toString()), builderName);
-          rethrow;
-        }
+              addLog('Built ${result.length} messages');
+              return (index: item.index, result: result);
+            } catch (e) {
+              addLog(
+                'Failed to build: $e',
+                severity: TimelineLogSeverity.error,
+              );
+              rethrow;
+            }
+          },
+        );
       }),
     );
   }
@@ -234,28 +276,29 @@ abstract base class ContextEngine with DebugTrackingMixin {
       final builder = sequentialBuilder.builder;
       final builderName = 'sequential-${builder.runtimeType}';
 
-      debugStartPhase(messageId, builderName);
-      onStageStart?.call('${builder.runtimeType}');
+      final context = await withStep(
+        builderName,
+        operation: (step) async {
+          onStageStart?.call('${builder.runtimeType}');
 
-      try {
-        final context = await (builder is SequentialContextBuilderDebugMixin
-            ? builder.buildWithDebug(inputQuery, currentContext, messageId)
-            : builder.build(inputQuery, currentContext));
+          try {
+            final context = await (builder is SequentialContextBuilderDebugMixin
+                ? builder.buildWithDebug(inputQuery, currentContext, messageId)
+                : builder.build(inputQuery, currentContext));
 
-        debugAddMetadata(messageId, '${builderName}-messages', context.length);
-        debugAddMetadata(
-          messageId,
-          '${builderName}-context-size',
-          currentContext.length,
-        );
+            addLog(
+              'Built ${context.length} messages from context size ${currentContext.length}',
+            );
+            return context;
+          } catch (e) {
+            addLog('Failed to build: $e', severity: TimelineLogSeverity.error);
+            rethrow;
+          }
+        },
+      );
 
-        currentContext = context;
-        results.add((index: item.index, result: context));
-        debugEndPhase(messageId, builderName);
-      } catch (e) {
-        debugMessageFailed(messageId, Exception(e.toString()), builderName);
-        rethrow;
-      }
+      currentContext = context;
+      results.add((index: item.index, result: context));
     }
 
     return results;

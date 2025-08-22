@@ -3,25 +3,41 @@
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:kai_engine/kai_engine.dart';
 
-abstract class PostResponseEngineBase {
-  /// Process post-response actions
-  /// This should run before save to database
-  /// [result] are the generated responses from the AI after process
-  /// [requestMessages] are the original messages sent along with user input to AI to process.
-  /// [input] is the original query context
-  /// [conversationManager] is the conversation manager for the current session, to access conversation state use [conversationManager.getMessages()]
+import 'inspector/kai_phase.dart';
+import 'inspector/phase_types.dart';
+
+abstract class PostResponseEngineBase
+    extends KaiPhase<PostResponseEngineInput, PostResponseEngineOutput> {
+  @override
+  Future<PostResponseEngineOutput> execute(
+    PostResponseEngineInput input,
+  ) async {
+    // Default implementation - do nothing
+    return const PostResponseEngineOutput();
+  }
+
+  /// Legacy method for backward compatibility - will be removed
+  @deprecated
   Future<void> process({
     required QueryContext input,
     required IList<CoreMessage> requestMessages,
     required GenerationResult result,
     required ConversationManager conversationManager,
   }) async {
-    // DO Nothings by default
+    final phaseInput = PostResponseEngineInput(
+      input: input,
+      requestMessages: requestMessages,
+      result: result,
+      conversationManager: conversationManager,
+    );
+
+    await execute(phaseInput);
   }
 }
 
 /// Enhanced PostResponseEngine with debug tracking capabilities
-mixin PostResponseEngineDebugMixin on PostResponseEngineBase implements DebugTrackingMixin {
+mixin PostResponseEngineDebugMixin on PostResponseEngineBase
+    implements DebugTrackingMixin {
   @override
   DebugTrackerInterface get debugTracker => KaiDebugTracker.instance;
 
@@ -94,10 +110,14 @@ mixin PostResponseEngineDebugMixin on PostResponseEngineBase implements DebugTra
     String messageId,
     IList<CoreMessage> contextMessages,
     IList<CoreMessage> finalPrompts,
-  ) => emitDebugEvent(ContextBuiltEvent(messageId, contextMessages, finalPrompts));
+  ) => emitDebugEvent(
+    ContextBuiltEvent(messageId, contextMessages, finalPrompts),
+  );
   @override
-  void debugGenerationConfigured(String messageId, DebugGenerationConfig config) =>
-      emitDebugEvent(GenerationConfiguredEvent(messageId, config));
+  void debugGenerationConfigured(
+    String messageId,
+    DebugGenerationConfig config,
+  ) => emitDebugEvent(GenerationConfiguredEvent(messageId, config));
   @override
   void debugStreamingChunk(String messageId, String chunk) =>
       emitDebugEvent(StreamingChunkEvent(messageId, chunk));
@@ -106,7 +126,9 @@ mixin PostResponseEngineDebugMixin on PostResponseEngineBase implements DebugTra
     String messageId,
     IList<CoreMessage> generatedMessages, [
     GenerationUsage? usage,
-  ]) => emitDebugEvent(MessageCompletedEvent(messageId, generatedMessages, usage));
+  ]) => emitDebugEvent(
+    MessageCompletedEvent(messageId, generatedMessages, usage),
+  );
   @override
   void debugMessageFailed(String messageId, Exception error, String phase) =>
       emitDebugEvent(MessageFailedEvent(messageId, error, phase));
@@ -122,7 +144,12 @@ mixin PostResponseEngineDebugMixin on PostResponseEngineBase implements DebugTra
     String? description,
     Map<String, dynamic>? data,
   }) => emitDebugEvent(
-    PostResponseStepStartedEvent(messageId, stepName, description: description, data: data),
+    PostResponseStepStartedEvent(
+      messageId,
+      stepName,
+      description: description,
+      data: data,
+    ),
   );
 
   @override
@@ -133,7 +160,13 @@ mixin PostResponseEngineDebugMixin on PostResponseEngineBase implements DebugTra
     Map<String, dynamic>? result,
     String? status,
   }) => emitDebugEvent(
-    PostResponseStepCompletedEvent(messageId, stepName, duration, result: result, status: status),
+    PostResponseStepCompletedEvent(
+      messageId,
+      stepName,
+      duration,
+      result: result,
+      status: status,
+    ),
   );
 
   @override
@@ -144,7 +177,13 @@ mixin PostResponseEngineDebugMixin on PostResponseEngineBase implements DebugTra
     Exception error, {
     String? errorDetails,
   }) => emitDebugEvent(
-    PostResponseStepFailedEvent(messageId, stepName, duration, error, errorDetails: errorDetails),
+    PostResponseStepFailedEvent(
+      messageId,
+      stepName,
+      duration,
+      error,
+      errorDetails: errorDetails,
+    ),
   );
 
   @override
@@ -154,7 +193,9 @@ mixin PostResponseEngineDebugMixin on PostResponseEngineBase implements DebugTra
     String level,
     String message, {
     Map<String, dynamic>? data,
-  }) => emitDebugEvent(PostResponseLogEvent(messageId, stepName, level, message, data: data));
+  }) => emitDebugEvent(
+    PostResponseLogEvent(messageId, stepName, level, message, data: data),
+  );
 
   /// Create a convenient logger for this engine's post-response processing
   PostResponseLogger createLogger(String messageId) {

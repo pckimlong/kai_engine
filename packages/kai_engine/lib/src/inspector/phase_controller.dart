@@ -56,12 +56,18 @@ class PhaseController {
   }
 
   /// Ends this phase with the given status.
-  Future<void> endPhase({TimelineStatus status = TimelineStatus.completed}) async {
+  Future<void> endPhase({
+    TimelineStatus status = TimelineStatus.completed,
+  }) async {
     await inspector.endPhase(sessionId, timelineId, phaseId, status: status);
   }
 
   /// Updates session aggregates (e.g., token usage, cost).
   Future<void> updateSessionAggregates({int? tokenUsage, double? cost}) async {
-    await inspector.updateSessionAggregates(sessionId, tokenUsage: tokenUsage, cost: cost);
+    await inspector.updateSessionAggregates(
+      sessionId,
+      tokenUsage: tokenUsage,
+      cost: cost,
+    );
   }
 }

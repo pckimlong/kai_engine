@@ -33,5 +33,6 @@ sealed class TimelineLog with _$TimelineLog {
   }) = _TimelineLog;
 
   /// Creates a TimelineLog from JSON.
-  factory TimelineLog.fromJson(Map<String, dynamic> json) => _$TimelineLogFromJson(json);
+  factory TimelineLog.fromJson(Map<String, dynamic> json) =>
+      _$TimelineLogFromJson(json);
 }

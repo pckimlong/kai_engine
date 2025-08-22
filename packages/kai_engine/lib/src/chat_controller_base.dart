@@ -4,11 +4,14 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:kai_engine/src/post_response_engine_base.dart';
 import 'package:kai_engine/src/tool_schema.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:uuid/uuid.dart';
 
+import 'ai_generation_phase.dart';
 import 'conversation_manager.dart';
-import 'debug/debug_system.dart';
 import 'generation_service_base.dart';
-import 'kai_logger.dart';
+import 'inspector/kai_inspector.dart';
+import 'inspector/models/timeline_types.dart';
+import 'inspector/phase_types.dart';
 import 'models/cancel_token.dart';
 import 'models/core_message.dart';
 import 'models/generation_result.dart';
@@ -25,26 +28,28 @@ typedef GenerationExecuteConfig = ({
 /// Base orchestrator for chat interactions
 /// override to add more configuration
 /// [TEntity] is the type of the message object which can use to translate to the backend
-abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
+abstract base class ChatControllerBase<TEntity> {
   final QueryEngineBase _queryEngine;
   final ConversationManager<TEntity> _conversationManager;
   final GenerationServiceBase _generationService;
   final PostResponseEngineBase _postResponseEngine;
   final CancelToken _cancelToken;
-  final KaiLogger _logger;
+  final KaiInspector _inspector;
 
   ChatControllerBase({
     required ConversationManager<TEntity> conversationManager,
     required GenerationServiceBase generationService,
     required QueryEngineBase queryEngine,
     required PostResponseEngineBase postResponseEngine,
-    KaiLogger? logger,
+    KaiInspector? inspector,
   }) : _queryEngine = queryEngine,
        _conversationManager = conversationManager,
        _generationService = generationService,
        _postResponseEngine = postResponseEngine,
        _cancelToken = CancelToken(),
-       _logger = logger ?? const NoOpKaiLogger();
+       _inspector = inspector ?? NoOpKaiInspector();
+
+  static const Uuid _uuid = Uuid();
 
   /// Handle generation state updates
   final _generationStateController =
@@ -67,14 +72,35 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
     bool revertInputOnError = false,
   }) async {
     var userMessage = CoreMessage.user(content: input);
-    debugStartMessage(userMessage.messageId, input);
+
+    // Use ConversationSession ID for inspector session and create unique timeline ID
+    final sessionId = _conversationManager.session.id;
+    final timelineId = _uuid.v4();
+
+    await _inspector.startSession(sessionId);
+    await _inspector.startTimeline(sessionId, timelineId, input);
 
     try {
       // Reset cancel token for new generation
       _cancelToken.reset();
 
-      await _logger.logInfo('Chat submission started', data: {'input': input});
+      // Add initial log to the first phase (Query Processing)
+      await _inspector.recordPhaseLog(
+        sessionId,
+        timelineId,
+        'query-processing',
+        TimelineLog(
+          message: 'Chat submission started',
+          timestamp: DateTime.now(),
+          severity: TimelineLogSeverity.info,
+          metadata: {'input': input},
+        ),
+      );
+
       _setState(GenerationState.loading());
+
+      // Variable to store the final generation result
+      late final GenerationResult generationResult;
 
       // Add user message to conversation, no await
       unawaited(
@@ -85,185 +111,81 @@ abstract base class ChatControllerBase<TEntity> with DebugTrackingMixin {
         }),
       );
 
-      // Optimize query
+      // Phase 1: Query Processing
       _setLoadingPhase(LoadingPhase.processingQuery());
-      debugStartPhase(userMessage.messageId, 'query-processing');
-      final inputQuery = await _queryEngine.process(
+      final inputQuery = await _inspector.inspectPhase(
+        sessionId,
+        timelineId,
+        'Query Processing',
+        _queryEngine,
         input,
-        session: _conversationManager.session,
-        onStageStart: (name) {
-          _setLoadingPhase(LoadingPhase.processingQuery(name));
-        },
       );
-      debugEndPhase(userMessage.messageId, 'query-processing');
-      debugQueryProcessed(userMessage.messageId, inputQuery);
 
-      // Build context/history with input ready
+      // Phase 2: Context Building
       _setLoadingPhase(LoadingPhase.buildContext());
-      debugStartPhase(userMessage.messageId, 'context-building');
-      final contextResult = await build().generate(
-        source: await _conversationManager.getMessages(),
-        inputQuery: inputQuery,
-        // the original user message will get override but not effect database
-        providedUserMessage: userMessage,
-        onStageStart: (name) {
-          _setLoadingPhase(LoadingPhase.buildContext(name));
-        },
+      final contextInput = ContextEngineInput(
+        inputQuery: inputQuery.queryContext,
+        conversationMessages: await _conversationManager.getMessages(),
       );
-      debugEndPhase(userMessage.messageId, 'context-building');
-      debugContextBuilt(
-        userMessage.messageId,
-        await _conversationManager.getMessages(),
-        contextResult.prompts,
+      final contextResult = await _inspector.inspectPhase(
+        sessionId,
+        timelineId,
+        'Context Building',
+        build(),
+        contextInput,
       );
 
-      // Generate response
+      // Phase 3: AI Generation
       final configs = generativeConfigs(contextResult.prompts);
-      debugGenerationConfigured(
-        userMessage.messageId,
-        DebugGenerationConfig(
-          availableTools: configs.tools.map((t) => t.name).toList(),
-          config: configs.config ?? {},
-        ),
-      );
-
       _setLoadingPhase(LoadingPhase.generatingResponse());
-      debugStartPhase(userMessage.messageId, 'ai-generation');
-      final responseStream = _generationService.stream(
-        contextResult.prompts,
+
+      final aiGenerationInput = AIGenerationInput(
+        prompts: contextResult.prompts,
         cancelToken: _cancelToken,
         tools: configs.tools,
         config: configs.config,
+        onStateUpdate: (state) => _generationStateController.add(state),
       );
 
-      GenerationState<GenerationResult>? finalState;
-      await for (final state in responseStream) {
-        if (state is! GenerationStreamingTextState<GenerationResult>) {
-          // If it not a generation streaming, log it to better see what behind
-          _logger.logInfo('Generation state updated: $state');
-        }
+      generationResult = await _inspector.inspectPhase(
+        sessionId,
+        timelineId,
+        'AI Generation',
+        AIGenerationPhase(_generationService),
+        aiGenerationInput,
+      );
 
-        // Track streaming chunks for debug
-        if (state is GenerationStreamingTextState<GenerationResult>) {
-          debugStreamingChunk(userMessage.messageId, state.text);
-        }
+      // Phase 4: Post-Response Processing
+      final postResponseInput = PostResponseEngineInput(
+        input: inputQuery.queryContext,
+        requestMessages: contextResult.prompts,
+        result: generationResult,
+        conversationManager: _conversationManager,
+      );
 
-        // Handle error states from the stream
-        if (state is GenerationErrorState<GenerationResult>) {
-          debugEndPhase(userMessage.messageId, 'ai-generation');
-          debugMessageFailed(
-            userMessage.messageId,
-            state.exception,
-            'ai-generation',
-          );
+      await _inspector.inspectPhase(
+        sessionId,
+        timelineId,
+        'Post-Response Processing',
+        _postResponseEngine,
+        postResponseInput,
+      );
 
-          // Emit error state through the controller
-          _generationStateController.add(state);
+      await _inspector.endTimeline(sessionId, timelineId);
 
-          // Handle revertInputOnError for stream errors
-          if (revertInputOnError) {
-            await _conversationManager.removeMessages([userMessage].lock);
-          }
-
-          await _logger.logError(
-            'Generation stream error',
-            error: state.exception,
-          );
-          return _mapGenerationState(state);
-        }
-
-        if (state is GenerationCompleteState<GenerationResult>) {
-          debugEndPhase(userMessage.messageId, 'ai-generation');
-
-          // Save AI responses, added messages might get modified again by post-processing
-          // we need to add the message before process background to make sure process background
-          // included the new responses
-          final addedMessages = await _conversationManager.addMessages(
-            state.result.generatedMessages,
-          );
-
-          // Process background task on generated response, eg summarize, generate embedding
-          // without blocking process
-          // added messages might get modified again by post-processing
-          debugStartPhase(userMessage.messageId, 'post-response-processing');
-          _postResponseEngine
-              .process(
-                input: inputQuery,
-                requestMessages: contextResult.prompts,
-                // Make sure we use valid generated message which already store to database for calculate
-                result: state.result.copyWith(generatedMessages: addedMessages),
-                conversationManager: _conversationManager,
-              )
-              .then((_) {
-                debugEndPhase(
-                  userMessage.messageId,
-                  'post-response-processing',
-                );
-              })
-              .catchError((error, stackTrace) {
-                debugMessageFailed(
-                  userMessage.messageId,
-                  Exception(error.toString()),
-                  'post-response-processing',
-                );
-                _logger.logError(
-                  'Post response processing failed',
-                  error: error,
-                  stackTrace: stackTrace,
-                );
-              });
-
-          // Validate generatedMessages contains only newly generated content
-          assert(
-            state.result.generatedMessages.isNotEmpty,
-            'generatedMessages should not be empty - this indicates a bug in the generation service',
-          );
-          assert(
-            state.result.generatedMessages.every(
-              (msg) =>
-                  msg.type == CoreMessageType.ai ||
-                  msg.type == CoreMessageType.function,
-            ),
-            'generatedMessages should only contain AI responses and function calls/responses, '
-            'not system prompts or user messages. Found: ${state.result.generatedMessages.map((m) => m.type).toList()}',
-          );
-
-          // Complete debug session
-          debugMessageCompleted(
-            userMessage.messageId,
-            state.result.generatedMessages,
-            state.result.usage,
-          );
-        }
-
-        // Emit state through the controller
-        finalState = state;
-        _generationStateController.add(state);
-      }
-
-      if (finalState == null) {
-        throw KaiException.exception(
-          'Response stream completed without emitting a final state',
-        );
-      }
-
-      final result = _mapGenerationState(finalState);
-      await _logger.logInfo('Chat submission completed successfully');
-      return result;
+      final generationState = GenerationState<GenerationResult>.complete(
+        generationResult,
+      );
+      _generationStateController.add(generationState);
+      return _mapGenerationState(generationState);
     } catch (error, stackTrace) {
-      debugMessageFailed(
-        userMessage.messageId,
-        Exception(error.toString()),
-        'unknown',
-      );
-      await _logger.logError(
-        'Chat submission failed',
-        error: error,
-        stackTrace: stackTrace,
+      await _inspector.endTimeline(
+        sessionId,
+        timelineId,
+        status: TimelineStatus.failed,
       );
 
       if (revertInputOnError) {
-        // If userMessage is set, it means we successfully processed the input and persisted it
         await _conversationManager.removeMessages([userMessage].lock);
       }
 

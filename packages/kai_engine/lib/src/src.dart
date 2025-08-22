@@ -1,3 +1,4 @@
+export 'ai_generation_phase.dart';
 export 'chat_controller_base.dart';
 export 'context_builder.dart';
 export 'conversation_manager.dart';

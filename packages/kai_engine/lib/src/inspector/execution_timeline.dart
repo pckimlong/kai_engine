@@ -56,7 +56,9 @@ sealed class ExecutionTimeline with _$ExecutionTimeline {
   }
 
   /// Creates a copy of this timeline marked as completed.
-  ExecutionTimeline complete({TimelineStatus status = TimelineStatus.completed}) {
+  ExecutionTimeline complete({
+    TimelineStatus status = TimelineStatus.completed,
+  }) {
     return copyWith(status: status, endTime: DateTime.now());
   }
 }

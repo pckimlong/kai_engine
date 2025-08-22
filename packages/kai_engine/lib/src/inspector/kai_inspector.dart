@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:uuid/uuid.dart';
+
 import 'kai_phase.dart';
 import 'models/timeline_session.dart';
 import 'models/timeline_step.dart';
@@ -18,10 +20,17 @@ abstract class KaiInspector {
   Future<void> startSession(String sessionId);
 
   /// Ends the session with the given ID.
-  Future<void> endSession(String sessionId, {TimelineStatus status = TimelineStatus.completed});
+  Future<void> endSession(
+    String sessionId, {
+    TimelineStatus status = TimelineStatus.completed,
+  });
 
   /// Starts a new timeline within the given session.
-  Future<void> startTimeline(String sessionId, String timelineId, String userMessage);
+  Future<void> startTimeline(
+    String sessionId,
+    String timelineId,
+    String userMessage,
+  );
 
   /// Ends the timeline with the given ID.
   Future<void> endTimeline(
@@ -48,10 +57,20 @@ abstract class KaiInspector {
   });
 
   /// Records a step within the given phase.
-  Future<void> recordStep(String sessionId, String timelineId, String phaseId, TimelineStep step);
+  Future<void> recordStep(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    TimelineStep step,
+  );
 
   /// Records a log entry for the given phase.
-  Future<void> recordPhaseLog(String sessionId, String timelineId, String phaseId, TimelineLog log);
+  Future<void> recordPhaseLog(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    TimelineLog log,
+  );
 
   /// Records a log entry for the given step.
   Future<void> recordStepLog(
@@ -69,7 +88,11 @@ abstract class KaiInspector {
   Future<TimelineSession?> getSession(String sessionId);
 
   /// Updates aggregate data for the session (e.g., total token usage, cost).
-  Future<void> updateSessionAggregates(String sessionId, {int? tokenUsage, double? cost});
+  Future<void> updateSessionAggregates(
+    String sessionId, {
+    int? tokenUsage,
+    double? cost,
+  });
 
   /// Helper method to run a KaiPhase with full inspection.
   ///
@@ -93,10 +116,16 @@ abstract class KaiInspector {
     Input input, {
     String? description,
   }) async {
-    final phaseId =
-        '${phaseName.toLowerCase().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}';
+    const uuid = Uuid();
+    final phaseId = uuid.v4();
 
-    await startPhase(sessionId, timelineId, phaseId, phaseName, description: description);
+    await startPhase(
+      sessionId,
+      timelineId,
+      phaseId,
+      phaseName,
+      description: description,
+    );
 
     try {
       final result = await phaseToRun.run(
@@ -113,7 +142,12 @@ abstract class KaiInspector {
       await endPhase(sessionId, timelineId, phaseId);
       return result;
     } catch (error) {
-      await endPhase(sessionId, timelineId, phaseId, status: TimelineStatus.failed);
+      await endPhase(
+        sessionId,
+        timelineId,
+        phaseId,
+        status: TimelineStatus.failed,
+      );
       rethrow;
     }
   }
@@ -136,7 +170,11 @@ class NoOpKaiInspector implements KaiInspector {
   }) async {}
 
   @override
-  Future<void> startTimeline(String sessionId, String timelineId, String userMessage) async {}
+  Future<void> startTimeline(
+    String sessionId,
+    String timelineId,
+    String userMessage,
+  ) async {}
 
   @override
   Future<void> endTimeline(
@@ -196,7 +234,11 @@ class NoOpKaiInspector implements KaiInspector {
   Future<TimelineSession?> getSession(String sessionId) async => null;
 
   @override
-  Future<void> updateSessionAggregates(String sessionId, {int? tokenUsage, double? cost}) async {}
+  Future<void> updateSessionAggregates(
+    String sessionId, {
+    int? tokenUsage,
+    double? cost,
+  }) async {}
 
   @override
   Future<Output> inspectPhase<Input, Output>(

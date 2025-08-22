@@ -44,7 +44,8 @@ sealed class TimelinePhase with _$TimelinePhase {
   }) = _TimelinePhase;
 
   /// Creates a TimelinePhase from JSON.
-  factory TimelinePhase.fromJson(Map<String, dynamic> json) => _$TimelinePhaseFromJson(json);
+  factory TimelinePhase.fromJson(Map<String, dynamic> json) =>
+      _$TimelinePhaseFromJson(json);
 
   const TimelinePhase._();
 

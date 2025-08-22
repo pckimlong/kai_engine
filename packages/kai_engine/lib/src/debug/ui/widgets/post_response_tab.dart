@@ -79,7 +79,9 @@ class _PostResponseOverview extends StatelessWidget {
     final totalSteps = steps.length;
     final completedSteps = steps.where((s) => s.isComplete).length;
     final failedSteps = steps.where((s) => s.hasError).length;
-    final runningSteps = steps.where((s) => !s.isComplete && !s.hasError).length;
+    final runningSteps = steps
+        .where((s) => !s.isComplete && !s.hasError)
+        .length;
 
     final totalPhases = phases.length;
     final completedPhases = phases.where((p) => p.isComplete).length;
@@ -96,7 +98,10 @@ class _PostResponseOverview extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.settings_applications, color: Colors.deepPurple),
+                const Icon(
+                  Icons.settings_applications,
+                  color: Colors.deepPurple,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Post-Response Processing Overview',
@@ -116,7 +121,11 @@ class _PostResponseOverview extends StatelessWidget {
               runSpacing: 12,
               children: [
                 if (totalPhases > 0) ...[
-                  InfoChip(label: 'Engines', value: '$totalPhases', color: Colors.deepPurple),
+                  InfoChip(
+                    label: 'Engines',
+                    value: '$totalPhases',
+                    color: Colors.deepPurple,
+                  ),
                   if (phaseDuration > 0)
                     InfoChip(
                       label: 'Engine Time',
@@ -125,12 +134,28 @@ class _PostResponseOverview extends StatelessWidget {
                     ),
                 ],
                 if (totalSteps > 0) ...[
-                  InfoChip(label: 'Total Steps', value: '$totalSteps', color: Colors.blue),
-                  InfoChip(label: 'Completed', value: '$completedSteps', color: Colors.green),
+                  InfoChip(
+                    label: 'Total Steps',
+                    value: '$totalSteps',
+                    color: Colors.blue,
+                  ),
+                  InfoChip(
+                    label: 'Completed',
+                    value: '$completedSteps',
+                    color: Colors.green,
+                  ),
                   if (failedSteps > 0)
-                    InfoChip(label: 'Failed', value: '$failedSteps', color: Colors.red),
+                    InfoChip(
+                      label: 'Failed',
+                      value: '$failedSteps',
+                      color: Colors.red,
+                    ),
                   if (runningSteps > 0)
-                    InfoChip(label: 'Running', value: '$runningSteps', color: Colors.orange),
+                    InfoChip(
+                      label: 'Running',
+                      value: '$runningSteps',
+                      color: Colors.orange,
+                    ),
                   if (totalDuration > 0)
                     InfoChip(
                       label: 'Step Time',
@@ -206,9 +231,11 @@ class _PostResponseOverview extends StatelessWidget {
     final jsonString = const JsonEncoder.withIndent('  ').convert(stepsData);
     Clipboard.setData(ClipboardData(text: jsonString));
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Post-response steps data copied to clipboard')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Post-response steps data copied to clipboard'),
+      ),
+    );
   }
 }
 
@@ -284,17 +311,27 @@ class _ProgressBar extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            _ProgressLegendItem(color: Colors.green, label: 'Completed ($completed)'),
+            _ProgressLegendItem(
+              color: Colors.green,
+              label: 'Completed ($completed)',
+            ),
             const SizedBox(width: 16),
             if (running > 0) ...[
-              _ProgressLegendItem(color: Colors.orange, label: 'Running ($running)'),
+              _ProgressLegendItem(
+                color: Colors.orange,
+                label: 'Running ($running)',
+              ),
               const SizedBox(width: 16),
             ],
             if (failed > 0) ...[
               _ProgressLegendItem(color: Colors.red, label: 'Failed ($failed)'),
               const SizedBox(width: 16),
             ],
-            if (pending > 0) _ProgressLegendItem(color: Colors.grey, label: 'Pending ($pending)'),
+            if (pending > 0)
+              _ProgressLegendItem(
+                color: Colors.grey,
+                label: 'Pending ($pending)',
+              ),
           ],
         ),
       ],
@@ -338,14 +375,21 @@ class _PostResponseStepsList extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Processing Steps', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Processing Steps',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 16),
             ...steps.asMap().entries.map((entry) {
               final index = entry.key;
               final step = entry.value;
               final isLast = index == steps.length - 1;
 
-              return _StepCard(step: step, stepNumber: index + 1, isLast: isLast);
+              return _StepCard(
+                step: step,
+                stepNumber: index + 1,
+                isLast: isLast,
+              );
             }),
           ],
         ),
@@ -359,7 +403,11 @@ class _StepCard extends StatefulWidget {
   final int stepNumber;
   final bool isLast;
 
-  const _StepCard({required this.step, required this.stepNumber, required this.isLast});
+  const _StepCard({
+    required this.step,
+    required this.stepNumber,
+    required this.isLast,
+  });
 
   @override
   State<_StepCard> createState() => _StepCardState();
@@ -444,7 +492,10 @@ class _StepCardState extends State<_StepCard> {
                                 ),
                                 if (step.duration != null)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: statusColor.withAlpha(51),
                                       borderRadius: BorderRadius.circular(12),
@@ -464,7 +515,10 @@ class _StepCardState extends State<_StepCard> {
                               const SizedBox(height: 4),
                               Text(
                                 step.description!,
-                                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                ),
                               ),
                             ],
                             const SizedBox(height: 8),
@@ -474,20 +528,28 @@ class _StepCardState extends State<_StepCard> {
                                 const SizedBox(width: 8),
                                 if (step.logs.isNotEmpty)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.blue.withAlpha(51),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
                                       '${step.logs.length} logs',
-                                      style: const TextStyle(fontSize: 11, color: Colors.blue),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.blue,
+                                      ),
                                     ),
                                   ),
                                 const Spacer(),
                                 if (step.logs.isNotEmpty)
                                   Icon(
-                                    _isExpanded ? Icons.expand_less : Icons.expand_more,
+                                    _isExpanded
+                                        ? Icons.expand_less
+                                        : Icons.expand_more,
                                     color: Colors.grey[600],
                                   ),
                               ],
@@ -501,7 +563,10 @@ class _StepCardState extends State<_StepCard> {
               ),
 
               // Expanded content
-              if (_isExpanded) ...[const Divider(height: 1), _ExpandedStepContent(step: step)],
+              if (_isExpanded) ...[
+                const Divider(height: 1),
+                _ExpandedStepContent(step: step),
+              ],
             ],
           ),
         ),
@@ -544,10 +609,17 @@ class _StatusChip extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: color.withAlpha(51), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        color: color.withAlpha(51),
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Text(
         status.toUpperCase(),
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
       ),
     );
   }
@@ -582,11 +654,17 @@ class _ExpandedStepContentState extends State<_ExpandedStepContent> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _InfoRow(label: 'Started', value: _formatTime(step.startTime)),
+                  _InfoRow(
+                    label: 'Started',
+                    value: _formatTime(step.startTime),
+                  ),
                   if (step.endTime != null)
                     _InfoRow(label: 'Ended', value: _formatTime(step.endTime!)),
                   if (step.duration != null)
-                    _InfoRow(label: 'Duration', value: '${step.duration!.inMilliseconds}ms'),
+                    _InfoRow(
+                      label: 'Duration',
+                      value: '${step.duration!.inMilliseconds}ms',
+                    ),
                 ],
               ),
             ),
@@ -628,7 +706,10 @@ class _ExpandedStepContentState extends State<_ExpandedStepContent> {
                   children: [
                     Text(
                       step.error.toString(),
-                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     if (step.errorDetails != null) ...[
                       const SizedBox(height: 4),
@@ -659,14 +740,18 @@ class _ExpandedStepContentState extends State<_ExpandedStepContent> {
                         (level) => Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
-                            label: Text(level, style: const TextStyle(fontSize: 10)),
+                            label: Text(
+                              level,
+                              style: const TextStyle(fontSize: 10),
+                            ),
                             selected: _selectedLogLevel == level,
                             onSelected: (selected) {
                               if (selected) {
                                 setState(() => _selectedLogLevel = level);
                               }
                             },
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                             visualDensity: VisualDensity.compact,
                           ),
                         ),
@@ -678,7 +763,9 @@ class _ExpandedStepContentState extends State<_ExpandedStepContent> {
                     constraints: const BoxConstraints(maxHeight: 200),
                     child: SingleChildScrollView(
                       child: Column(
-                        children: filteredLogs.map((log) => _LogEntry(log: log)).toList(),
+                        children: filteredLogs
+                            .map((log) => _LogEntry(log: log))
+                            .toList(),
                       ),
                     ),
                   ),
@@ -695,7 +782,9 @@ class _ExpandedStepContentState extends State<_ExpandedStepContent> {
     if (_selectedLogLevel == 'all') {
       return widget.step.logs;
     }
-    return widget.step.logs.where((log) => log.level == _selectedLogLevel).toList();
+    return widget.step.logs
+        .where((log) => log.level == _selectedLogLevel)
+        .toList();
   }
 
   String _formatTime(DateTime time) {
@@ -717,7 +806,10 @@ class _InfoSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
         const SizedBox(height: 4),
         child,
       ],
@@ -740,10 +832,16 @@ class _InfoRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 80,
-            child: Text('$label:', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            child: Text(
+              '$label:',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+            ),
           ),
         ],
       ),
@@ -778,16 +876,26 @@ class _LogEntry extends StatelessWidget {
             ),
             child: Text(
               log.level.substring(0, 1).toUpperCase(),
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: levelColor),
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                color: levelColor,
+              ),
             ),
           ),
           const SizedBox(width: 6),
           Text(
             _formatTime(log.timestamp),
-            style: TextStyle(fontSize: 10, color: Colors.grey[600], fontFamily: 'monospace'),
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey[600],
+              fontFamily: 'monospace',
+            ),
           ),
           const SizedBox(width: 6),
-          Expanded(child: Text(log.message, style: const TextStyle(fontSize: 11))),
+          Expanded(
+            child: Text(log.message, style: const TextStyle(fontSize: 11)),
+          ),
         ],
       ),
     );

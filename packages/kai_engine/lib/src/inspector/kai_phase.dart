@@ -8,6 +8,8 @@
 ///    that can be called with `this.` from inside the implementation. These helpers
 ///    get the context they need from the private `PhaseController`.
 
+import 'package:uuid/uuid.dart';
+
 import 'models/timeline_step.dart';
 import 'models/timeline_types.dart';
 import 'phase_controller.dart';
@@ -108,11 +110,18 @@ abstract class KaiPhase<Input, Output> {
   void updateAggregates({int? tokenUsage, double? cost}) {
     if (_phaseController == null) return;
 
-    _phaseController!.updateSessionAggregates(tokenUsage: tokenUsage, cost: cost);
+    _phaseController!.updateSessionAggregates(
+      tokenUsage: tokenUsage,
+      cost: cost,
+    );
   }
 
   /// Creates a dummy step for when no inspector is active.
-  TimelineStep _createDummyStep(String name, String? description, Map<String, dynamic>? metadata) {
+  TimelineStep _createDummyStep(
+    String name,
+    String? description,
+    Map<String, dynamic>? metadata,
+  ) {
     return TimelineStep(
       id: 'dummy',
       name: name,
@@ -124,6 +133,7 @@ abstract class KaiPhase<Input, Output> {
 
   /// Generates a unique ID for steps.
   String _generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
+    const uuid = Uuid();
+    return uuid.v4();
   }
 }
