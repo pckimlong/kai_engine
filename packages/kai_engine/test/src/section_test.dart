@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kai_engine/src/content_builder.dart';
 import 'package:kai_engine/src/section.dart';
 
 void main() {
@@ -137,6 +138,74 @@ void main() {
             .add(Section.bulletList(['Item 1', 'Item 2']))
             .add(Section.codeBlock('print("Hello");', language: 'dart'));
         expect(section, isNotNull);
+      });
+    });
+
+    group('addEach method', () {
+      test('adds sections for each item in a list', () {
+        final errors = ['Timeout', 'Auth Failed'];
+        final section = Section.xml(
+          'errors',
+        ).addEach(errors, (error) => Section.xmlText('error', error));
+
+        expect(section, isNotNull);
+        expect(section.children, hasLength(2));
+        expect(section.children[0].output(), contains('Timeout'));
+        expect(section.children[1].output(), contains('Auth Failed'));
+      });
+
+      test('adds sections for each item in an iterable', () {
+        final numbers = Iterable<int>.generate(3); // 0, 1, 2
+        final section = Section.xml(
+          'numbers',
+        ).addEach(numbers, (number) => Section.xmlText('number', number.toString()));
+
+        expect(section, isNotNull);
+        expect(section.children, hasLength(3));
+        expect(section.children[0].output(), contains('0'));
+        expect(section.children[1].output(), contains('1'));
+        expect(section.children[2].output(), contains('2'));
+      });
+
+      test('works with complex objects', () {
+        final users = [
+          {'name': 'Alice', 'age': '30'},
+          {'name': 'Bob', 'age': '25'},
+        ];
+
+        final section = Section.xml('users').addEach(
+          users,
+          (user) => Section.xml(
+            'user',
+            attributes: {'name': user['name']!},
+          ).add(Section.xmlText('age', user['age']!)),
+        );
+
+        expect(section, isNotNull);
+        expect(section.children, hasLength(2));
+        final output = section.output();
+        expect(output, contains('name="Alice"'));
+        expect(output, contains('name="Bob"'));
+        expect(output, contains('30'));
+        expect(output, contains('25'));
+      });
+
+      test('returns parent section for chaining', () {
+        final items = ['item1', 'item2'];
+        final parent = Section.xml('parent');
+        final result = parent.addEach(items, (item) => Section.xmlText('child', item));
+
+        expect(result, same(parent)); // Should return the same instance for chaining
+      });
+
+      test('works with empty iterable', () {
+        final emptyList = <String>[];
+        final section = Section.xml(
+          'container',
+        ).addEach(emptyList, (item) => Section.xmlText('item', item));
+
+        expect(section, isNotNull);
+        expect(section.children, isEmpty);
       });
     });
 
@@ -510,6 +579,164 @@ void main() {
         // Verify that error elements are rendered if present
         final promptWithErrors = buildPrompt(false, ['Test error']);
         expect(promptWithErrors.contains('Test error'), isTrue);
+      });
+    });
+
+    group('ContentBuilder', () {
+      test('adds a single line', () {
+        final builder = ContentBuilder();
+        builder.addLine('First line');
+        final content = builder.build();
+        expect(content, equals(['First line']));
+      });
+
+      test('adds multiple lines', () {
+        final builder = ContentBuilder();
+        builder.addLines(['Line 1', 'Line 2', 'Line 3']);
+        final content = builder.build();
+        expect(content, equals(['Line 1', 'Line 2', 'Line 3']));
+      });
+
+      test('adds a line conditionally', () {
+        final builder = ContentBuilder();
+        builder.addLineIf(true, 'Conditional line added');
+        builder.addLineIf(false, 'Conditional line not added');
+        final content = builder.build();
+        expect(content, equals(['Conditional line added']));
+      });
+
+      test('builds content with multiple operations', () {
+        final builder = ContentBuilder();
+        builder.addLine('First line');
+        builder.addLineIf(true, 'Second line');
+        builder.addLines(['Third line', 'Fourth line']);
+        builder.addLineIf(false, 'This line should not appear');
+        final content = builder.build();
+        expect(content, equals(['First line', 'Second line', 'Third line', 'Fourth line']));
+      });
+    });
+
+    group('Section.build', () {
+      test('creates section with dynamically built content', () {
+        final section = Section.build((builder) {
+          builder.addLine('First line');
+          builder.addLine('Second line');
+        });
+        final output = section.output();
+        expect(output, equals('First line\nSecond line'));
+      });
+
+      test('creates section with conditional content', () {
+        final section = Section.build((builder) {
+          builder.addLine('Always present');
+          builder.addLineIf(true, 'Conditionally present');
+          builder.addLineIf(false, 'Should not be present');
+        });
+        final output = section.output();
+        expect(output, equals('Always present\nConditionally present'));
+      });
+
+      test('creates section with mixed content operations', () {
+        final section = Section.build((builder) {
+          builder.addLine('First line');
+          builder.addLines(['Second line', 'Third line']);
+          builder.addLineIf(true, 'Fourth line');
+          builder.addLineIf(false, 'Should not be present');
+        });
+        final output = section.output();
+        expect(output, equals('First line\nSecond line\nThird line\nFourth line'));
+      });
+    });
+    group('Section.xmlFrom', () {
+      test('creates XML section with content from builder', () {
+        final section = Section.xmlFrom('notes', builder: () => 'This is a note');
+        final output = section.output();
+        expect(output, equals('<notes>\n This is a note\n</notes>'));
+      });
+
+      test('omits section when builder returns null', () {
+        final section = Section.xmlFrom('notes', builder: () => null);
+        final output = section.output();
+        expect(output, equals(''));
+        expect(section.shouldRender, isFalse);
+      });
+
+      test('omits section when builder returns empty string', () {
+        final section = Section.xmlFrom('notes', builder: () => '');
+        final output = section.output();
+        expect(output, equals(''));
+        expect(section.shouldRender, isFalse);
+      });
+
+      test('creates XML section with attributes and content from builder', () {
+        final section = Section.xmlFrom(
+          'user',
+          attributes: {'id': '123', 'name': 'John'},
+          builder: () => 'User information',
+        );
+        final output = section.output();
+        expect(output, equals('<user id="123" name="John">\n  User information\n</user>'));
+      });
+
+      test('works with complex content from builder', () {
+        final section = Section.xmlFrom('data', builder: () => 'Line 1\nLine 2\nLine 3');
+        final output = section.output();
+        expect(output, equals('<data>\n  Line 1\nLine 2\nLine 3\n</data>'));
+      });
+    });
+
+    group('includeIf method', () {
+      test('includes section when condition is true', () {
+        final section = Section.xml(
+          'debug',
+        ).includeIf(true).add(Section(body: ['Debug information']));
+
+        final output = section.output();
+        expect(output, contains('<debug>'));
+        expect(output, contains('Debug information'));
+      });
+
+      test('omits section when condition is false', () {
+        final section = Section.xml(
+          'debug',
+        ).includeIf(false).add(Section(body: ['Debug information']));
+
+        final output = section.output();
+        expect(output, equals(''));
+      });
+
+      test('includes section when condition function returns true', () {
+        bool isDebugMode = true;
+        final section = Section.xml(
+          'debug',
+        ).includeIf(() => isDebugMode).add(Section(body: ['Debug information']));
+
+        final output = section.output();
+        expect(output, contains('<debug>'));
+        expect(output, contains('Debug information'));
+      });
+
+      test('omits section when condition function returns false', () {
+        bool isDebugMode = false;
+        final section = Section.xml(
+          'debug',
+        ).includeIf(() => isDebugMode).add(Section(body: ['Debug information']));
+
+        final output = section.output();
+        expect(output, equals(''));
+      });
+
+      test('works with omitWhenEmpty() in combination', () {
+        final section = Section.xml('errors').includeIf(true).omitWhenEmpty();
+
+        final output = section.output();
+        expect(output, equals('')); // Should be omitted because it's empty
+      });
+
+      test('returns Section for chaining', () {
+        final section = Section.xml('test');
+        final result = section.includeIf(true);
+        expect(result, same(section));
       });
     });
   });
