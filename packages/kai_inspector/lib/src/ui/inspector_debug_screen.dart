@@ -29,8 +29,7 @@ class InspectorDebugScreen extends StatefulWidget {
   State<InspectorDebugScreen> createState() => _InspectorDebugScreenState();
 }
 
-class _InspectorDebugScreenState extends State<InspectorDebugScreen>
-    with TickerProviderStateMixin {
+class _InspectorDebugScreenState extends State<InspectorDebugScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   TimelineSession? _session;
   SessionOverviewData? _sessionOverview;
@@ -151,7 +150,7 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Session: ${widget.sessionId.substring(0, 8)}...'),
+        title: Text('Session'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -241,7 +240,7 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen>
 
     final summary = _generateSessionSummary();
     Clipboard.setData(ClipboardData(text: summary));
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Session summary exported to clipboard')),
     );
@@ -253,7 +252,7 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen>
     try {
       final jsonString = const JsonEncoder.withIndent('  ').convert(_session!.toJson());
       Clipboard.setData(ClipboardData(text: jsonString));
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Full session JSON exported to clipboard')),
       );
@@ -267,7 +266,7 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen>
   void _exportSessionSummary() {
     final summary = _generateSessionSummary();
     Clipboard.setData(ClipboardData(text: summary));
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Session summary exported to clipboard')),
     );
@@ -285,7 +284,7 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen>
     final buffer = StringBuffer();
     buffer.writeln('=== Kai Engine Debug Session Summary ===');
     buffer.writeln();
-    
+
     // Basic session info
     buffer.writeln('Session ID: ${session.id}');
     buffer.writeln('Start Time: ${session.startTime.toIso8601String()}');
@@ -300,7 +299,8 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen>
     buffer.writeln('Average Response Time: ${metrics.performanceMetrics.averageResponseTimeMs}ms');
     buffer.writeln('Fastest Response: ${metrics.performanceMetrics.fastestResponseTimeMs}ms');
     buffer.writeln('Slowest Response: ${metrics.performanceMetrics.slowestResponseTimeMs}ms');
-    buffer.writeln('Messages/Minute: ${metrics.performanceMetrics.messagesPerMinute.toStringAsFixed(1)}');
+    buffer.writeln(
+        'Messages/Minute: ${metrics.performanceMetrics.messagesPerMinute.toStringAsFixed(1)}');
     buffer.writeln();
 
     // Token economics
@@ -315,11 +315,14 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen>
 
     // Quality metrics
     buffer.writeln('=== Quality Metrics ===');
-    buffer.writeln('Success Rate: ${(metrics.qualityMetrics.successRate * 100).toStringAsFixed(1)}%');
+    buffer
+        .writeln('Success Rate: ${(metrics.qualityMetrics.successRate * 100).toStringAsFixed(1)}%');
     buffer.writeln('Total Errors: ${overview.totalErrors}');
     buffer.writeln('Total Warnings: ${overview.totalWarnings}');
-    buffer.writeln('Avg Errors/Message: ${metrics.qualityMetrics.averageErrorsPerMessage.toStringAsFixed(1)}');
-    buffer.writeln('Avg Warnings/Message: ${metrics.qualityMetrics.averageWarningsPerMessage.toStringAsFixed(1)}');
+    buffer.writeln(
+        'Avg Errors/Message: ${metrics.qualityMetrics.averageErrorsPerMessage.toStringAsFixed(1)}');
+    buffer.writeln(
+        'Avg Warnings/Message: ${metrics.qualityMetrics.averageWarningsPerMessage.toStringAsFixed(1)}');
     buffer.writeln();
 
     // Streaming analytics
@@ -329,7 +332,8 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen>
       buffer.writeln('Chunks Received: ${metrics.streamingAnalytics.totalChunksReceived}');
       buffer.writeln('Characters Streamed: ${metrics.streamingAnalytics.totalCharactersStreamed}');
       buffer.writeln('Average Chunk Size: ${metrics.streamingAnalytics.averageChunkSize}');
-      buffer.writeln('Avg Time to First Chunk: ${metrics.streamingAnalytics.averageTimeToFirstChunkMs}ms');
+      buffer.writeln(
+          'Avg Time to First Chunk: ${metrics.streamingAnalytics.averageTimeToFirstChunkMs}ms');
       buffer.writeln();
     }
 
@@ -351,15 +355,17 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen>
     for (var i = 0; i < session.timelines.length; i++) {
       final timeline = session.timelines[i];
       final timelineData = DebugDataAdapter.convertTimelineOverview(timeline);
-      
+
       buffer.writeln('Message ${i + 1}:');
-      buffer.writeln('  Input: ${timeline.userMessage.length > 100 ? timeline.userMessage.substring(0, 100) + '...' : timeline.userMessage}');
+      buffer.writeln(
+          '  Input: ${timeline.userMessage.length > 100 ? timeline.userMessage.substring(0, 100) + '...' : timeline.userMessage}');
       buffer.writeln('  Duration: ${timelineData.duration?.inMilliseconds ?? 'N/A'}ms');
       buffer.writeln('  Tokens: ${timelineData.totalTokens}');
       buffer.writeln('  Phases: ${timelineData.phaseCount}');
       buffer.writeln('  Status: ${timelineData.status}');
       if (timelineData.errorCount > 0 || timelineData.warningCount > 0) {
-        buffer.writeln('  Issues: ${timelineData.errorCount} errors, ${timelineData.warningCount} warnings');
+        buffer.writeln(
+            '  Issues: ${timelineData.errorCount} errors, ${timelineData.warningCount} warnings');
       }
       buffer.writeln();
     }

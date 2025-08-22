@@ -1,10 +1,9 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-import 'package:kai_engine/src/inspector/kai_inspector.dart';
 import 'package:kai_engine/src/inspector/execution_timeline.dart';
+import 'package:kai_engine/src/inspector/kai_inspector.dart';
+
 import 'debug_data_adapter.dart';
 import 'widgets/shared_widgets.dart';
 
@@ -207,7 +206,7 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
 
     final summary = _generateTimelineSummary();
     Clipboard.setData(ClipboardData(text: summary));
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Timeline data exported to clipboard')),
     );
@@ -224,7 +223,7 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
     final buffer = StringBuffer();
     buffer.writeln('=== Message Processing Timeline ===');
     buffer.writeln();
-    
+
     // Basic info
     buffer.writeln('Message ID: ${timeline.id}');
     buffer.writeln('User Input: ${timeline.userMessage}');
@@ -251,14 +250,16 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
       buffer.writeln('  Logs: ${phase.logCount}');
       if (phase.tokenMetadata != null && phase.tokenMetadata!.totalTokens > 0) {
         final token = phase.tokenMetadata!;
-        buffer.writeln('  Tokens: ${token.totalTokens} (${token.inputTokens ?? 0} in, ${token.outputTokens ?? 0} out)');
+        buffer.writeln(
+            '  Tokens: ${token.totalTokens} (${token.inputTokens ?? 0} in, ${token.outputTokens ?? 0} out)');
         if (token.tokensPerSecond != null) {
           buffer.writeln('  Speed: ${token.tokensPerSecond!.toStringAsFixed(1)} tokens/sec');
         }
       }
       if (phase.streamingMetadata != null) {
         final streaming = phase.streamingMetadata!;
-        buffer.writeln('  Streaming: ${streaming.chunksReceived} chunks, ${streaming.totalCharacters} chars');
+        buffer.writeln(
+            '  Streaming: ${streaming.chunksReceived} chunks, ${streaming.totalCharacters} chars');
         if (streaming.timeToFirstChunkMs != null) {
           buffer.writeln('  First Chunk: ${streaming.timeToFirstChunkMs}ms');
         }
@@ -276,8 +277,8 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
         buffer.writeln('--- ${phase.phaseName} ---');
         for (final log in phase.logs) {
           buffer.writeln('[${_formatTimestamp(log.timestamp)}] '
-                       '[${log.severity.toString().split('.').last.toUpperCase()}] '
-                       '${log.message}');
+              '[${log.severity.toString().split('.').last.toUpperCase()}] '
+              '${log.message}');
           if (log.metadata.isNotEmpty) {
             for (final entry in log.metadata.entries) {
               buffer.writeln('  ${entry.key}: ${entry.value}');
@@ -293,8 +294,8 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
           buffer.writeln('--- ${phase.phaseName} / ${step.stepName} ---');
           for (final log in step.logs) {
             buffer.writeln('[${_formatTimestamp(log.timestamp)}] '
-                         '[${log.severity.toString().split('.').last.toUpperCase()}] '
-                         '${log.message}');
+                '[${log.severity.toString().split('.').last.toUpperCase()}] '
+                '${log.message}');
             if (log.metadata.isNotEmpty) {
               for (final entry in log.metadata.entries) {
                 buffer.writeln('  ${entry.key}: ${entry.value}');
@@ -311,9 +312,9 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
 
   String _formatTimestamp(DateTime timestamp) {
     return '${timestamp.hour.toString().padLeft(2, '0')}:'
-           '${timestamp.minute.toString().padLeft(2, '0')}:'
-           '${timestamp.second.toString().padLeft(2, '0')}'
-           '.${timestamp.millisecond.toString().padLeft(3, '0')}';
+        '${timestamp.minute.toString().padLeft(2, '0')}:'
+        '${timestamp.second.toString().padLeft(2, '0')}'
+        '.${timestamp.millisecond.toString().padLeft(3, '0')}';
   }
 }
 
@@ -384,15 +385,15 @@ class _MessageHeaderCard extends StatelessWidget {
                       Text(
                         'Message Processing Timeline',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                       Text(
                         'ID: ${timeline.id}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontFamily: 'monospace',
-                          color: Colors.grey[600],
-                        ),
+                              fontFamily: 'monospace',
+                              color: Colors.grey[600],
+                            ),
                       ),
                     ],
                   ),
@@ -576,15 +577,15 @@ class _PhaseTimelineVisualization extends StatelessWidget {
             Text(
               'Processing Timeline',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
             const SizedBox(height: 16),
             ...timelineData.phases.map((phase) => _PhaseTimelineRow(
-              phase: phase,
-              totalDuration: timelineData.duration?.inMilliseconds ?? 1,
-              timelineStart: timelineData.startTime,
-            )),
+                  phase: phase,
+                  totalDuration: timelineData.duration?.inMilliseconds ?? 1,
+                  timelineStart: timelineData.startTime,
+                )),
           ],
         ),
       ),
@@ -634,9 +635,7 @@ class _PhaseTimelineRow extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                phase.duration != null
-                    ? '${phase.duration!.inMilliseconds}ms'
-                    : 'In Progress...',
+                phase.duration != null ? '${phase.duration!.inMilliseconds}ms' : 'In Progress...',
                 style: TextStyle(
                   color: Colors.grey[600],
                   fontSize: 12,
@@ -673,9 +672,7 @@ class _PhaseTimelineRow extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      phase.duration != null
-                          ? '${phase.duration!.inMilliseconds}ms'
-                          : '...',
+                      phase.duration != null ? '${phase.duration!.inMilliseconds}ms' : '...',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -708,8 +705,8 @@ class _PhaseDetailsTab extends StatelessWidget {
           Text(
             'Phase Details',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+                  fontWeight: FontWeight.w600,
+                ),
           ),
           const SizedBox(height: 16),
           ...timelineData.phases.map((phase) => _PhaseDetailCard(phase: phase)),
@@ -954,7 +951,7 @@ class _LogsAndMetadataTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final allLogs = <LogEntryData>[];
-    
+
     // Collect all logs from phases and steps
     for (final phase in timelineData.phases) {
       allLogs.addAll(phase.logs);
@@ -962,7 +959,7 @@ class _LogsAndMetadataTab extends StatelessWidget {
         allLogs.addAll(step.logs);
       }
     }
-    
+
     // Sort by timestamp
     allLogs.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
@@ -974,8 +971,8 @@ class _LogsAndMetadataTab extends StatelessWidget {
           Text(
             'Timeline Logs (${allLogs.length})',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+                  fontWeight: FontWeight.w600,
+                ),
           ),
           const SizedBox(height: 16),
           if (allLogs.isEmpty)
@@ -1052,36 +1049,38 @@ class _LogEntryCard extends StatelessWidget {
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: log.metadata.entries.map((entry) => 
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 1),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 100,
-                            child: Text(
-                              '${entry.key}:',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey[600],
+                  children: log.metadata.entries
+                      .map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 1),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 100,
+                                child: Text(
+                                  '${entry.key}:',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              entry.value.toString(),
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontFamily: 'monospace',
+                              Expanded(
+                                child: Text(
+                                  entry.value.toString(),
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ).toList(),
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
             ],
@@ -1108,8 +1107,8 @@ class _LogEntryCard extends StatelessWidget {
 
   String _formatTimestamp(DateTime timestamp) {
     return '${timestamp.hour.toString().padLeft(2, '0')}:'
-           '${timestamp.minute.toString().padLeft(2, '0')}:'
-           '${timestamp.second.toString().padLeft(2, '0')}'
-           '.${timestamp.millisecond.toString().padLeft(3, '0')}';
+        '${timestamp.minute.toString().padLeft(2, '0')}:'
+        '${timestamp.second.toString().padLeft(2, '0')}'
+        '.${timestamp.millisecond.toString().padLeft(3, '0')}';
   }
 }

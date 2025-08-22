@@ -74,6 +74,10 @@ KaiInspectorScreen(inspector: inspector);
 
 Note: When `inspector` is `null`, the inspection feature is completely disabled with zero performance overhead.
 
+## Default Inspector Implementation
+
+The `DefaultKaiInspector` provides an in-memory implementation of the inspection contract using fast immutable collections for efficient updates. It's suitable for development and testing purposes. For production use, you might want to implement a custom inspector that stores data in a persistent database.
+
 ## UI Components
 
 ### Session Dashboard

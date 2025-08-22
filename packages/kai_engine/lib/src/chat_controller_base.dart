@@ -19,10 +19,7 @@ import 'models/kai_exception.dart';
 import 'prompt_engine.dart';
 import 'query_engine_base.dart';
 
-typedef GenerationExecuteConfig = ({
-  List<ToolSchema> tools,
-  Map<String, dynamic>? config,
-});
+typedef GenerationExecuteConfig = ({List<ToolSchema> tools, Map<String, dynamic>? config});
 
 /// Base orchestrator for chat interactions
 /// override to add more configuration
@@ -48,12 +45,10 @@ abstract base class ChatControllerBase<TEntity> {
        _cancelToken = CancelToken(),
        _inspector = inspector ?? NoOpKaiInspector();
 
-
   /// Handle generation state updates
-  final _generationStateController =
-      BehaviorSubject<GenerationState<GenerationResult>>.seeded(
-        GenerationState.initial(),
-      );
+  final _generationStateController = BehaviorSubject<GenerationState<GenerationResult>>.seeded(
+    GenerationState.initial(),
+  );
 
   ContextEngine build();
 
@@ -102,21 +97,20 @@ abstract base class ChatControllerBase<TEntity> {
 
       // Add user message to conversation, no await
       unawaited(
-        _conversationManager.addMessages([userMessage].lock).then((
-          inserted,
-        ) async {
+        _conversationManager.addMessages([userMessage].lock).then((inserted) async {
           userMessage = inserted.first;
         }),
       );
 
       // Phase 1: Query Processing
       _setLoadingPhase(LoadingPhase.processingQuery());
-      final inputQuery = await _inspector.inspectPhase(
+      final queryInput = QueryEngineInput(rawInput: input, session: _conversationManager.session);
+      final inputQuery = await _inspector.inspectPhase<QueryEngineInput, QueryEngineOutput>(
         sessionId,
         timelineId,
         'Query Processing',
         _queryEngine,
-        input,
+        queryInput,
       );
 
       // Phase 2: Context Building
@@ -153,6 +147,11 @@ abstract base class ChatControllerBase<TEntity> {
         aiGenerationInput,
       );
 
+      // Save the AI-generated messages to the conversation
+      if (generationResult.generatedMessages.isNotEmpty) {
+        await _conversationManager.addMessages(generationResult.generatedMessages);
+      }
+
       // Phase 4: Post-Response Processing
       final postResponseInput = PostResponseEngineInput(
         input: inputQuery.queryContext,
@@ -171,17 +170,11 @@ abstract base class ChatControllerBase<TEntity> {
 
       await _inspector.endTimeline(sessionId, timelineId);
 
-      final generationState = GenerationState<GenerationResult>.complete(
-        generationResult,
-      );
+      final generationState = GenerationState<GenerationResult>.complete(generationResult);
       _generationStateController.add(generationState);
       return _mapGenerationState(generationState);
     } catch (error, stackTrace) {
-      await _inspector.endTimeline(
-        sessionId,
-        timelineId,
-        status: TimelineStatus.failed,
-      );
+      await _inspector.endTimeline(sessionId, timelineId, status: TimelineStatus.failed);
 
       if (revertInputOnError) {
         await _conversationManager.removeMessages([userMessage].lock);
@@ -200,10 +193,8 @@ abstract base class ChatControllerBase<TEntity> {
     _setState(GenerationState.error(KaiException.cancelled()));
   }
 
-  Stream<IList<CoreMessage>> get messagesStream =>
-      _conversationManager.messagesStream;
-  Future<IList<CoreMessage>> getAllMessages() =>
-      _conversationManager.getMessages();
+  Stream<IList<CoreMessage>> get messagesStream => _conversationManager.messagesStream;
+  Future<IList<CoreMessage>> getAllMessages() => _conversationManager.getMessages();
 
   Stream<GenerationState<CoreMessage>> get generationStateStream =>
       _generationStateController.stream.map(_mapGenerationState);
@@ -214,9 +205,7 @@ abstract base class ChatControllerBase<TEntity> {
     _cancelToken.cancel();
   }
 
-  GenerationState<CoreMessage> _mapGenerationState(
-    GenerationState<GenerationResult> state,
-  ) {
+  GenerationState<CoreMessage> _mapGenerationState(GenerationState<GenerationResult> state) {
     return state.map(
       loading: (l) => GenerationState.loading(l.phase),
       initial: (value) => GenerationState.initial(),
@@ -229,8 +218,6 @@ abstract base class ChatControllerBase<TEntity> {
     );
   }
 
-  void _setState(GenerationState<GenerationResult> state) =>
-      _generationStateController.add(state);
-  void _setLoadingPhase(LoadingPhase phase) =>
-      _setState(GenerationState.loading(phase));
+  void _setState(GenerationState<GenerationResult> state) => _generationStateController.add(state);
+  void _setLoadingPhase(LoadingPhase phase) => _setState(GenerationState.loading(phase));
 }

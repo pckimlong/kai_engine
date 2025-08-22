@@ -36,8 +36,7 @@ sealed class TimelineSession with _$TimelineSession {
   }) = _TimelineSession;
 
   /// Creates a TimelineSession from JSON.
-  factory TimelineSession.fromJson(Map<String, dynamic> json) =>
-      _$TimelineSessionFromJson(json);
+  factory TimelineSession.fromJson(Map<String, dynamic> json) => _$TimelineSessionFromJson(json);
 
   const TimelineSession._();
 
@@ -69,12 +68,10 @@ sealed class TimelineSession with _$TimelineSession {
   TimelineSession updateAggregates({int? tokenUsage, double? cost}) {
     final newMetadata = Map<String, dynamic>.from(metadata);
     if (tokenUsage != null) {
-      newMetadata['totalTokenUsage'] =
-          (newMetadata['totalTokenUsage'] as int? ?? 0) + tokenUsage;
+      newMetadata['totalTokenUsage'] = (newMetadata['totalTokenUsage'] as int? ?? 0) + tokenUsage;
     }
     if (cost != null) {
-      newMetadata['totalCost'] =
-          (newMetadata['totalCost'] as double? ?? 0.0) + cost;
+      newMetadata['totalCost'] = (newMetadata['totalCost'] as double? ?? 0.0) + cost;
     }
     return copyWith(metadata: newMetadata);
   }

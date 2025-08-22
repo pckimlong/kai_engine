@@ -4,6 +4,7 @@ export 'context_builder.dart';
 export 'conversation_manager.dart';
 export 'flex_template.dart';
 export 'generation_service_base.dart';
+export 'inspector/inspector.dart';
 export 'kai_logger.dart';
 export 'message_adapter_base.dart';
 export 'message_repository_base.dart';

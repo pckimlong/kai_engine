@@ -4,8 +4,7 @@ import 'package:kai_engine/kai_engine.dart';
 import 'inspector/kai_phase.dart';
 import 'inspector/phase_types.dart';
 
-interface class QueryEngineBase
-    extends KaiPhase<QueryEngineInput, QueryEngineOutput> {
+base class QueryEngineBase extends KaiPhase<QueryEngineInput, QueryEngineOutput> {
   @override
   Future<QueryEngineOutput> execute(QueryEngineInput input) async {
     // Default implementation, no any logic, you might need to abstract it to extend functionality
@@ -28,11 +27,7 @@ interface class QueryEngineBase
     IList<CoreMessage> histories = const IList.empty(),
     void Function(String stageName)? onStageStart,
   }) async {
-    final input = QueryEngineInput(
-      rawInput: rawInput,
-      session: session,
-      histories: histories,
-    );
+    final input = QueryEngineInput(rawInput: rawInput, session: session, histories: histories);
 
     final result = await execute(input);
     return result.queryContext;
