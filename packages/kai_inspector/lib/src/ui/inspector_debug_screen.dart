@@ -30,7 +30,8 @@ class InspectorDebugScreen extends StatefulWidget {
   State<InspectorDebugScreen> createState() => _InspectorDebugScreenState();
 }
 
-class _InspectorDebugScreenState extends State<InspectorDebugScreen> with TickerProviderStateMixin {
+class _InspectorDebugScreenState extends State<InspectorDebugScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   TimelineSession? _session;
   SessionOverviewData? _sessionOverview;
@@ -58,7 +59,8 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
         setState(() {
           _session = session;
           _sessionOverview = DebugDataAdapter.convertSessionOverview(session);
-          _sessionMetrics = SessionMetricsCalculator.calculateSessionMetrics(session);
+          _sessionMetrics =
+              SessionMetricsCalculator.calculateSessionMetrics(session);
           _isLoading = false;
         });
       } else {
@@ -82,7 +84,8 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
           setState(() {
             _session = session;
             _sessionOverview = DebugDataAdapter.convertSessionOverview(session);
-            _sessionMetrics = SessionMetricsCalculator.calculateSessionMetrics(session);
+            _sessionMetrics =
+                SessionMetricsCalculator.calculateSessionMetrics(session);
           });
         }
       },
@@ -202,7 +205,8 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
                   child: Text(
                     'Dashboard',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 600 ? 12 : 14,
                     ),
                   ),
                 ),
@@ -210,7 +214,8 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
                   child: Text(
                     'Timeline',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 600 ? 12 : 14,
                     ),
                   ),
                 ),
@@ -218,7 +223,8 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
                   child: Text(
                     'Tokens',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 600 ? 12 : 14,
                     ),
                   ),
                 ),
@@ -226,7 +232,8 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
                   child: Text(
                     'Logs',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 600 ? 12 : 14,
                     ),
                   ),
                 ),
@@ -290,7 +297,8 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
     }
   }
 
-  void _navigateToMessage(String sessionId, String messageId, String? userInput) {
+  void _navigateToMessage(
+      String sessionId, String messageId, String? userInput) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => MessageInputDebugScreen(
@@ -318,11 +326,13 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
     if (_session == null) return;
 
     try {
-      final jsonString = const JsonEncoder.withIndent('  ').convert(_session!.toJson());
+      final jsonString =
+          const JsonEncoder.withIndent('  ').convert(_session!.toJson());
       Clipboard.setData(ClipboardData(text: jsonString));
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Full session JSON exported to clipboard')),
+        const SnackBar(
+            content: Text('Full session JSON exported to clipboard')),
       );
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -332,7 +342,9 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
   }
 
   String _generateSessionSummary() {
-    if (_session == null || _sessionOverview == null || _sessionMetrics == null) {
+    if (_session == null ||
+        _sessionOverview == null ||
+        _sessionMetrics == null) {
       return 'Session data not available';
     }
 
@@ -347,7 +359,8 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
     // Basic session info
     buffer.writeln('Session ID: ${session.id}');
     buffer.writeln('Start Time: ${session.startTime.toIso8601String()}');
-    buffer.writeln('End Time: ${session.endTime?.toIso8601String() ?? 'In Progress'}');
+    buffer.writeln(
+        'End Time: ${session.endTime?.toIso8601String() ?? 'In Progress'}');
     buffer.writeln('Duration: ${overview.duration?.inMilliseconds ?? 'N/A'}ms');
     buffer.writeln('Status: ${session.status}');
     buffer.writeln();
@@ -355,9 +368,12 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
     // Performance metrics
     buffer.writeln('=== Performance Metrics ===');
     buffer.writeln('Messages: ${overview.messageCount}');
-    buffer.writeln('Average Response Time: ${metrics.performanceMetrics.averageResponseTimeMs}ms');
-    buffer.writeln('Fastest Response: ${metrics.performanceMetrics.fastestResponseTimeMs}ms');
-    buffer.writeln('Slowest Response: ${metrics.performanceMetrics.slowestResponseTimeMs}ms');
+    buffer.writeln(
+        'Average Response Time: ${metrics.performanceMetrics.averageResponseTimeMs}ms');
+    buffer.writeln(
+        'Fastest Response: ${metrics.performanceMetrics.fastestResponseTimeMs}ms');
+    buffer.writeln(
+        'Slowest Response: ${metrics.performanceMetrics.slowestResponseTimeMs}ms');
     buffer.writeln(
         'Messages/Minute: ${metrics.performanceMetrics.messagesPerMinute.toStringAsFixed(1)}');
     buffer.writeln();
@@ -365,17 +381,20 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
     // Token economics
     buffer.writeln('=== Token Usage ===');
     buffer.writeln('Total Tokens: ${overview.totalTokenUsage}');
-    buffer.writeln('Average Tokens/Message: ${metrics.tokenEconomics.averageTokensPerMessage}');
-    buffer.writeln('Min Tokens/Message: ${metrics.tokenEconomics.minTokensPerMessage}');
-    buffer.writeln('Max Tokens/Message: ${metrics.tokenEconomics.maxTokensPerMessage}');
+    buffer.writeln(
+        'Average Tokens/Message: ${metrics.tokenEconomics.averageTokensPerMessage}');
+    buffer.writeln(
+        'Min Tokens/Message: ${metrics.tokenEconomics.minTokensPerMessage}');
+    buffer.writeln(
+        'Max Tokens/Message: ${metrics.tokenEconomics.maxTokensPerMessage}');
     buffer.writeln('Tokens/Minute: ${metrics.tokenEconomics.tokensPerMinute}');
     buffer.writeln('Total Cost: \$${overview.totalCost.toStringAsFixed(4)}');
     buffer.writeln();
 
     // Quality metrics
     buffer.writeln('=== Quality Metrics ===');
-    buffer
-        .writeln('Success Rate: ${(metrics.qualityMetrics.successRate * 100).toStringAsFixed(1)}%');
+    buffer.writeln(
+        'Success Rate: ${(metrics.qualityMetrics.successRate * 100).toStringAsFixed(1)}%');
     buffer.writeln('Total Errors: ${overview.totalErrors}');
     buffer.writeln('Total Warnings: ${overview.totalWarnings}');
     buffer.writeln(
@@ -387,10 +406,14 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
     // Streaming analytics
     if (metrics.streamingAnalytics.totalStreamEvents > 0) {
       buffer.writeln('=== Streaming Analytics ===');
-      buffer.writeln('Stream Events: ${metrics.streamingAnalytics.totalStreamEvents}');
-      buffer.writeln('Chunks Received: ${metrics.streamingAnalytics.totalChunksReceived}');
-      buffer.writeln('Characters Streamed: ${metrics.streamingAnalytics.totalCharactersStreamed}');
-      buffer.writeln('Average Chunk Size: ${metrics.streamingAnalytics.averageChunkSize}');
+      buffer.writeln(
+          'Stream Events: ${metrics.streamingAnalytics.totalStreamEvents}');
+      buffer.writeln(
+          'Chunks Received: ${metrics.streamingAnalytics.totalChunksReceived}');
+      buffer.writeln(
+          'Characters Streamed: ${metrics.streamingAnalytics.totalCharactersStreamed}');
+      buffer.writeln(
+          'Average Chunk Size: ${metrics.streamingAnalytics.averageChunkSize}');
       buffer.writeln(
           'Avg Time to First Chunk: ${metrics.streamingAnalytics.averageTimeToFirstChunkMs}ms');
       buffer.writeln();
@@ -403,8 +426,10 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
         buffer.writeln('${phase.phaseName}:');
         buffer.writeln('  Executions: ${phase.executionCount}');
         buffer.writeln('  Avg Duration: ${phase.averageDurationMs}ms');
-        buffer.writeln('  Min/Max: ${phase.minDurationMs}ms / ${phase.maxDurationMs}ms');
-        buffer.writeln('  Errors: ${phase.errorCount}, Warnings: ${phase.warningCount}');
+        buffer.writeln(
+            '  Min/Max: ${phase.minDurationMs}ms / ${phase.maxDurationMs}ms');
+        buffer.writeln(
+            '  Errors: ${phase.errorCount}, Warnings: ${phase.warningCount}');
         buffer.writeln();
       }
     }
@@ -427,7 +452,8 @@ class _InspectorDebugScreenState extends State<InspectorDebugScreen> with Ticker
         buffer.writeln('  Response: Not available');
       }
 
-      buffer.writeln('  Duration: ${timelineData.duration?.inMilliseconds ?? 'N/A'}ms');
+      buffer.writeln(
+          '  Duration: ${timelineData.duration?.inMilliseconds ?? 'N/A'}ms');
       buffer.writeln('  Tokens: ${timelineData.totalTokens}');
       buffer.writeln('  Phases: ${timelineData.phaseCount}');
       buffer.writeln('  Status: ${timelineData.status}');

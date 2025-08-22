@@ -69,7 +69,8 @@ void main() {
     test('startTimeline with non-existent session does nothing', () async {
       // Should not throw an exception
       await expectLater(
-        () => inspector.startTimeline('non-existent-session', timelineId, userMessage),
+        () => inspector.startTimeline(
+            'non-existent-session', timelineId, userMessage),
         returnsNormally,
       );
     });
@@ -88,7 +89,8 @@ void main() {
     test('endTimeline with failed status marks timeline as failed', () async {
       await inspector.startSession(sessionId);
       await inspector.startTimeline(sessionId, timelineId, userMessage);
-      await inspector.endTimeline(sessionId, timelineId, status: TimelineStatus.failed);
+      await inspector.endTimeline(sessionId, timelineId,
+          status: TimelineStatus.failed);
       final session = await inspector.getSession(sessionId);
       expect(session, isNotNull);
       expect(session!.timelines[0].status, TimelineStatus.failed);
@@ -399,7 +401,8 @@ void main() {
       final session = await inspector.getSession(sessionId);
       expect(session, isNotNull);
       expect(session!.timelines[0].phases[0].steps[0].logs, hasLength(1));
-      expect(session.timelines[0].phases[0].steps[0].logs[0].message, logMessage);
+      expect(
+          session.timelines[0].phases[0].steps[0].logs[0].message, logMessage);
     });
 
     test('recordStepLog with non-existent session does nothing', () async {
@@ -485,20 +488,23 @@ void main() {
       inspector.getSessionStream(sessionId).listen(sessionUpdates.add);
 
       await inspector.startSession(sessionId);
-      await Future.delayed(Duration(milliseconds: 10)); // Allow stream to process
+      await Future.delayed(
+          Duration(milliseconds: 10)); // Allow stream to process
 
       expect(sessionUpdates, hasLength(1));
       expect(sessionUpdates[0].id, sessionId);
       expect(sessionUpdates[0].status, TimelineStatus.running);
 
       await inspector.endSession(sessionId);
-      await Future.delayed(Duration(milliseconds: 10)); // Allow stream to process
+      await Future.delayed(
+          Duration(milliseconds: 10)); // Allow stream to process
 
       expect(sessionUpdates, hasLength(2));
       expect(sessionUpdates[1].status, TimelineStatus.completed);
     });
 
-    test('getSessionStream returns empty stream for non-existent session', () async {
+    test('getSessionStream returns empty stream for non-existent session',
+        () async {
       final stream = inspector.getSessionStream('non-existent-session');
       expect(stream, isNotNull);
       // The stream should be empty and not emit any values
@@ -543,7 +549,8 @@ void main() {
       expect(session.totalCost, 0.08);
     });
 
-    test('updateSessionAggregates with non-existent session does nothing', () async {
+    test('updateSessionAggregates with non-existent session does nothing',
+        () async {
       // Should not throw an exception
       await expectLater(
         () => inspector.updateSessionAggregates(
@@ -568,7 +575,8 @@ void main() {
       expect(result, 'test input processed');
       final session = await inspector.getSession(sessionId);
       expect(session, isNotNull);
-      expect(session!.timelines, isEmpty); // inspectPhase doesn't create timeline
+      expect(
+          session!.timelines, isEmpty); // inspectPhase doesn't create timeline
     });
 
     test('inspectPhase handles phase errors', () async {
@@ -587,7 +595,8 @@ void main() {
       // Even though the phase failed, it should have been tracked
       final session = await inspector.getSession(sessionId);
       expect(session, isNotNull);
-      expect(session!.timelines, isEmpty); // inspectPhase doesn't create timeline
+      expect(
+          session!.timelines, isEmpty); // inspectPhase doesn't create timeline
     });
 
     test('dispose closes all streams and clears data', () async {

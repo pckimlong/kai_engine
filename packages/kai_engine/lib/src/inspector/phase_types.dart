@@ -33,7 +33,8 @@ sealed class ContextEngineInput with _$ContextEngineInput {
 /// Output type for ContextEngine phase
 @freezed
 sealed class ContextEngineOutput with _$ContextEngineOutput {
-  const factory ContextEngineOutput({required IList<CoreMessage> prompts}) = _ContextEngineOutput;
+  const factory ContextEngineOutput({required IList<CoreMessage> prompts}) =
+      _ContextEngineOutput;
 }
 
 /// Input type for GenerationService phase

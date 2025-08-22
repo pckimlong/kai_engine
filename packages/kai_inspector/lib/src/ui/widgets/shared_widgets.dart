@@ -18,7 +18,7 @@ class InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chipColor = color ?? Colors.blue;
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(

@@ -64,7 +64,7 @@ sealed class ExecutionTimeline with _$ExecutionTimeline {
     String? aiResponse,
   }) {
     return copyWith(
-      status: status, 
+      status: status,
       endTime: DateTime.now(),
       aiResponse: aiResponse,
     );

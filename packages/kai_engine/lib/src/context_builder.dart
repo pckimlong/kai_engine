@@ -13,7 +13,10 @@ abstract interface class SequentialContextBuilder implements ContextBuilder {
   /// you can override that list to pass to next, eg build summarization etc
   /// return of [build] will be used as context for next step, return empty will
   /// effect overall next sequence and final prompt
-  Future<NextSequentialContext> build(QueryContext input, List<CoreMessage> previous);
+  Future<NextSequentialContext> build(
+    QueryContext input,
+    List<CoreMessage> previous,
+  );
 }
 
 abstract interface class ParallelContextBuilder implements ContextBuilder {
@@ -22,11 +25,17 @@ abstract interface class ParallelContextBuilder implements ContextBuilder {
   /// return empty will only ignore it from final template
   /// unlike SequentialContextBuilder, return value will not be used for next step
   /// previous context will be use just for reference
-  Future<List<CoreMessage>> build(QueryContext input, IList<CoreMessage> context);
+  Future<List<CoreMessage>> build(
+    QueryContext input,
+    IList<CoreMessage> context,
+  );
 }
 
 /// Prebuilt history context
 class HistoryContext implements SequentialContextBuilder {
   @override
-  Future<List<CoreMessage>> build(QueryContext input, List<CoreMessage> previous) async => previous;
+  Future<List<CoreMessage>> build(
+    QueryContext input,
+    List<CoreMessage> previous,
+  ) async => previous;
 }

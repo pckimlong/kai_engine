@@ -8,7 +8,8 @@ import '../debug_data_adapter.dart';
 class EnhancedTimelineTab extends StatefulWidget {
   final TimelineSession session;
   final SessionOverviewData sessionOverview;
-  final Function(String sessionId, String messageId, String? userInput)? onNavigateToMessage;
+  final Function(String sessionId, String messageId, String? userInput)?
+      onNavigateToMessage;
 
   const EnhancedTimelineTab({
     super.key,
@@ -82,7 +83,8 @@ class _TimelineCard extends StatelessWidget {
   final int index;
   final bool isExpanded;
   final VoidCallback onToggle;
-  final Function(String sessionId, String messageId, String? userInput)? onNavigateToMessage;
+  final Function(String sessionId, String messageId, String? userInput)?
+      onNavigateToMessage;
 
   const _TimelineCard({
     required this.timeline,
@@ -144,7 +146,8 @@ class _TimelineCard extends StatelessWidget {
                           color: _getStatusColor(timelineData.status),
                           boxShadow: [
                             BoxShadow(
-                              color: _getStatusColor(timelineData.status).withAlpha(77),
+                              color: _getStatusColor(timelineData.status)
+                                  .withAlpha(77),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -169,7 +172,10 @@ class _TimelineCard extends StatelessWidget {
                           children: [
                             Text(
                               _truncateText(timeline.userMessage, 60),
-                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     height: 1.2,
                                   ),
@@ -178,12 +184,15 @@ class _TimelineCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: _getStatusColor(timelineData.status).withAlpha(26),
+                                color: _getStatusColor(timelineData.status)
+                                    .withAlpha(26),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: _getStatusColor(timelineData.status).withAlpha(51),
+                                  color: _getStatusColor(timelineData.status)
+                                      .withAlpha(51),
                                 ),
                               ),
                               child: Text(
@@ -219,7 +228,9 @@ class _TimelineCard extends StatelessWidget {
                               padding: const EdgeInsets.all(8),
                               constraints: const BoxConstraints(),
                               style: IconButton.styleFrom(
-                                backgroundColor: Theme.of(context).primaryColor.withAlpha(13),
+                                backgroundColor: Theme.of(context)
+                                    .primaryColor
+                                    .withAlpha(13),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -276,7 +287,8 @@ class _TimelineCard extends StatelessWidget {
             Container(
               decoration: BoxDecoration(
                 color: Colors.grey[50],
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(bottom: Radius.circular(12)),
               ),
               child: _ExpandedContent(
                 timeline: timeline,
@@ -397,7 +409,8 @@ class _ExpandedContent extends StatelessWidget {
           _MetricsSection(timelineData: timelineData),
           const SizedBox(height: 16),
           // Phases
-          if (timelineData.phases.isNotEmpty) _PhasesSection(phases: timelineData.phases),
+          if (timelineData.phases.isNotEmpty)
+            _PhasesSection(phases: timelineData.phases),
         ],
       ),
     );
@@ -457,8 +470,9 @@ class _MessageBubbleState extends State<_MessageBubble> {
   @override
   Widget build(BuildContext context) {
     final isLongMessage = widget.message.length > 100;
-    final displayMessage =
-        isLongMessage && !_isExpanded ? '${widget.message.substring(0, 100)}...' : widget.message;
+    final displayMessage = isLongMessage && !_isExpanded
+        ? '${widget.message.substring(0, 100)}...'
+        : widget.message;
 
     return Container(
       width: double.infinity,

@@ -13,18 +13,19 @@ class SessionMetricsCalculator {
       return SessionMetrics.empty(session.id);
     }
 
-    final sessionDuration = session.duration ?? 
-        DateTime.now().difference(session.startTime);
+    final sessionDuration =
+        session.duration ?? DateTime.now().difference(session.startTime);
 
     // Performance metrics
-    final performanceMetrics = _calculatePerformanceMetrics(timelines, sessionDuration);
-    
+    final performanceMetrics =
+        _calculatePerformanceMetrics(timelines, sessionDuration);
+
     // Token economics
     final tokenEconomics = _calculateTokenEconomics(timelines, sessionDuration);
-    
+
     // Quality metrics
     final qualityMetrics = _calculateQualityMetrics(timelines);
-    
+
     // Streaming analytics
     final streamingAnalytics = _calculateStreamingAnalytics(timelines);
 
@@ -42,21 +43,22 @@ class SessionMetricsCalculator {
   }
 
   /// Calculates token usage trends over time
-  static List<TokenUsagePoint> calculateTokenUsageTrend(TimelineSession session) {
+  static List<TokenUsagePoint> calculateTokenUsageTrend(
+      TimelineSession session) {
     final points = <TokenUsagePoint>[];
     var cumulativeTokens = 0;
 
     for (final timeline in session.timelines) {
       final timelineTokens = _extractTimelineTokens(timeline);
       cumulativeTokens += timelineTokens;
-      
+
       points.add(TokenUsagePoint(
         timestamp: timeline.endTime ?? timeline.startTime,
         cumulativeTokens: cumulativeTokens,
         timelineTokens: timelineTokens,
         timelineId: timeline.id,
-        userMessage: timeline.userMessage.length > 50 
-            ? '${timeline.userMessage.substring(0, 50)}...' 
+        userMessage: timeline.userMessage.length > 50
+            ? '${timeline.userMessage.substring(0, 50)}...'
             : timeline.userMessage,
       ));
     }
@@ -68,22 +70,23 @@ class SessionMetricsCalculator {
   static List<PhasePerformanceComparison> calculatePhasePerformanceComparison(
       TimelineSession session) {
     final phaseData = <String, List<PhasePerformanceData>>{};
-    
+
     // Collect phase data from all timelines
     for (final timeline in session.timelines) {
       for (final phase in timeline.phases) {
         final phaseName = phase.name;
         final duration = phase.duration?.inMilliseconds ?? 0;
         final tokenUsage = _extractPhaseTokens(phase);
-        
+
         phaseData.putIfAbsent(phaseName, () => []).add(
-          PhasePerformanceData(
-            timelineId: timeline.id,
-            durationMs: duration,
-            tokenUsage: tokenUsage,
-            hasErrors: phase.logs.any((log) => log.severity == TimelineLogSeverity.error),
-          ),
-        );
+              PhasePerformanceData(
+                timelineId: timeline.id,
+                durationMs: duration,
+                tokenUsage: tokenUsage,
+                hasErrors: phase.logs
+                    .any((log) => log.severity == TimelineLogSeverity.error),
+              ),
+            );
       }
     }
 
@@ -91,16 +94,25 @@ class SessionMetricsCalculator {
     return phaseData.entries.map((entry) {
       final phaseName = entry.key;
       final data = entry.value;
-      final durations = data.map((d) => d.durationMs).where((d) => d > 0).toList();
+      final durations =
+          data.map((d) => d.durationMs).where((d) => d > 0).toList();
       final tokens = data.map((d) => d.tokenUsage).where((t) => t > 0).toList();
-      
+
       return PhasePerformanceComparison(
         phaseName: phaseName,
         executionCount: data.length,
-        averageDurationMs: durations.isNotEmpty ? (durations.reduce((a, b) => a + b) / durations.length).round() : 0,
-        minDurationMs: durations.isNotEmpty ? durations.reduce((a, b) => a < b ? a : b) : 0,
-        maxDurationMs: durations.isNotEmpty ? durations.reduce((a, b) => a > b ? a : b) : 0,
-        averageTokenUsage: tokens.isNotEmpty ? (tokens.reduce((a, b) => a + b) / tokens.length).round() : 0,
+        averageDurationMs: durations.isNotEmpty
+            ? (durations.reduce((a, b) => a + b) / durations.length).round()
+            : 0,
+        minDurationMs: durations.isNotEmpty
+            ? durations.reduce((a, b) => a < b ? a : b)
+            : 0,
+        maxDurationMs: durations.isNotEmpty
+            ? durations.reduce((a, b) => a > b ? a : b)
+            : 0,
+        averageTokenUsage: tokens.isNotEmpty
+            ? (tokens.reduce((a, b) => a + b) / tokens.length).round()
+            : 0,
         totalTokenUsage: tokens.isNotEmpty ? tokens.reduce((a, b) => a + b) : 0,
         errorRate: data.where((d) => d.hasErrors).length / data.length,
         performanceData: data,
@@ -110,7 +122,8 @@ class SessionMetricsCalculator {
   }
 
   /// Calculates cost breakdown by phase and timeline
-  static CostAnalysis calculateCostAnalysis(TimelineSession session, {double costPerToken = 0.0}) {
+  static CostAnalysis calculateCostAnalysis(TimelineSession session,
+      {double costPerToken = 0.0}) {
     if (costPerToken <= 0.0) {
       return CostAnalysis.zero(session.id);
     }
@@ -140,12 +153,13 @@ class SessionMetricsCalculator {
       }
     }
 
-    final phaseCostBreakdown = phaseCosts.entries.map((entry) => 
-      PhaseCostData(
-        phaseName: entry.key,
-        totalCost: entry.value,
-        percentage: totalCost > 0 ? (entry.value / totalCost) * 100 : 0.0,
-      )).toList()
+    final phaseCostBreakdown = phaseCosts.entries
+        .map((entry) => PhaseCostData(
+              phaseName: entry.key,
+              totalCost: entry.value,
+              percentage: totalCost > 0 ? (entry.value / totalCost) * 100 : 0.0,
+            ))
+        .toList()
       ..sort((a, b) => b.totalCost.compareTo(a.totalCost));
 
     return CostAnalysis(
@@ -153,7 +167,8 @@ class SessionMetricsCalculator {
       totalCost: totalCost,
       costPerToken: costPerToken,
       totalTokens: session.totalTokenUsage,
-      averageCostPerMessage: timelineCosts.isNotEmpty ? totalCost / timelineCosts.length : 0.0,
+      averageCostPerMessage:
+          timelineCosts.isNotEmpty ? totalCost / timelineCosts.length : 0.0,
       timelineCosts: timelineCosts,
       phaseCostBreakdown: phaseCostBreakdown,
     );
@@ -169,31 +184,49 @@ class SessionMetricsCalculator {
         .toList();
 
     return PerformanceMetrics(
-      averageResponseTimeMs: durations.isNotEmpty ? (durations.reduce((a, b) => a + b) / durations.length).round() : 0,
-      fastestResponseTimeMs: durations.isNotEmpty ? durations.reduce((a, b) => a < b ? a : b) : 0,
-      slowestResponseTimeMs: durations.isNotEmpty ? durations.reduce((a, b) => a > b ? a : b) : 0,
+      averageResponseTimeMs: durations.isNotEmpty
+          ? (durations.reduce((a, b) => a + b) / durations.length).round()
+          : 0,
+      fastestResponseTimeMs:
+          durations.isNotEmpty ? durations.reduce((a, b) => a < b ? a : b) : 0,
+      slowestResponseTimeMs:
+          durations.isNotEmpty ? durations.reduce((a, b) => a > b ? a : b) : 0,
       sessionDurationMs: sessionDuration.inMilliseconds,
-      messagesPerMinute: sessionDuration.inMinutes > 0 ? timelines.length / sessionDuration.inMinutes : 0.0,
-      totalPhaseExecutions: timelines.fold(0, (sum, timeline) => sum + timeline.phases.length),
+      messagesPerMinute: sessionDuration.inMinutes > 0
+          ? timelines.length / sessionDuration.inMinutes
+          : 0.0,
+      totalPhaseExecutions:
+          timelines.fold(0, (sum, timeline) => sum + timeline.phases.length),
     );
   }
 
   static TokenEconomics _calculateTokenEconomics(
       List<ExecutionTimeline> timelines, Duration sessionDuration) {
-    final tokenCounts = timelines.map(_extractTimelineTokens).where((t) => t > 0).toList();
-    final totalTokens = tokenCounts.isNotEmpty ? tokenCounts.reduce((a, b) => a + b) : 0;
+    final tokenCounts =
+        timelines.map(_extractTimelineTokens).where((t) => t > 0).toList();
+    final totalTokens =
+        tokenCounts.isNotEmpty ? tokenCounts.reduce((a, b) => a + b) : 0;
 
     return TokenEconomics(
       totalTokensUsed: totalTokens,
-      averageTokensPerMessage: tokenCounts.isNotEmpty ? (totalTokens / tokenCounts.length).round() : 0,
-      minTokensPerMessage: tokenCounts.isNotEmpty ? tokenCounts.reduce((a, b) => a < b ? a : b) : 0,
-      maxTokensPerMessage: tokenCounts.isNotEmpty ? tokenCounts.reduce((a, b) => a > b ? a : b) : 0,
-      tokensPerMinute: sessionDuration.inMinutes > 0 ? (totalTokens / sessionDuration.inMinutes).round() : 0,
+      averageTokensPerMessage: tokenCounts.isNotEmpty
+          ? (totalTokens / tokenCounts.length).round()
+          : 0,
+      minTokensPerMessage: tokenCounts.isNotEmpty
+          ? tokenCounts.reduce((a, b) => a < b ? a : b)
+          : 0,
+      maxTokensPerMessage: tokenCounts.isNotEmpty
+          ? tokenCounts.reduce((a, b) => a > b ? a : b)
+          : 0,
+      tokensPerMinute: sessionDuration.inMinutes > 0
+          ? (totalTokens / sessionDuration.inMinutes).round()
+          : 0,
       efficiency: _calculateTokenEfficiency(timelines),
     );
   }
 
-  static QualityMetrics _calculateQualityMetrics(List<ExecutionTimeline> timelines) {
+  static QualityMetrics _calculateQualityMetrics(
+      List<ExecutionTimeline> timelines) {
     var totalErrors = 0;
     var totalWarnings = 0;
     var completedTimelines = 0;
@@ -206,21 +239,29 @@ class SessionMetricsCalculator {
       }
 
       for (final phase in timeline.phases) {
-        totalErrors += phase.logs.where((log) => log.severity == TimelineLogSeverity.error).length;
-        totalWarnings += phase.logs.where((log) => log.severity == TimelineLogSeverity.warning).length;
+        totalErrors += phase.logs
+            .where((log) => log.severity == TimelineLogSeverity.error)
+            .length;
+        totalWarnings += phase.logs
+            .where((log) => log.severity == TimelineLogSeverity.warning)
+            .length;
       }
     }
 
     return QualityMetrics(
-      successRate: timelines.isNotEmpty ? completedTimelines / timelines.length : 0.0,
+      successRate:
+          timelines.isNotEmpty ? completedTimelines / timelines.length : 0.0,
       totalErrors: totalErrors,
       totalWarnings: totalWarnings,
-      averageErrorsPerMessage: timelines.isNotEmpty ? totalErrors / timelines.length : 0.0,
-      averageWarningsPerMessage: timelines.isNotEmpty ? totalWarnings / timelines.length : 0.0,
+      averageErrorsPerMessage:
+          timelines.isNotEmpty ? totalErrors / timelines.length : 0.0,
+      averageWarningsPerMessage:
+          timelines.isNotEmpty ? totalWarnings / timelines.length : 0.0,
     );
   }
 
-  static StreamingAnalytics _calculateStreamingAnalytics(List<ExecutionTimeline> timelines) {
+  static StreamingAnalytics _calculateStreamingAnalytics(
+      List<ExecutionTimeline> timelines) {
     var totalChunks = 0;
     var totalCharacters = 0;
     var totalFirstChunkTimes = <int>[];
@@ -233,7 +274,7 @@ class SessionMetricsCalculator {
           totalChunks += streamingMetadata.chunksReceived;
           totalCharacters += streamingMetadata.totalCharacters;
           totalStreamEvents += streamingMetadata.streamEvents;
-          
+
           if (streamingMetadata.timeToFirstChunkMs != null) {
             totalFirstChunkTimes.add(streamingMetadata.timeToFirstChunkMs!);
           }
@@ -245,9 +286,12 @@ class SessionMetricsCalculator {
       totalStreamEvents: totalStreamEvents,
       totalChunksReceived: totalChunks,
       totalCharactersStreamed: totalCharacters,
-      averageChunkSize: totalChunks > 0 ? (totalCharacters / totalChunks).round() : 0,
+      averageChunkSize:
+          totalChunks > 0 ? (totalCharacters / totalChunks).round() : 0,
       averageTimeToFirstChunkMs: totalFirstChunkTimes.isNotEmpty
-          ? (totalFirstChunkTimes.reduce((a, b) => a + b) / totalFirstChunkTimes.length).round()
+          ? (totalFirstChunkTimes.reduce((a, b) => a + b) /
+                  totalFirstChunkTimes.length)
+              .round()
           : 0,
     );
   }
@@ -260,7 +304,7 @@ class SessionMetricsCalculator {
     for (final timeline in timelines) {
       final tokens = _extractTimelineTokens(timeline);
       final duration = timeline.duration?.inMilliseconds ?? 0;
-      
+
       if (tokens > 0 && duration > 0) {
         totalTokens += tokens;
         totalTime += duration;
@@ -296,8 +340,10 @@ class SessionMetricsCalculator {
           inputTokens: metadata['input_tokens'] as int?,
           outputTokens: metadata['output_tokens'] as int?,
           apiCallCount: metadata['api_call_count'] as int?,
-          tokensPerSecond: double.tryParse(metadata['tokens_per_second']?.toString() ?? ''),
-          tokensPerMs: double.tryParse(metadata['tokens_per_ms']?.toString() ?? ''),
+          tokensPerSecond:
+              double.tryParse(metadata['tokens_per_second']?.toString() ?? ''),
+          tokensPerMs:
+              double.tryParse(metadata['tokens_per_ms']?.toString() ?? ''),
         );
       }
     }
@@ -315,7 +361,8 @@ class SessionMetricsCalculator {
           totalCharacters: metadata['total_characters'] as int? ?? 0,
           averageChunkSize: metadata['average_chunk_size'] as int? ?? 0,
           timeToFirstChunkMs: metadata['time_to_first_chunk_ms'] as int?,
-          functionCallsMade: (metadata['function_calls_made'] as List?)?.cast<String>() ?? [],
+          functionCallsMade:
+              (metadata['function_calls_made'] as List?)?.cast<String>() ?? [],
         );
       }
     }

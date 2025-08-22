@@ -56,10 +56,12 @@ class DefaultKaiInspector implements KaiInspector {
     _sessions[sessionId] = session;
 
     // Use existing controller if available, otherwise create new one
-    if (_sessionStreams.containsKey(sessionId) && !_sessionStreams[sessionId]!.isClosed) {
+    if (_sessionStreams.containsKey(sessionId) &&
+        !_sessionStreams[sessionId]!.isClosed) {
       _sessionStreams[sessionId]!.add(session);
     } else {
-      _sessionStreams[sessionId] = BehaviorSubject<TimelineSession>.seeded(session);
+      _sessionStreams[sessionId] =
+          BehaviorSubject<TimelineSession>.seeded(session);
     }
   }
 
@@ -106,11 +108,13 @@ class DefaultKaiInspector implements KaiInspector {
     final session = _sessions[sessionId];
     if (session == null) return;
 
-    final timelineIndex = session.timelines.indexWhere((t) => t.id == timelineId);
+    final timelineIndex =
+        session.timelines.indexWhere((t) => t.id == timelineId);
     if (timelineIndex == -1) return;
 
     final timeline = session.timelines[timelineIndex];
-    final updatedTimeline = timeline.complete(status: status, aiResponse: aiResponse);
+    final updatedTimeline =
+        timeline.complete(status: status, aiResponse: aiResponse);
 
     final updatedTimelines = List<ExecutionTimeline>.from(session.timelines);
     updatedTimelines[timelineIndex] = updatedTimeline;
@@ -131,7 +135,8 @@ class DefaultKaiInspector implements KaiInspector {
     final session = _sessions[sessionId];
     if (session == null) return;
 
-    final timelineIndex = session.timelines.indexWhere((t) => t.id == timelineId);
+    final timelineIndex =
+        session.timelines.indexWhere((t) => t.id == timelineId);
     if (timelineIndex == -1) return;
 
     final timeline = session.timelines[timelineIndex];
@@ -161,7 +166,8 @@ class DefaultKaiInspector implements KaiInspector {
     final session = _sessions[sessionId];
     if (session == null) return;
 
-    final timelineIndex = session.timelines.indexWhere((t) => t.id == timelineId);
+    final timelineIndex =
+        session.timelines.indexWhere((t) => t.id == timelineId);
     if (timelineIndex == -1) return;
 
     final timeline = session.timelines[timelineIndex];
@@ -193,7 +199,8 @@ class DefaultKaiInspector implements KaiInspector {
     final session = _sessions[sessionId];
     if (session == null) return;
 
-    final timelineIndex = session.timelines.indexWhere((t) => t.id == timelineId);
+    final timelineIndex =
+        session.timelines.indexWhere((t) => t.id == timelineId);
     if (timelineIndex == -1) return;
 
     final timeline = session.timelines[timelineIndex];
@@ -225,7 +232,8 @@ class DefaultKaiInspector implements KaiInspector {
     final session = _sessions[sessionId];
     if (session == null) return;
 
-    final timelineIndex = session.timelines.indexWhere((t) => t.id == timelineId);
+    final timelineIndex =
+        session.timelines.indexWhere((t) => t.id == timelineId);
     if (timelineIndex == -1) return;
 
     final timeline = session.timelines[timelineIndex];
@@ -258,7 +266,8 @@ class DefaultKaiInspector implements KaiInspector {
     final session = _sessions[sessionId];
     if (session == null) return;
 
-    final timelineIndex = session.timelines.indexWhere((t) => t.id == timelineId);
+    final timelineIndex =
+        session.timelines.indexWhere((t) => t.id == timelineId);
     if (timelineIndex == -1) return;
 
     final timeline = session.timelines[timelineIndex];
@@ -347,7 +356,8 @@ class DefaultKaiInspector implements KaiInspector {
     }
 
     // Only start phase if timeline exists (the test expects this to be a no-op if timeline doesn't exist)
-    await startPhase(sessionId, timelineId, phaseId, phaseName, description: description);
+    await startPhase(sessionId, timelineId, phaseId, phaseName,
+        description: description);
 
     // KaiPhase.run() handles endPhase internally, so we don't need to call it here
     final result = await phaseToRun.run(
@@ -396,10 +406,12 @@ class DefaultKaiInspector implements KaiInspector {
   InspectorStats get stats => InspectorStats(
         totalSessions: _sessions.length,
         activeStreams: _sessionStreams.length,
-        totalTimelines: _sessions.values.fold(0, (sum, session) => sum + session.timelines.length),
-        totalTokensTracked:
-            _sessions.values.fold(0, (sum, session) => sum + session.totalTokenUsage),
-        totalCostTracked: _sessions.values.fold(0.0, (sum, session) => sum + session.totalCost),
+        totalTimelines: _sessions.values
+            .fold(0, (sum, session) => sum + session.timelines.length),
+        totalTokensTracked: _sessions.values
+            .fold(0, (sum, session) => sum + session.totalTokenUsage),
+        totalCostTracked: _sessions.values
+            .fold(0.0, (sum, session) => sum + session.totalCost),
       );
 }
 

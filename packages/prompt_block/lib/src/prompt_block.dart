@@ -211,6 +211,9 @@ class PromptBlock {
        _shouldRender = shouldRender,
        _forceCompact = forceCompact;
 
+  @override
+  String toString() => output();
+
   // --- Factory Constructors ---
 
   /// Creates a section wrapped in an XML-style tag.
@@ -228,13 +231,12 @@ class PromptBlock {
     String text, {
     Map<String, String> attributes = const {},
   }) {
-    return PromptBlock.xml(
-      tag,
-      attributes: attributes,
-      children: [
-        PromptBlock(body: [text]),
-      ],
-    );
+    return PromptBlock.xml(tag, attributes: attributes, children: [PromptBlock.text(text)]);
+  }
+
+  /// Creates a section with a single text body.
+  factory PromptBlock.text(String text) {
+    return PromptBlock._internal(body: [text]);
   }
 
   /// Creates a section formatted as a bulleted or numbered list.
@@ -346,9 +348,16 @@ class PromptBlock {
   ///
   /// [items] The collection of items to iterate over.
   /// [builder] A function that takes an item and returns a Section.
-  PromptBlock addEach<T>(Iterable<T> items, PromptBlock Function(T item) builder) {
+  PromptBlock addEach<T>(
+    Iterable<T> items,
+    PromptBlock Function(T item) builder, {
+    String? whenEmptyAdd,
+  }) {
     for (final item in items) {
       add(builder(item));
+    }
+    if (items.isEmpty && whenEmptyAdd != null) {
+      add(PromptBlock.text(whenEmptyAdd));
     }
     return this;
   }

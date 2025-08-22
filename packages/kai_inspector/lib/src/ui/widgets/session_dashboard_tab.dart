@@ -66,7 +66,7 @@ class _SessionHeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isActive = session.status == TimelineStatus.running;
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -147,7 +147,8 @@ class _SessionHeaderCard extends StatelessWidget {
                   label: 'Duration',
                   value: sessionOverview.duration != null
                       ? '${sessionOverview.duration!.inMilliseconds}ms'
-                      : _formatDuration(DateTime.now().difference(session.startTime)),
+                      : _formatDuration(
+                          DateTime.now().difference(session.startTime)),
                   color: Colors.purple,
                 ),
                 _SessionStat(
@@ -177,8 +178,8 @@ class _SessionHeaderCard extends StatelessWidget {
 
   String _formatDateTime(DateTime dateTime) {
     return '${dateTime.hour.toString().padLeft(2, '0')}:'
-           '${dateTime.minute.toString().padLeft(2, '0')}:'
-           '${dateTime.second.toString().padLeft(2, '0')}';
+        '${dateTime.minute.toString().padLeft(2, '0')}:'
+        '${dateTime.second.toString().padLeft(2, '0')}';
   }
 
   String _formatDuration(Duration duration) {
@@ -240,13 +241,15 @@ class _MetricsOverviewGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount = screenWidth < 600 ? 2 : 4; // 2 columns on mobile, 4 on wider screens
-    
+    final crossAxisCount =
+        screenWidth < 600 ? 2 : 4; // 2 columns on mobile, 4 on wider screens
+
     return GridView.count(
       crossAxisCount: crossAxisCount,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: screenWidth < 600 ? 1.4 : 1.2, // Adjust aspect ratio for mobile
+      childAspectRatio:
+          screenWidth < 600 ? 1.4 : 1.2, // Adjust aspect ratio for mobile
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
       children: [
@@ -264,15 +267,21 @@ class _MetricsOverviewGrid extends StatelessWidget {
         ),
         _MetricCard(
           title: 'Success Rate',
-          value: '${(sessionMetrics.qualityMetrics.successRate * 100).toStringAsFixed(1)}%',
+          value:
+              '${(sessionMetrics.qualityMetrics.successRate * 100).toStringAsFixed(1)}%',
           icon: Icons.check_circle,
-          color: sessionMetrics.qualityMetrics.successRate >= 0.9 ? Colors.green : Colors.orange,
+          color: sessionMetrics.qualityMetrics.successRate >= 0.9
+              ? Colors.green
+              : Colors.orange,
         ),
         _MetricCard(
           title: 'Issues',
-          value: '${sessionMetrics.qualityMetrics.totalErrors + sessionMetrics.qualityMetrics.totalWarnings}',
+          value:
+              '${sessionMetrics.qualityMetrics.totalErrors + sessionMetrics.qualityMetrics.totalWarnings}',
           icon: Icons.warning,
-          color: sessionMetrics.qualityMetrics.totalErrors > 0 ? Colors.red : Colors.grey,
+          color: sessionMetrics.qualityMetrics.totalErrors > 0
+              ? Colors.red
+              : Colors.grey,
         ),
       ],
     );
@@ -356,8 +365,8 @@ class _MessagesTimelineCard extends StatelessWidget {
             Text(
               'Message Timeline',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
             const SizedBox(height: 12),
             if (timelines.isEmpty)
@@ -374,8 +383,9 @@ class _MessagesTimelineCard extends StatelessWidget {
                   itemCount: timelines.length,
                   itemBuilder: (context, index) {
                     final timeline = timelines[index];
-                    final timelineData = DebugDataAdapter.convertTimelineOverview(timeline);
-                    
+                    final timelineData =
+                        DebugDataAdapter.convertTimelineOverview(timeline);
+
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: _MessageTimelineItem(
@@ -404,8 +414,9 @@ class _MessageTimelineItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasIssues = timelineData.errorCount > 0 || timelineData.warningCount > 0;
-    
+    final hasIssues =
+        timelineData.errorCount > 0 || timelineData.warningCount > 0;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -475,7 +486,8 @@ class _MessageTimelineItem extends StatelessWidget {
               if (hasIssues)
                 InfoChip(
                   label: 'Issues',
-                  value: '${timelineData.errorCount + timelineData.warningCount}',
+                  value:
+                      '${timelineData.errorCount + timelineData.warningCount}',
                   color: Colors.red,
                 ),
             ],
@@ -513,8 +525,8 @@ class _PhasePerformanceCard extends StatelessWidget {
             Text(
               'Phase Performance',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
             const SizedBox(height: 12),
             if (phaseStatistics.isEmpty)
@@ -554,7 +566,8 @@ class _PhasePerformanceItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final phaseName = phase.phaseName
         .split('-')
-        .map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
+        .map((word) =>
+            word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
         .join(' ');
 
     return Container(
@@ -636,14 +649,14 @@ class _QualityInsightsCard extends StatelessWidget {
             Text(
               'Quality Insights',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
             const SizedBox(height: 12),
             ...insights.map((insight) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: _InsightItem(insight: insight),
-            )),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: _InsightItem(insight: insight),
+                )),
           ],
         ),
       ),
@@ -661,13 +674,15 @@ class _QualityInsightsCard extends StatelessWidget {
       insights.add(QualityInsight(
         type: InsightType.warning,
         title: 'Slow Response Times',
-        description: 'Average response time is ${performance.averageResponseTimeMs}ms. Consider optimizing phases.',
+        description:
+            'Average response time is ${performance.averageResponseTimeMs}ms. Consider optimizing phases.',
       ));
     } else if (performance.averageResponseTimeMs < 1000) {
       insights.add(QualityInsight(
         type: InsightType.positive,
         title: 'Fast Response Times',
-        description: 'Excellent average response time of ${performance.averageResponseTimeMs}ms.',
+        description:
+            'Excellent average response time of ${performance.averageResponseTimeMs}ms.',
       ));
     }
 
@@ -676,13 +691,15 @@ class _QualityInsightsCard extends StatelessWidget {
       insights.add(QualityInsight(
         type: InsightType.error,
         title: 'Low Success Rate',
-        description: 'Success rate is ${(quality.successRate * 100).toStringAsFixed(1)}%. Review error patterns.',
+        description:
+            'Success rate is ${(quality.successRate * 100).toStringAsFixed(1)}%. Review error patterns.',
       ));
     } else if (quality.successRate >= 0.98) {
       insights.add(QualityInsight(
         type: InsightType.positive,
         title: 'High Reliability',
-        description: 'Excellent success rate of ${(quality.successRate * 100).toStringAsFixed(1)}%.',
+        description:
+            'Excellent success rate of ${(quality.successRate * 100).toStringAsFixed(1)}%.',
       ));
     }
 
@@ -691,7 +708,8 @@ class _QualityInsightsCard extends StatelessWidget {
       insights.add(QualityInsight(
         type: InsightType.warning,
         title: 'High Token Usage',
-        description: 'Average ${tokens.averageTokensPerMessage} tokens/message. Consider context optimization.',
+        description:
+            'Average ${tokens.averageTokensPerMessage} tokens/message. Consider context optimization.',
       ));
     }
 
@@ -700,7 +718,8 @@ class _QualityInsightsCard extends StatelessWidget {
       insights.add(QualityInsight(
         type: InsightType.info,
         title: 'Error Analysis',
-        description: '${quality.totalErrors} errors across ${sessionOverview.messageCount} messages. Check logs for patterns.',
+        description:
+            '${quality.totalErrors} errors across ${sessionOverview.messageCount} messages. Check logs for patterns.',
       ));
     }
 
@@ -708,7 +727,8 @@ class _QualityInsightsCard extends StatelessWidget {
       insights.add(QualityInsight(
         type: InsightType.positive,
         title: 'All Systems Nominal',
-        description: 'Session is performing well with no significant issues detected.',
+        description:
+            'Session is performing well with no significant issues detected.',
       ));
     }
 

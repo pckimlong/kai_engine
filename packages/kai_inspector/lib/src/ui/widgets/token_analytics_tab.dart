@@ -21,10 +21,12 @@ class TokenAnalyticsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokenUsageTrend = SessionMetricsCalculator.calculateTokenUsageTrend(session);
-    final phaseComparison = SessionMetricsCalculator.calculatePhasePerformanceComparison(session);
-    final costAnalysis =
-        SessionMetricsCalculator.calculateCostAnalysis(session, costPerToken: 0.0001);
+    final tokenUsageTrend =
+        SessionMetricsCalculator.calculateTokenUsageTrend(session);
+    final phaseComparison =
+        SessionMetricsCalculator.calculatePhasePerformanceComparison(session);
+    final costAnalysis = SessionMetricsCalculator.calculateCostAnalysis(session,
+        costPerToken: 0.0001);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -62,10 +64,11 @@ class TokenAnalyticsTab extends StatelessWidget {
                     children: [
                       Text(
                         'Token Analytics',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: Theme.of(context).primaryColor,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: Theme.of(context).primaryColor,
+                                ),
                       ),
                       Text(
                         'Detailed token usage and cost analysis',
@@ -105,7 +108,8 @@ class TokenAnalyticsTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: _TokenUsageTrendChart(tokenUsageTrend: tokenUsageTrend),
+                  child:
+                      _TokenUsageTrendChart(tokenUsageTrend: tokenUsageTrend),
                 ),
                 const SizedBox(width: 20),
                 Expanded(
@@ -171,18 +175,22 @@ class _TokenOverviewCards extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         'Token Usage',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
+                  _buildTokenStat('Total Tokens',
+                      '${_formatNumber(tokens.totalTokensUsed)}', Colors.green),
+                  _buildTokenStat('Avg/Message',
+                      '${tokens.averageTokensPerMessage}', Colors.blue),
                   _buildTokenStat(
-                      'Total Tokens', '${_formatNumber(tokens.totalTokensUsed)}', Colors.green),
-                  _buildTokenStat('Avg/Message', '${tokens.averageTokensPerMessage}', Colors.blue),
-                  _buildTokenStat('Min/Max',
-                      '${tokens.minTokensPerMessage}/${tokens.maxTokensPerMessage}', Colors.purple),
+                      'Min/Max',
+                      '${tokens.minTokensPerMessage}/${tokens.maxTokensPerMessage}',
+                      Colors.purple),
                 ],
               ),
             ),
@@ -200,18 +208,20 @@ class _TokenOverviewCards extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         'Performance',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _buildTokenStat('Tokens/Min', '${tokens.tokensPerMinute}', Colors.orange),
                   _buildTokenStat(
-                      'Efficiency', '${tokens.efficiency.toStringAsFixed(3)}/ms', Colors.red),
-                  _buildTokenStat(
-                      'Avg Response', '${performance.averageResponseTimeMs}ms', Colors.blue),
+                      'Tokens/Min', '${tokens.tokensPerMinute}', Colors.orange),
+                  _buildTokenStat('Efficiency',
+                      '${tokens.efficiency.toStringAsFixed(3)}/ms', Colors.red),
+                  _buildTokenStat('Avg Response',
+                      '${performance.averageResponseTimeMs}ms', Colors.blue),
                 ],
               ),
             ),
@@ -235,17 +245,20 @@ class _TokenOverviewCards extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           'Token Usage',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     _buildTokenStat(
-                        'Total Tokens', '${_formatNumber(tokens.totalTokensUsed)}', Colors.green),
-                    _buildTokenStat(
-                        'Avg/Message', '${tokens.averageTokensPerMessage}', Colors.blue),
+                        'Total Tokens',
+                        '${_formatNumber(tokens.totalTokensUsed)}',
+                        Colors.green),
+                    _buildTokenStat('Avg/Message',
+                        '${tokens.averageTokensPerMessage}', Colors.blue),
                     _buildTokenStat(
                         'Min/Max',
                         '${tokens.minTokensPerMessage}/${tokens.maxTokensPerMessage}',
@@ -269,18 +282,22 @@ class _TokenOverviewCards extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           'Performance',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _buildTokenStat('Tokens/Min', '${tokens.tokensPerMinute}', Colors.orange),
+                    _buildTokenStat('Tokens/Min', '${tokens.tokensPerMinute}',
+                        Colors.orange),
                     _buildTokenStat(
-                        'Efficiency', '${tokens.efficiency.toStringAsFixed(3)}/ms', Colors.red),
-                    _buildTokenStat(
-                        'Avg Response', '${performance.averageResponseTimeMs}ms', Colors.blue),
+                        'Efficiency',
+                        '${tokens.efficiency.toStringAsFixed(3)}/ms',
+                        Colors.red),
+                    _buildTokenStat('Avg Response',
+                        '${performance.averageResponseTimeMs}ms', Colors.blue),
                   ],
                 ),
               ),
@@ -353,7 +370,8 @@ class _TokenUsageTrendChart extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.show_chart, size: 20, color: Theme.of(context).primaryColor),
+              Icon(Icons.show_chart,
+                  size: 20, color: Theme.of(context).primaryColor),
               const SizedBox(width: 8),
               Text(
                 'Token Usage Trend',
@@ -433,7 +451,8 @@ class _TokenTrendPainter extends CustomPainter {
     final cumulativePath = Path();
     for (int i = 0; i < points.length; i++) {
       final x = (i / (points.length - 1)) * size.width;
-      final y = size.height - ((points[i].cumulativeTokens / maxTokens) * size.height);
+      final y = size.height -
+          ((points[i].cumulativeTokens / maxTokens) * size.height);
       if (i == 0) {
         cumulativePath.moveTo(x, y);
       } else {
@@ -448,7 +467,8 @@ class _TokenTrendPainter extends CustomPainter {
 
     for (int i = 0; i < points.length; i++) {
       final x = (i / (points.length - 1)) * size.width - barWidth / 2;
-      final barHeight = (points[i].timelineTokens / maxTimelineTokens) * size.height * 0.3;
+      final barHeight =
+          (points[i].timelineTokens / maxTimelineTokens) * size.height * 0.3;
       final y = size.height - barHeight;
 
       canvas.drawRect(
@@ -461,7 +481,8 @@ class _TokenTrendPainter extends CustomPainter {
     fillPaint.color = Colors.blue;
     for (int i = 0; i < points.length; i++) {
       final x = (i / (points.length - 1)) * size.width;
-      final y = size.height - ((points[i].cumulativeTokens / maxTokens) * size.height);
+      final y = size.height -
+          ((points[i].cumulativeTokens / maxTokens) * size.height);
       canvas.drawCircle(Offset(x, y), 3, fillPaint);
     }
   }
@@ -484,7 +505,8 @@ class _TokenEfficiencyInsights extends StatelessWidget {
     final insights = _generateEfficiencyInsights();
 
     return Container(
-      constraints: const BoxConstraints(maxHeight: 200), // Match the height of the trend chart
+      constraints: const BoxConstraints(
+          maxHeight: 200), // Match the height of the trend chart
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -503,7 +525,8 @@ class _TokenEfficiencyInsights extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.lightbulb, size: 20, color: Theme.of(context).primaryColor),
+              Icon(Icons.lightbulb,
+                  size: 20, color: Theme.of(context).primaryColor),
               const SizedBox(width: 8),
               Text(
                 'Efficiency Insights',
@@ -562,20 +585,23 @@ class _TokenEfficiencyInsights extends StatelessWidget {
       insights.add(EfficiencyInsight(
         icon: Icons.trending_up,
         title: 'High Token Variance',
-        description: 'Range: ${tokens.minTokensPerMessage}-${tokens.maxTokensPerMessage}',
+        description:
+            'Range: ${tokens.minTokensPerMessage}-${tokens.maxTokensPerMessage}',
         color: Colors.blue,
         isPositive: false,
       ));
     }
 
     // Phase efficiency
-    final mostExpensivePhase = phaseComparison.isNotEmpty ? phaseComparison.first : null;
+    final mostExpensivePhase =
+        phaseComparison.isNotEmpty ? phaseComparison.first : null;
 
     if (mostExpensivePhase != null && mostExpensivePhase.totalTokenUsage > 0) {
       insights.add(EfficiencyInsight(
         icon: Icons.analytics,
         title: 'Top Token Consumer',
-        description: '${mostExpensivePhase.phaseName}: ${mostExpensivePhase.totalTokenUsage}',
+        description:
+            '${mostExpensivePhase.phaseName}: ${mostExpensivePhase.totalTokenUsage}',
         color: Colors.purple,
         isPositive: false,
       ));
@@ -666,7 +692,8 @@ class _PhaseTokenAnalysis extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.pie_chart, size: 24, color: Theme.of(context).primaryColor),
+            Icon(Icons.pie_chart,
+                size: 24, color: Theme.of(context).primaryColor),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -736,7 +763,8 @@ class _PhaseTokenItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final phaseName = phase.phaseName
         .split('-')
-        .map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
+        .map((word) =>
+            word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
         .join(' ');
 
     return Container(
@@ -769,7 +797,8 @@ class _PhaseTokenItem extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.green.withAlpha(51),
                   borderRadius: BorderRadius.circular(16),
@@ -908,7 +937,8 @@ class _CostAnalysisSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.attach_money, color: Theme.of(context).primaryColor, size: 24),
+              Icon(Icons.attach_money,
+                  color: Theme.of(context).primaryColor, size: 24),
               const SizedBox(width: 8),
               Text(
                 'Cost Analysis',
@@ -953,7 +983,8 @@ class _CostAnalysisSection extends StatelessWidget {
                 Center(
                   child: _CostMetricCard(
                     title: 'Avg/Message',
-                    value: '\$${costAnalysis.averageCostPerMessage.toStringAsFixed(4)}',
+                    value:
+                        '\$${costAnalysis.averageCostPerMessage.toStringAsFixed(4)}',
                     icon: Icons.message,
                     color: Colors.blue,
                   ),
@@ -986,7 +1017,8 @@ class _CostAnalysisSection extends StatelessWidget {
                 Expanded(
                   child: _CostMetricCard(
                     title: 'Avg/Message',
-                    value: '\$${costAnalysis.averageCostPerMessage.toStringAsFixed(4)}',
+                    value:
+                        '\$${costAnalysis.averageCostPerMessage.toStringAsFixed(4)}',
                     icon: Icons.message,
                     color: Colors.blue,
                   ),
@@ -1012,7 +1044,9 @@ class _CostAnalysisSection extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 8),
-            ...costAnalysis.phaseCostBreakdown.take(5).map((phase) => _PhaseCostItem(phase: phase)),
+            ...costAnalysis.phaseCostBreakdown
+                .take(5)
+                .map((phase) => _PhaseCostItem(phase: phase)),
           ],
         ],
       ),
@@ -1094,7 +1128,8 @@ class _PhaseCostItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final phaseName = phase.phaseName
         .split('-')
-        .map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
+        .map((word) =>
+            word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
         .join(' ');
 
     return Padding(

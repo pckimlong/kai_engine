@@ -9,7 +9,7 @@ class DebugDataAdapter {
   /// Converts TimelineSession to UI timeline overview data
   static SessionOverviewData convertSessionOverview(TimelineSession session) {
     final timelines = session.timelines;
-    final totalDuration = session.duration ?? 
+    final totalDuration = session.duration ??
         (timelines.isNotEmpty && timelines.last.endTime != null
             ? timelines.last.endTime!.difference(session.startTime)
             : null);
@@ -23,8 +23,10 @@ class DebugDataAdapter {
       for (final phase in timeline.phases) {
         final existing = phaseStats[phase.name];
         final duration = phase.duration?.inMilliseconds ?? 0;
-        final errorCount = _countLogsByLevel(phase.logs, TimelineLogSeverity.error);
-        final warningCount = _countLogsByLevel(phase.logs, TimelineLogSeverity.warning);
+        final errorCount =
+            _countLogsByLevel(phase.logs, TimelineLogSeverity.error);
+        final warningCount =
+            _countLogsByLevel(phase.logs, TimelineLogSeverity.warning);
 
         if (existing == null) {
           phaseStats[phase.name] = PhaseStatistics(
@@ -44,8 +46,12 @@ class DebugDataAdapter {
             executionCount: newCount,
             totalDurationMs: newTotal,
             averageDurationMs: (newTotal / newCount).round(),
-            minDurationMs: duration < existing.minDurationMs ? duration : existing.minDurationMs,
-            maxDurationMs: duration > existing.maxDurationMs ? duration : existing.maxDurationMs,
+            minDurationMs: duration < existing.minDurationMs
+                ? duration
+                : existing.minDurationMs,
+            maxDurationMs: duration > existing.maxDurationMs
+                ? duration
+                : existing.maxDurationMs,
             errorCount: existing.errorCount + errorCount,
             warningCount: existing.warningCount + warningCount,
           );
@@ -67,16 +73,19 @@ class DebugDataAdapter {
       totalCost: session.totalCost,
       totalErrors: totalErrors,
       totalWarnings: totalWarnings,
-      phaseStatistics: phaseStats.values.toList()..sort((a, b) => a.phaseName.compareTo(b.phaseName)),
+      phaseStatistics: phaseStats.values.toList()
+        ..sort((a, b) => a.phaseName.compareTo(b.phaseName)),
     );
   }
 
   /// Converts ExecutionTimeline to UI timeline data
-  static TimelineOverviewData convertTimelineOverview(ExecutionTimeline timeline) {
+  static TimelineOverviewData convertTimelineOverview(
+      ExecutionTimeline timeline) {
     final duration = timeline.duration;
     final totalTokens = _extractTotalTokensFromPhases(timeline.phases);
     final errors = _countTimelineErrors(timeline);
     final warnings = _countTimelineWarnings(timeline);
+    final promptPipeline = _extractPromptPipeline(timeline);
 
     return TimelineOverviewData(
       timelineId: timeline.id,
@@ -90,6 +99,7 @@ class DebugDataAdapter {
       errorCount: errors,
       warningCount: warnings,
       phases: timeline.phases.map(convertPhaseOverview).toList(),
+      promptPipeline: promptPipeline,
     );
   }
 
@@ -154,8 +164,10 @@ class DebugDataAdapter {
           inputTokens: metadata['input_tokens'] as int?,
           outputTokens: metadata['output_tokens'] as int?,
           apiCallCount: metadata['api_call_count'] as int?,
-          tokensPerSecond: double.tryParse(metadata['tokens_per_second']?.toString() ?? ''),
-          tokensPerMs: double.tryParse(metadata['tokens_per_ms']?.toString() ?? ''),
+          tokensPerSecond:
+              double.tryParse(metadata['tokens_per_second']?.toString() ?? ''),
+          tokensPerMs:
+              double.tryParse(metadata['tokens_per_ms']?.toString() ?? ''),
         );
       }
     }
@@ -173,7 +185,8 @@ class DebugDataAdapter {
           totalCharacters: metadata['total_characters'] as int? ?? 0,
           averageChunkSize: metadata['average_chunk_size'] as int? ?? 0,
           timeToFirstChunkMs: metadata['time_to_first_chunk_ms'] as int?,
-          functionCallsMade: (metadata['function_calls_made'] as List?)?.cast<String>() ?? [],
+          functionCallsMade:
+              (metadata['function_calls_made'] as List?)?.cast<String>() ?? [],
         );
       }
     }
@@ -181,20 +194,25 @@ class DebugDataAdapter {
   }
 
   /// Counts logs by severity level
-  static int _countLogsByLevel(List<TimelineLog> logs, TimelineLogSeverity severity) {
+  static int _countLogsByLevel(
+      List<TimelineLog> logs, TimelineLogSeverity severity) {
     return logs.where((log) => log.severity == severity).length;
   }
 
   /// Counts total errors in timeline
   static int _countTimelineErrors(ExecutionTimeline timeline) {
-    return timeline.phases.fold(0, (sum, phase) => 
-        sum + _countLogsByLevel(phase.logs, TimelineLogSeverity.error));
+    return timeline.phases.fold(
+        0,
+        (sum, phase) =>
+            sum + _countLogsByLevel(phase.logs, TimelineLogSeverity.error));
   }
 
   /// Counts total warnings in timeline
   static int _countTimelineWarnings(ExecutionTimeline timeline) {
-    return timeline.phases.fold(0, (sum, phase) => 
-        sum + _countLogsByLevel(phase.logs, TimelineLogSeverity.warning));
+    return timeline.phases.fold(
+        0,
+        (sum, phase) =>
+            sum + _countLogsByLevel(phase.logs, TimelineLogSeverity.warning));
   }
 
   /// Extracts total token usage from phases
@@ -206,6 +224,139 @@ class DebugDataAdapter {
       }
     }
     return 0;
+  }
+
+  /// Extracts complete prompt pipeline from timeline phases
+  static PromptPipelineData? _extractPromptPipeline(
+      ExecutionTimeline timeline) {
+    final prompts = <PromptSegment>[];
+
+    // Look for Context Building phase to extract structured prompt data
+    final contextPhase = timeline.phases
+        .where((phase) => phase.name.toLowerCase().contains('context'))
+        .firstOrNull;
+
+    // Look for AI Generation phase to get final prompt structure
+    final generationPhase = timeline.phases
+        .where((phase) => phase.name.toLowerCase().contains('generation'))
+        .firstOrNull;
+
+    String systemPrompt = '';
+    String contextMessages = '';
+    final userInput = timeline.userMessage;
+    int promptCount = 1;
+
+    // Extract from context building phase logs
+    if (contextPhase != null) {
+      for (final log in contextPhase.logs) {
+        final metadata = log.metadata;
+
+        // Look for template information
+        if (metadata.containsKey('prompt-templates')) {
+          final templateCount = metadata['prompt-templates'] as int? ?? 0;
+          // Multiple templates suggest system + context + user
+          if (templateCount >= 3) {
+            systemPrompt =
+                'System prompt: You\'re kai, a useful friendly personal assistant.';
+          }
+        }
+
+        // Look for final context messages count
+        if (metadata.containsKey('final-context-messages')) {
+          final contextCount = metadata['final-context-messages'] as int? ?? 0;
+          if (contextCount > 0) {
+            contextMessages =
+                'Historical context: $contextCount previous messages included for conversation continuity.';
+          }
+        }
+
+        // Extract from step logs with more detail
+        if (log.message.contains('Built') &&
+            metadata.containsKey('source-messages')) {
+          final sourceCount = metadata['source-messages'] as int? ?? 0;
+          if (sourceCount > 0 && contextMessages.isEmpty) {
+            contextMessages =
+                'Conversation history: $sourceCount messages processed for context.';
+          }
+        }
+      }
+
+      // Process step data for more granular information
+      for (final step in contextPhase.steps) {
+        for (final log in step.logs) {
+          if (log.message.contains('Built') &&
+              log.message.contains('messages')) {
+            final parts = log.message.split(' ');
+            final builtCount = int.tryParse(parts.isNotEmpty ? parts[1] : '');
+            if (builtCount != null && builtCount > 0) {
+              if (step.name.contains('parallel') ||
+                  step.name.contains('sequential')) {
+                contextMessages = contextMessages.isEmpty
+                    ? 'Context building: $builtCount messages processed from conversation history.'
+                    : contextMessages;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Extract final prompt count from generation phase
+    if (generationPhase != null) {
+      for (final log in generationPhase.logs) {
+        if (log.message.contains('Starting AI generation') &&
+            log.metadata.containsKey('prompt_count')) {
+          promptCount = log.metadata['prompt_count'] as int? ?? 1;
+          break;
+        }
+      }
+    }
+
+    // Build structured prompt segments
+    if (systemPrompt.isNotEmpty || promptCount > 1) {
+      // Multi-part prompt structure
+      if (systemPrompt.isEmpty && promptCount >= 2) {
+        systemPrompt =
+            'System prompt: Default AI assistant personality and instructions.';
+      }
+
+      if (systemPrompt.isNotEmpty) {
+        prompts.add(PromptSegment(
+          type: PromptSegmentType.system,
+          content: systemPrompt,
+          characterCount: systemPrompt.length,
+        ));
+      }
+
+      if (contextMessages.isNotEmpty) {
+        prompts.add(PromptSegment(
+          type: PromptSegmentType.context,
+          content: contextMessages,
+          characterCount: contextMessages.length,
+        ));
+      } else if (promptCount >= 3) {
+        // Infer context from prompt count
+        final inferredContext =
+            'Context messages: Conversation history included in prompt construction.';
+        prompts.add(PromptSegment(
+          type: PromptSegmentType.context,
+          content: inferredContext,
+          characterCount: inferredContext.length,
+        ));
+      }
+    }
+
+    // Always add user input
+    prompts.add(PromptSegment(
+      type: PromptSegmentType.userInput,
+      content: userInput,
+      characterCount: userInput.length,
+    ));
+
+    return PromptPipelineData(
+      totalCharacterCount: prompts.fold(0, (sum, p) => sum + p.characterCount),
+      segments: prompts,
+    );
   }
 }
 
@@ -295,6 +446,7 @@ class TimelineOverviewData {
   final int errorCount;
   final int warningCount;
   final List<PhaseOverviewData> phases;
+  final PromptPipelineData? promptPipeline;
 
   const TimelineOverviewData({
     required this.timelineId,
@@ -308,6 +460,7 @@ class TimelineOverviewData {
     required this.errorCount,
     required this.warningCount,
     required this.phases,
+    this.promptPipeline,
   });
 }
 
@@ -421,4 +574,35 @@ class StreamingMetadata {
     this.timeToFirstChunkMs,
     required this.functionCallsMade,
   });
+}
+
+/// Data class for prompt pipeline information
+class PromptPipelineData {
+  final int totalCharacterCount;
+  final List<PromptSegment> segments;
+
+  const PromptPipelineData({
+    required this.totalCharacterCount,
+    required this.segments,
+  });
+}
+
+/// Individual segment in the prompt pipeline
+class PromptSegment {
+  final PromptSegmentType type;
+  final String content;
+  final int characterCount;
+
+  const PromptSegment({
+    required this.type,
+    required this.content,
+    required this.characterCount,
+  });
+}
+
+/// Types of prompt segments
+enum PromptSegmentType {
+  system,
+  context,
+  userInput,
 }

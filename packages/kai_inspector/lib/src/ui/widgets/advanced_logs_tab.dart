@@ -26,7 +26,8 @@ class _AdvancedLogsTabState extends State<AdvancedLogsTab> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  Set<TimelineLogSeverity> _selectedSeverities = TimelineLogSeverity.values.toSet();
+  Set<TimelineLogSeverity> _selectedSeverities =
+      TimelineLogSeverity.values.toSet();
   Set<String> _selectedPhases = <String>{};
   Set<String> _selectedTimelines = <String>{};
   String _searchQuery = '';
@@ -153,13 +154,16 @@ class _AdvancedLogsTabState extends State<AdvancedLogsTab> {
             border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
           ),
           child: InkWell(
-            onTap: () => setState(() => _isFilterPanelExpanded = !_isFilterPanelExpanded),
+            onTap: () => setState(
+                () => _isFilterPanelExpanded = !_isFilterPanelExpanded),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   Icon(
-                    _isFilterPanelExpanded ? Icons.expand_less : Icons.expand_more,
+                    _isFilterPanelExpanded
+                        ? Icons.expand_less
+                        : Icons.expand_more,
                     size: 20,
                     color: Colors.grey[600],
                   ),
@@ -185,9 +189,12 @@ class _AdvancedLogsTabState extends State<AdvancedLogsTab> {
                     icon: const Icon(Icons.clear_all, size: 18),
                     onPressed: () {
                       setState(() {
-                        _selectedSeverities = TimelineLogSeverity.values.toSet();
-                        _selectedPhases = _allLogs.map((e) => e.phaseName).toSet();
-                        _selectedTimelines = _allLogs.map((e) => e.timelineId).toSet();
+                        _selectedSeverities =
+                            TimelineLogSeverity.values.toSet();
+                        _selectedPhases =
+                            _allLogs.map((e) => e.phaseName).toSet();
+                        _selectedTimelines =
+                            _allLogs.map((e) => e.timelineId).toSet();
                         _searchController.clear();
                         _applyFilters();
                       });
@@ -368,7 +375,8 @@ class _LogsControlPanel extends StatelessWidget {
                     prefixIcon: Icon(Icons.search),
                     border: OutlineInputBorder(),
                     isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                 ),
               ),
@@ -405,11 +413,14 @@ class _LogsControlPanel extends StatelessWidget {
                         style: const TextStyle(fontSize: 11),
                       ),
                       selected: isSelected,
-                      onSelected: (selected) => onSeverityChanged(severity, selected),
-                      backgroundColor: _getSeverityColor(severity).withAlpha(26),
+                      onSelected: (selected) =>
+                          onSeverityChanged(severity, selected),
+                      backgroundColor:
+                          _getSeverityColor(severity).withAlpha(26),
                       selectedColor: _getSeverityColor(severity).withAlpha(77),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
                     );
                   }).toList(),
                 ),
@@ -440,9 +451,11 @@ class _LogsControlPanel extends StatelessWidget {
                           style: const TextStyle(fontSize: 10),
                         ),
                         selected: true,
-                        onSelected: (selected) => onPhaseChanged(phase, selected),
+                        onSelected: (selected) =>
+                            onPhaseChanged(phase, selected),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 1),
                       );
                     }).toList(),
                   ),
@@ -479,7 +492,8 @@ class _LogsControlPanel extends StatelessWidget {
   String _formatPhaseName(String phaseName) {
     return phaseName
         .split('-')
-        .map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
+        .map((word) =>
+            word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
         .join(' ');
   }
 }
@@ -525,7 +539,8 @@ class _LogsListView extends StatelessWidget {
       itemCount: logs.length,
       itemBuilder: (context, index) {
         final logEntry = logs[index];
-        final isFirstOfTimeline = index == 0 || logs[index - 1].timelineId != logEntry.timelineId;
+        final isFirstOfTimeline =
+            index == 0 || logs[index - 1].timelineId != logEntry.timelineId;
 
         return Column(
           children: [
@@ -591,7 +606,8 @@ class _LogEntryItemState extends State<_LogEntryItem> {
     final severityColor = _getSeverityColor(log.severity);
 
     return InkWell(
-      onTap: hasMetadata ? () => setState(() => _isExpanded = !_isExpanded) : null,
+      onTap:
+          hasMetadata ? () => setState(() => _isExpanded = !_isExpanded) : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
@@ -609,7 +625,8 @@ class _LogEntryItemState extends State<_LogEntryItem> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: severityColor.withAlpha(51),
                     borderRadius: BorderRadius.circular(4),
@@ -634,7 +651,8 @@ class _LogEntryItemState extends State<_LogEntryItem> {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   decoration: BoxDecoration(
                     color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(3),
@@ -650,7 +668,8 @@ class _LogEntryItemState extends State<_LogEntryItem> {
                 if (widget.logEntry.stepName != null) ...[
                   const SizedBox(width: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                     decoration: BoxDecoration(
                       color: Colors.blue[100],
                       borderRadius: BorderRadius.circular(3),
@@ -760,7 +779,8 @@ class _LogEntryItemState extends State<_LogEntryItem> {
   String _formatPhaseName(String phaseName) {
     return phaseName
         .split('-')
-        .map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
+        .map((word) =>
+            word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
         .join(' ');
   }
 }

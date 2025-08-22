@@ -40,7 +40,8 @@ sealed class TimelineStep with _$TimelineStep {
   }) = _TimelineStep;
 
   /// Creates a TimelineStep from JSON.
-  factory TimelineStep.fromJson(Map<String, dynamic> json) => _$TimelineStepFromJson(json);
+  factory TimelineStep.fromJson(Map<String, dynamic> json) =>
+      _$TimelineStepFromJson(json);
 
   const TimelineStep._();
 
