@@ -127,7 +127,7 @@ class _MetricCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withAlpha((255 * 0.1).round()),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -144,7 +144,7 @@ class _MetricCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(fontSize: 12, color: color.withOpacity(0.7)),
+            style: TextStyle(fontSize: 12, color: color.withValues(alpha: 0.7)),
             textAlign: TextAlign.center,
           ),
         ],
@@ -415,7 +415,7 @@ class _CostBreakdown extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.green.withAlpha((255 * 0.1).round()),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.green.withOpacity(0.3)),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

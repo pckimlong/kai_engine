@@ -4,7 +4,6 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:kai_engine/src/post_response_engine_base.dart';
 import 'package:kai_engine/src/tool_schema.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:uuid/uuid.dart';
 
 import 'ai_generation_phase.dart';
 import 'conversation_manager.dart';
@@ -49,7 +48,6 @@ abstract base class ChatControllerBase<TEntity> {
        _cancelToken = CancelToken(),
        _inspector = inspector ?? NoOpKaiInspector();
 
-  static const Uuid _uuid = Uuid();
 
   /// Handle generation state updates
   final _generationStateController =
@@ -73,9 +71,9 @@ abstract base class ChatControllerBase<TEntity> {
   }) async {
     var userMessage = CoreMessage.user(content: input);
 
-    // Use ConversationSession ID for inspector session and create unique timeline ID
+    // Use ConversationSession ID for inspector session and user message ID as timeline ID
     final sessionId = _conversationManager.session.id;
-    final timelineId = _uuid.v4();
+    final timelineId = userMessage.messageId; // Use user message ID to track this specific input
 
     await _inspector.startSession(sessionId);
     await _inspector.startTimeline(sessionId, timelineId, input);

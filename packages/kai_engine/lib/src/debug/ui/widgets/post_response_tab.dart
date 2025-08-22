@@ -84,7 +84,6 @@ class _PostResponseOverview extends StatelessWidget {
         .length;
 
     final totalPhases = phases.length;
-    final completedPhases = phases.where((p) => p.isComplete).length;
     final phaseDuration = _calculatePhaseDuration();
 
     final totalDuration = _calculateTotalDuration();
