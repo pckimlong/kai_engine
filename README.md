@@ -11,10 +11,11 @@ A modular, extensible AI chat engine built with a pipeline-based architecture.
 
 This repository is a monorepo containing the following packages:
 
-| Package | Description | Version |
-|---------|-------------|---------|
-| [`kai_engine`](packages/kai_engine/) | The core AI chat engine with a pipeline-based architecture | TBD |
-| [`kai_engine_firebase_ai`](packages/kai_engine_firebase_ai/) | Firebase AI adapter for the Kai Engine | TBD |
+| Package | Description |
+|---------|-------------|
+| [`kai_engine`](packages/kai_engine/) | The core AI chat engine with a pipeline-based architecture |
+| [`kai_engine_firebase_ai`](packages/kai_engine_firebase_ai/) | Firebase AI adapter for the Kai Engine |
+| [`kai_inspector`](packages/kai_inspector/) | A powerful debugging and inspection tool for the Kai Engine |
 
 ## Overview
 
@@ -33,6 +34,7 @@ The core framework provides essential abstractions for building conversational A
 - **Tool Calling Support**: Native support for AI function/tool calling with type-safe schemas.
 - **Template Engine**: Built-in flexible template engine for dynamic content generation.
 - **Post-Response Processing**: Process AI responses after generation with custom pipelines.
+- **Real-time Inspection**: Debug and monitor AI processing pipelines with Kai Inspector.
 - **Type Safety**: Strong typing throughout the system for better developer experience.
 - **Comprehensive Testability**: Designed for easy unit and integration testing.
 
@@ -42,14 +44,33 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  kai_engine: ^1.0.0
+  kai_engine:
+    git:
+      url: https://github.com/pckimlong/kai_engine.git
+      ref: main
+      path: packages/kai_engine
 ```
 
 For Firebase AI integration:
 
 ```yaml
 dependencies:
-  kai_engine_firebase_ai: ^1.0.0
+  kai_engine_firebase_ai:
+    git:
+      url: https://github.com/pckimlong/kai_engine.git
+      ref: main
+      path: packages/kai_engine_firebase_ai
+```
+
+For debugging and inspection capabilities (development only):
+
+```yaml
+dev_dependencies:
+  kai_inspector:
+    git:
+      url: https://github.com/pckimlong/kai_engine.git
+      ref: main
+      path: packages/kai_inspector
 ```
 
 ## Documentation
@@ -57,6 +78,7 @@ dependencies:
 See the individual package READMEs for detailed documentation:
 - [kai_engine README](packages/kai_engine/README.md)
 - [kai_engine_firebase_ai README](packages/kai_engine_firebase_ai/README.md)
+- [kai_inspector README](packages/kai_inspector/README.md)
 
 ## Contributing
 

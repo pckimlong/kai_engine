@@ -1,6 +1,5 @@
 # Kai Engine Firebase AI Adapter
 
-[![Pub Version](https://img.shields.io/pub/v/kai_engine_firebase_ai)](https://pub.dev/packages/kai_engine_firebase_ai)
 [![GitHub](https://img.shields.io/github/license/pckimlong/kai_engine)](https://github.com/pckimlong/kai_engine/blob/main/LICENSE)
 
 A Firebase AI adapter for the Kai Engine.
@@ -23,7 +22,11 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  kai_engine_firebase_ai: ^1.0.0
+  kai_engine_firebase_ai:
+    git:
+      url: https://github.com/pckimlong/kai_engine.git
+      ref: main
+      path: packages/kai_engine_firebase_ai
 ```
 
 ## Usage

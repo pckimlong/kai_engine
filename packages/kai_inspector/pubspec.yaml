@@ -1,5 +1,5 @@
 name: kai_inspector
-description: A new Flutter package for Kai Engine Inspector UI.
+description: A powerful debugging and inspection tool for the Kai Engine, providing real-time visibility into AI chat processing pipelines.
 version: 0.0.1
 publish_to: 'none'
 

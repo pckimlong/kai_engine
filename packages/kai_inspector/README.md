@@ -1,59 +1,97 @@
-The Final Flow
+# Kai Inspector
 
-  1. The Two-Package Structure
+A powerful debugging and inspection tool for the Kai Engine, providing real-time visibility into AI chat processing pipelines.
 
-   * `kai_engine` (The Core): A lean, platform-agnostic package. It contains all the core logic for chat processing. It knows that it can be inspected, but it doesn't
-     know how.
-   * `kai_inspector` (The Tool): A new Flutter package that developers can optionally add to their dev_dependencies. It contains all the UI and default logic for the
-     Inspector tool.
+## Overview
 
-  2. The "Contract" in `kai_engine`
+Kai Inspector is a Flutter package that provides a comprehensive debugging UI for applications built with the [Kai Engine](https://github.com/pckimlong/kai_engine). It offers real-time insights into the execution of chat processing pipelines, helping developers understand, optimize, and debug their AI chat applications.
 
-  To allow the kai_inspector to plug in, kai_engine will define the "contract" (the API) for the inspection system. This contract consists of two parts:
+With Kai Inspector, you can:
+- Visualize the complete execution timeline of chat messages
+- Monitor performance metrics and token usage
+- Identify bottlenecks and optimize processing phases
+- Debug errors and warnings in real-time
+- Analyze AI generation quality and efficiency
 
-   * The Data Models: kai_engine will define the data structures that represent an execution: TimelineSession, ExecutionTimeline, TimelinePhase, and TimelineStep.
-   * The Service Interface: kai_engine will define a single abstract class. This is the main plug-in point for the entire system.
+## Features
 
-   1     // Defined in kai_engine
-   2     abstract class KaiInspector {
-   3       // The public API for the inspection system
-   4     }
+- **Real-time Timeline Visualization**: See each phase of message processing as it happens
+- **Performance Metrics Dashboard**: Track response times, token usage, and throughput
+- **Detailed Phase Analysis**: Drill down into specific processing phases and steps
+- **Token Usage Analytics**: Monitor and optimize token consumption
+- **Error and Warning Tracking**: Identify and resolve issues quickly
+- **Export Capabilities**: Export session data for offline analysis
+- **Modular Design**: Clean separation between core engine and inspection UI
 
-  3. The Developer's Experience
+## Architecture
 
-  This is how a developer will use the system in their app:
+Kai Inspector follows a clean, decoupled architecture that integrates seamlessly with the Kai Engine:
 
-   * Step A (Optional): In their pubspec.yaml, they add kai_inspector to their dev_dependencies.
-   * Step B: They create an instance of the Inspector service. The kai_inspector package will provide a default, in-memory implementation.
-   1     // In the developer's app setup code
-   2     final inspector = DefaultKaiInspector();
-   * Step C (Injection): They pass this instance into the kai_engine's main controller.
+1. **Two-Package Structure**:
+   - `kai_engine`: Contains all core chat processing logic (platform-agnostic)
+   - `kai_inspector`: Provides Flutter-based debugging UI and tools
 
-   1     final chatController = ChatController(
-   2       // ... other services
-   3       inspector: inspector, // Injecting the service
-   4     );
-      If they pass nothing (inspector: null), a default NoOpInspector is used internally, and the entire feature is disabled with zero performance cost.
-   * Step D (UI): In their app's debug screen, they use the pre-built widget from the kai_inspector package, passing it the same instance.
-   1     // In the developer's debug UI
-   2     KaiInspectorScreen(inspector: inspector);
+2. **Contract-Based Integration**:
+   - `kai_engine` defines the inspection contract through data models and service interfaces
+   - `kai_inspector` implements the UI and default in-memory storage
+   - Loose coupling allows for custom implementations without modifying core engine
 
-  4. The Internal Engine Flow
+## Installation
 
-  Here’s what happens inside kai_engine when the developer calls chatController.submit():
+Add `kai_inspector` to your `pubspec.yaml` as a dev dependency:
 
-   1. The ChatController checks if it was given a KaiInspector instance.
-   2. It tells the inspector: "A new message is being processed for session 'XYZ'. Here is the timeline object that you should update."
-   3. The ChatController then executes its pipeline of KaiPhases (QueryEngine, GenerationService, etc.).
-   4. As each KaiPhase runs, it uses the built-in withStep() helper, which creates TimelineStep data objects.
-   5. When a phase is complete, the ChatController takes the resulting TimelinePhase data object (which contains all its steps) and hands it to the inspector service.
-   6. The inspector service receives this data and adds it to the ExecutionTimeline for the current message. It then broadcasts the updated timeline on its public
-      Stream.
+```yaml
+dev_dependencies:
+  kai_inspector:
+    git:
+      url: https://github.com/pckimlong/kai_engine.git
+      ref: main
+      path: packages/kai_inspector
+```
 
-  5. The UI Reactivity
+## Usage
 
-   1. The KaiInspectorScreen widget is listening to the Stream from the KaiInspector service instance it was given.
-   2. When the service broadcasts the updated timeline, the StreamProvider (or similar mechanism) inside the KaiInspectorScreen receives the new data.
-   3. The screen automatically rebuilds itself to display the new information, showing the steps and phases as they complete in near real-time.
+1. Create an inspector instance in your app:
+```dart
+import 'package:kai_inspector/kai_inspector.dart';
 
-  This creates a clean, decoupled, and highly extensible end-to-end flow that is easy for developers to opt into and use.
+final inspector = DefaultKaiInspector();
+```
+
+2. Inject the inspector into your Kai Engine controller:
+```dart
+final chatController = ChatController(
+  // ... other services
+  inspector: inspector, // Injecting the service
+);
+```
+
+3. Use the inspector UI in your debug screen:
+```dart
+// In your debug UI
+KaiInspectorScreen(inspector: inspector);
+```
+
+Note: When `inspector` is `null`, the inspection feature is completely disabled with zero performance overhead.
+
+## UI Components
+
+### Session Dashboard
+Get a high-level overview of your debugging session with key metrics and quality insights.
+
+### Timeline Analysis
+Visualize the complete execution flow of individual messages with detailed phase breakdowns.
+
+### Token Analytics
+Analyze token usage patterns, efficiency metrics, and cost analysis.
+
+### Advanced Logging
+Filter, search, and export detailed logs from all processing phases.
+
+## Development
+
+This package is designed to be used in development environments only. The inspector has no impact on production performance when not injected.
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
