@@ -1,40 +1,40 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kai_engine/src/content_builder.dart';
-import 'package:kai_engine/src/section.dart';
+
+import '../../lib/src/src.dart';
 
 void main() {
-  group('Section', () {
-    group('Basic Section creation', () {
+  group('PromptBlock', () {
+    group('Basic PromptBlock creation', () {
       test('creates section with title only', () {
-        final section = Section(title: '# Introduction');
+        final section = PromptBlock(title: '# Introduction');
         expect(section, isNotNull);
       });
 
       test('creates section with body only', () {
-        final section = Section(body: ['This is a simple body line']);
+        final section = PromptBlock(body: ['This is a simple body line']);
         expect(section, isNotNull);
       });
 
       test('creates section with both title and body', () {
-        final section = Section(title: '## User Profile', body: ['Name: John Doe', 'Age: 30']);
+        final section = PromptBlock(title: '## User Profile', body: ['Name: John Doe', 'Age: 30']);
         expect(section, isNotNull);
       });
 
       test('creates section with children', () {
-        final childSection = Section(title: 'Child Section');
-        final parentSection = Section(title: 'Parent Section', children: [childSection]);
+        final childSection = PromptBlock(title: 'Child PromptBlock');
+        final parentSection = PromptBlock(title: 'Parent PromptBlock', children: [childSection]);
         expect(parentSection, isNotNull);
       });
     });
 
-    group('XML Section creation', () {
+    group('XML PromptBlock creation', () {
       test('creates XML section with tag only', () {
-        final section = Section.xml('user_context');
+        final section = PromptBlock.xml('user_context');
         expect(section, isNotNull);
       });
 
       test('creates XML section with tag and attributes', () {
-        final section = Section.xml(
+        final section = PromptBlock.xml(
           'user_context',
           attributes: {'name': 'Kim', 'role': 'developer'},
         );
@@ -42,8 +42,8 @@ void main() {
       });
 
       test('creates XML section with children', () {
-        final child = Section.xml('memory', attributes: {'author': 'assistant'});
-        final parent = Section.xml(
+        final child = PromptBlock.xml('memory', attributes: {'author': 'assistant'});
+        final parent = PromptBlock.xml(
           'conversation_history',
           attributes: {'turns': '2'},
           children: [child],
@@ -52,42 +52,42 @@ void main() {
       });
     });
 
-    group('Bullet List Section creation', () {
+    group('Bullet List PromptBlock creation', () {
       test('creates bullet list with default hyphen type', () {
         final items = ['Item 1', 'Item 2', 'Item 3'];
-        final section = Section.bulletList(items);
+        final section = PromptBlock.bulletList(items);
         expect(section, isNotNull);
       });
 
       test('creates bullet list with number type', () {
         final items = ['First item', 'Second item', 'Third item'];
-        final section = Section.bulletList(items, type: BulletType.number);
+        final section = PromptBlock.bulletList(items, type: BulletType.number);
         expect(section, isNotNull);
       });
 
       test('creates bullet list with hyphen type', () {
         final items = ['Point A', 'Point B', 'Point C'];
-        final section = Section.bulletList(items, type: BulletType.hyphen);
+        final section = PromptBlock.bulletList(items, type: BulletType.hyphen);
         expect(section, isNotNull);
       });
 
       test('creates bullet list with none type', () {
         final items = ['Note 1', 'Note 2', 'Note 3'];
-        final section = Section.bulletList(items, type: BulletType.none);
+        final section = PromptBlock.bulletList(items, type: BulletType.none);
         expect(section, isNotNull);
       });
     });
 
-    group('Code Block Section creation', () {
+    group('Code Block PromptBlock creation', () {
       test('creates code block without language', () {
         final code = 'print("Hello, World!");\nint x = 5;';
-        final section = Section.codeBlock(code);
+        final section = PromptBlock.codeBlock(code);
         expect(section, isNotNull);
       });
 
       test('creates code block with language', () {
         final code = 'print("Hello, World!");\nint x = 5;';
-        final section = Section.codeBlock(code, language: 'dart');
+        final section = PromptBlock.codeBlock(code, language: 'dart');
         expect(section, isNotNull);
       });
 
@@ -98,45 +98,45 @@ void main() {
   int x = 5;
   print(x);
 }''';
-        final section = Section.codeBlock(code, language: 'dart');
+        final section = PromptBlock.codeBlock(code, language: 'dart');
         expect(section, isNotNull);
       });
     });
 
     group('Hierarchical nesting', () {
       test('creates nested sections with add method', () {
-        final section = Section(
+        final section = PromptBlock(
           title: '# Root',
-        ).add(Section(title: '## Child 1')).add(Section(title: '## Child 2'));
+        ).add(PromptBlock(title: '## Child 1')).add(PromptBlock(title: '## Child 2'));
         expect(section, isNotNull);
       });
 
       test('creates nested sections with addAll method', () {
         final children = [
-          Section(title: '## Child 1'),
-          Section(title: '## Child 2'),
-          Section(title: '## Child 3'),
+          PromptBlock(title: '## Child 1'),
+          PromptBlock(title: '## Child 2'),
+          PromptBlock(title: '## Child 3'),
         ];
-        final section = Section(title: '# Root').addAll(children);
+        final section = PromptBlock(title: '# Root').addAll(children);
         expect(section, isNotNull);
       });
 
       test('creates deeply nested sections', () {
-        final section = Section(title: '# Root')
+        final section = PromptBlock(title: '# Root')
             .add(
-              Section(title: '## Level 1')
-                  .add(Section(title: '### Level 2').add(Section(title: '#### Level 3')))
-                  .add(Section(title: '## Another Level 1')),
+              PromptBlock(title: '## Level 1')
+                  .add(PromptBlock(title: '### Level 2').add(PromptBlock(title: '#### Level 3')))
+                  .add(PromptBlock(title: '## Another Level 1')),
             )
-            .add(Section(title: '## Another Root Child'));
+            .add(PromptBlock(title: '## Another Root Child'));
         expect(section, isNotNull);
       });
 
       test('creates mixed nested sections with different types', () {
-        final section = Section(title: '# Mixed Content')
-            .add(Section.xml('user_data', attributes: {'id': '123'}))
-            .add(Section.bulletList(['Item 1', 'Item 2']))
-            .add(Section.codeBlock('print("Hello");', language: 'dart'));
+        final section = PromptBlock(title: '# Mixed Content')
+            .add(PromptBlock.xml('user_data', attributes: {'id': '123'}))
+            .add(PromptBlock.bulletList(['Item 1', 'Item 2']))
+            .add(PromptBlock.codeBlock('print("Hello");', language: 'dart'));
         expect(section, isNotNull);
       });
     });
@@ -144,9 +144,9 @@ void main() {
     group('addEach method', () {
       test('adds sections for each item in a list', () {
         final errors = ['Timeout', 'Auth Failed'];
-        final section = Section.xml(
+        final section = PromptBlock.xml(
           'errors',
-        ).addEach(errors, (error) => Section.xmlText('error', error));
+        ).addEach(errors, (error) => PromptBlock.xmlText('error', error));
 
         expect(section, isNotNull);
         expect(section.children, hasLength(2));
@@ -156,9 +156,9 @@ void main() {
 
       test('adds sections for each item in an iterable', () {
         final numbers = Iterable<int>.generate(3); // 0, 1, 2
-        final section = Section.xml(
+        final section = PromptBlock.xml(
           'numbers',
-        ).addEach(numbers, (number) => Section.xmlText('number', number.toString()));
+        ).addEach(numbers, (number) => PromptBlock.xmlText('number', number.toString()));
 
         expect(section, isNotNull);
         expect(section.children, hasLength(3));
@@ -173,12 +173,12 @@ void main() {
           {'name': 'Bob', 'age': '25'},
         ];
 
-        final section = Section.xml('users').addEach(
+        final section = PromptBlock.xml('users').addEach(
           users,
-          (user) => Section.xml(
+          (user) => PromptBlock.xml(
             'user',
             attributes: {'name': user['name']!},
-          ).add(Section.xmlText('age', user['age']!)),
+          ).add(PromptBlock.xmlText('age', user['age']!)),
         );
 
         expect(section, isNotNull);
@@ -192,17 +192,17 @@ void main() {
 
       test('returns parent section for chaining', () {
         final items = ['item1', 'item2'];
-        final parent = Section.xml('parent');
-        final result = parent.addEach(items, (item) => Section.xmlText('child', item));
+        final parent = PromptBlock.xml('parent');
+        final result = parent.addEach(items, (item) => PromptBlock.xmlText('child', item));
 
         expect(result, same(parent)); // Should return the same instance for chaining
       });
 
       test('works with empty iterable', () {
         final emptyList = <String>[];
-        final section = Section.xml(
+        final section = PromptBlock.xml(
           'container',
-        ).addEach(emptyList, (item) => Section.xmlText('item', item));
+        ).addEach(emptyList, (item) => PromptBlock.xmlText('item', item));
 
         expect(section, isNotNull);
         expect(section.children, isEmpty);
@@ -211,31 +211,31 @@ void main() {
 
     group('output method', () {
       test('outputs basic section with title', () {
-        final section = Section(title: '# Introduction');
+        final section = PromptBlock(title: '# Introduction');
         final output = section.output();
         expect(output, equals('# Introduction'));
       });
 
       test('outputs basic section with body', () {
-        final section = Section(body: ['This is a body line', 'This is another line']);
+        final section = PromptBlock(body: ['This is a body line', 'This is another line']);
         final output = section.output();
         expect(output, equals('This is a body line\nThis is another line'));
       });
 
       test('outputs section with title and body', () {
-        final section = Section(title: '## User Profile', body: ['Name: John Doe', 'Age: 30']);
+        final section = PromptBlock(title: '## User Profile', body: ['Name: John Doe', 'Age: 30']);
         final output = section.output();
         expect(output, equals('## User Profile\nName: John Doe\nAge: 30'));
       });
 
       test('outputs XML section with tag', () {
-        final section = Section.xml('user_context');
+        final section = PromptBlock.xml('user_context');
         final output = section.output();
         expect(output, equals('<user_context>\n</user_context>'));
       });
 
       test('outputs XML section with tag and attributes', () {
-        final section = Section.xml(
+        final section = PromptBlock.xml(
           'user_context',
           attributes: {'name': 'Kim', 'role': 'developer'},
         );
@@ -244,15 +244,15 @@ void main() {
       });
 
       test('outputs XML section with body content', () {
-        final section = Section.xml(
+        final section = PromptBlock.xml(
           'user_context',
-        ).add(Section(body: ['User ID: 123', 'Status: Active']));
+        ).add(PromptBlock(body: ['User ID: 123', 'Status: Active']));
         final output = section.output();
         expect(output, equals('<user_context>\n  User ID: 123\n  Status: Active\n</user_context>'));
       });
 
       test('outputs bullet list with number type', () {
-        final section = Section.bulletList([
+        final section = PromptBlock.bulletList([
           'First item',
           'Second item',
           'Third item',
@@ -262,7 +262,7 @@ void main() {
       });
 
       test('outputs bullet list with hyphen type', () {
-        final section = Section.bulletList([
+        final section = PromptBlock.bulletList([
           'Point A',
           'Point B',
           'Point C',
@@ -272,39 +272,43 @@ void main() {
       });
 
       test('outputs bullet list with none type', () {
-        final section = Section.bulletList(['Note 1', 'Note 2', 'Note 3'], type: BulletType.none);
+        final section = PromptBlock.bulletList([
+          'Note 1',
+          'Note 2',
+          'Note 3',
+        ], type: BulletType.none);
         final output = section.output();
         expect(output, equals('Note 1\nNote 2\nNote 3'));
       });
 
       test('outputs code block without language', () {
-        final section = Section.codeBlock('print("Hello");\nint x = 5;');
+        final section = PromptBlock.codeBlock('print("Hello");\nint x = 5;');
         final output = section.output();
         expect(output, equals('```\nprint("Hello");\nint x = 5;\n```'));
       });
 
       test('outputs code block with language', () {
-        final section = Section.codeBlock('print("Hello");\nint x = 5;', language: 'dart');
+        final section = PromptBlock.codeBlock('print("Hello");\nint x = 5;', language: 'dart');
         final output = section.output();
         expect(output, equals('```dart\nprint("Hello");\nint x = 5;\n```'));
       });
 
       test('outputs nested sections correctly', () {
-        final section = Section(
+        final section = PromptBlock(
           title: '# Root',
-        ).add(Section(title: '## Child 1')).add(Section(title: '## Child 2'));
+        ).add(PromptBlock(title: '## Child 1')).add(PromptBlock(title: '## Child 2'));
         final output = section.output();
         expect(output, equals('# Root\n\n## Child 1\n\n## Child 2'));
       });
 
       test('outputs deeply nested sections correctly', () {
-        final section = Section(title: '# Root')
+        final section = PromptBlock(title: '# Root')
             .add(
-              Section(
-                title: '## Level 1',
-              ).add(Section(title: '### Level 2')).add(Section(title: '## Another Level 1')),
+              PromptBlock(title: '## Level 1')
+                  .add(PromptBlock(title: '### Level 2'))
+                  .add(PromptBlock(title: '## Another Level 1')),
             )
-            .add(Section(title: '## Another Root Child'));
+            .add(PromptBlock(title: '## Another Root Child'));
         final output = section.output();
         expect(
           output,
@@ -315,12 +319,12 @@ void main() {
       });
 
       test('outputs complex nested structure with different section types', () {
-        final section = Section(title: '# Final Prompt For Gemini')
+        final section = PromptBlock(title: '# Final Prompt For Gemini')
             .add(
-              Section.xml('user_context', attributes: {'name': 'Kim'})
+              PromptBlock.xml('user_context', attributes: {'name': 'Kim'})
                   .add(
-                    Section(title: '## User Profile').add(
-                      Section.bulletList([
+                    PromptBlock(title: '## User Profile').add(
+                      PromptBlock.bulletList([
                         'Currently pursuing a Master\'s degree',
                         'Expected graduation: September 2025',
                         'Interests: AI, Dart, Flutter',
@@ -328,21 +332,21 @@ void main() {
                     ),
                   )
                   .add(
-                    Section.xml('conversation_history', attributes: {'turns': '2'}).addAll([
-                      Section.xml(
+                    PromptBlock.xml('conversation_history', attributes: {'turns': '2'}).addAll([
+                      PromptBlock.xml(
                         'memory',
                         attributes: {'author': 'assistant'},
-                      ).add(Section(body: ['Hey Kim! Good morning.'])),
-                      Section.xml(
+                      ).add(PromptBlock(body: ['Hey Kim! Good morning.'])),
+                      PromptBlock.xml(
                         'memory',
                         attributes: {'author': 'user'},
-                      ).add(Section(body: ['Good morning to you too!'])),
+                      ).add(PromptBlock(body: ['Good morning to you too!'])),
                     ]),
                   ),
             )
             .add(
-              Section(title: '## Task').add(
-                Section(
+              PromptBlock(title: '## Task').add(
+                PromptBlock(
                   body: ['Summarize the user\'s current status based on the context provided.'],
                 ),
               ),
@@ -359,55 +363,58 @@ void main() {
 
     group('Edge cases', () {
       test('handles empty section', () {
-        final section = Section();
+        final section = PromptBlock();
         final output = section.output();
         expect(output, equals(''));
       });
 
       test('handles section with empty title', () {
-        final section = Section(title: '');
+        final section = PromptBlock(title: '');
         final output = section.output();
         expect(output, equals(''));
       });
 
       test('handles section with empty body', () {
-        final section = Section(body: []);
+        final section = PromptBlock(body: []);
         final output = section.output();
         expect(output, equals(''));
       });
 
       test('handles XML section with empty tag', () {
-        final section = Section.xml('');
+        final section = PromptBlock.xml('');
         final output = section.output();
         expect(output, equals('<>\n</>'));
       });
 
       test('handles bullet list with empty items', () {
-        final section = Section.bulletList([]);
+        final section = PromptBlock.bulletList([]);
         final output = section.output();
         expect(output, equals(''));
       });
 
       test('handles code block with empty code', () {
-        final section = Section.codeBlock('');
+        final section = PromptBlock.codeBlock('');
         final output = section.output();
         expect(output, equals('```\n\n```'));
       });
 
       test('handles deeply nested empty sections', () {
-        final section = Section().add(Section().add(Section())).add(Section());
+        final section = PromptBlock().add(PromptBlock().add(PromptBlock())).add(PromptBlock());
         final output = section.output();
         expect(output, equals(''));
       });
 
       test('handles section with special characters in body', () {
-        final section = Section(body: ['Special chars: <>&"\'']);
+        final section = PromptBlock(body: ['Special chars: <>&"\'']);
         final output = section.output();
         expect(output, equals('Special chars: <>&"\''));
       });
 
       test('handles XML section with special characters in attributes', () {
-        final section = Section.xml('tag', attributes: {'attr': 'value with "quotes" and <tags>'});
+        final section = PromptBlock.xml(
+          'tag',
+          attributes: {'attr': 'value with "quotes" and <tags>'},
+        );
         final output = section.output();
         expect(output, equals('<tag attr="value with "quotes" and <tags>">\n</tag>'));
       });
@@ -418,19 +425,21 @@ void main() {
       late List<String> errors;
 
       String buildPrompt(bool debug, List<String> errorList) {
-        final errorSection = Section.xml('errors')
-            .addAll(errorList.map((e) => Section.xmlText('error', e).compact()).toList())
+        final errorSection = PromptBlock.xml('errors')
+            .addAll(errorList.map((e) => PromptBlock.xmlText('error', e).compact()).toList())
             .omitWhenEmpty();
 
-        final prompt = Section(title: '# System Prompt')
-            .add(Section.xmlText('user_id', 'user-12345').compact())
+        final prompt = PromptBlock(title: '# System Prompt')
+            .add(PromptBlock.xmlText('user_id', 'user-12345').compact())
             .add(errorSection)
             .add(
-              Section.xml('debug_info')
+              PromptBlock.xml('debug_info')
                   .when(debug)
-                  .add(Section.codeBlock('Session ID: abc-xyz\nTimestamp: 2024-01-01 12:00:00')),
+                  .add(
+                    PromptBlock.codeBlock('Session ID: abc-xyz\nTimestamp: 2024-01-01 12:00:00'),
+                  ),
             )
-            .add(Section(title: '## Task', body: ['Analyze the user request.']));
+            .add(PromptBlock(title: '## Task', body: ['Analyze the user request.']));
 
         return prompt.output();
       }
@@ -616,9 +625,9 @@ void main() {
       });
     });
 
-    group('Section.build', () {
+    group('PromptBlock.build', () {
       test('creates section with dynamically built content', () {
-        final section = Section.build((builder) {
+        final section = PromptBlock.build((builder) {
           builder.addLine('First line');
           builder.addLine('Second line');
         });
@@ -627,7 +636,7 @@ void main() {
       });
 
       test('creates section with conditional content', () {
-        final section = Section.build((builder) {
+        final section = PromptBlock.build((builder) {
           builder.addLine('Always present');
           builder.addLineIf(true, 'Conditionally present');
           builder.addLineIf(false, 'Should not be present');
@@ -637,7 +646,7 @@ void main() {
       });
 
       test('creates section with mixed content operations', () {
-        final section = Section.build((builder) {
+        final section = PromptBlock.build((builder) {
           builder.addLine('First line');
           builder.addLines(['Second line', 'Third line']);
           builder.addLineIf(true, 'Fourth line');
@@ -647,29 +656,29 @@ void main() {
         expect(output, equals('First line\nSecond line\nThird line\nFourth line'));
       });
     });
-    group('Section.xmlFrom', () {
+    group('PromptBlock.xmlFrom', () {
       test('creates XML section with content from builder', () {
-        final section = Section.xmlFrom('notes', builder: () => 'This is a note');
+        final section = PromptBlock.xmlFrom('notes', builder: () => 'This is a note');
         final output = section.output();
         expect(output, equals('<notes>\n This is a note\n</notes>'));
       });
 
       test('omits section when builder returns null', () {
-        final section = Section.xmlFrom('notes', builder: () => null);
+        final section = PromptBlock.xmlFrom('notes', builder: () => null);
         final output = section.output();
         expect(output, equals(''));
         expect(section.shouldRender, isFalse);
       });
 
       test('omits section when builder returns empty string', () {
-        final section = Section.xmlFrom('notes', builder: () => '');
+        final section = PromptBlock.xmlFrom('notes', builder: () => '');
         final output = section.output();
         expect(output, equals(''));
         expect(section.shouldRender, isFalse);
       });
 
       test('creates XML section with attributes and content from builder', () {
-        final section = Section.xmlFrom(
+        final section = PromptBlock.xmlFrom(
           'user',
           attributes: {'id': '123', 'name': 'John'},
           builder: () => 'User information',
@@ -679,7 +688,7 @@ void main() {
       });
 
       test('works with complex content from builder', () {
-        final section = Section.xmlFrom('data', builder: () => 'Line 1\nLine 2\nLine 3');
+        final section = PromptBlock.xmlFrom('data', builder: () => 'Line 1\nLine 2\nLine 3');
         final output = section.output();
         expect(output, equals('<data>\n  Line 1\nLine 2\nLine 3\n</data>'));
       });
@@ -687,9 +696,9 @@ void main() {
 
     group('includeIf method', () {
       test('includes section when condition is true', () {
-        final section = Section.xml(
+        final section = PromptBlock.xml(
           'debug',
-        ).includeIf(true).add(Section(body: ['Debug information']));
+        ).includeIf(true).add(PromptBlock(body: ['Debug information']));
 
         final output = section.output();
         expect(output, contains('<debug>'));
@@ -697,9 +706,9 @@ void main() {
       });
 
       test('omits section when condition is false', () {
-        final section = Section.xml(
+        final section = PromptBlock.xml(
           'debug',
-        ).includeIf(false).add(Section(body: ['Debug information']));
+        ).includeIf(false).add(PromptBlock(body: ['Debug information']));
 
         final output = section.output();
         expect(output, equals(''));
@@ -707,9 +716,9 @@ void main() {
 
       test('includes section when condition function returns true', () {
         bool isDebugMode = true;
-        final section = Section.xml(
+        final section = PromptBlock.xml(
           'debug',
-        ).includeIf(() => isDebugMode).add(Section(body: ['Debug information']));
+        ).includeIf(() => isDebugMode).add(PromptBlock(body: ['Debug information']));
 
         final output = section.output();
         expect(output, contains('<debug>'));
@@ -718,23 +727,23 @@ void main() {
 
       test('omits section when condition function returns false', () {
         bool isDebugMode = false;
-        final section = Section.xml(
+        final section = PromptBlock.xml(
           'debug',
-        ).includeIf(() => isDebugMode).add(Section(body: ['Debug information']));
+        ).includeIf(() => isDebugMode).add(PromptBlock(body: ['Debug information']));
 
         final output = section.output();
         expect(output, equals(''));
       });
 
       test('works with omitWhenEmpty() in combination', () {
-        final section = Section.xml('errors').includeIf(true).omitWhenEmpty();
+        final section = PromptBlock.xml('errors').includeIf(true).omitWhenEmpty();
 
         final output = section.output();
         expect(output, equals('')); // Should be omitted because it's empty
       });
 
-      test('returns Section for chaining', () {
-        final section = Section.xml('test');
+      test('returns PromptBlock for chaining', () {
+        final section = PromptBlock.xml('test');
         final result = section.includeIf(true);
         expect(result, same(section));
       });

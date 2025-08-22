@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:convert';
 
 import 'content_builder.dart';
 
@@ -7,23 +8,23 @@ enum BulletType { number, hyphen, none }
 
 /// A class to build a structured section of an AI prompt.
 ///
-/// Use the factory constructors like `Section.xml()` or `Section.bulletList()`
+/// Use the factory constructors like `PromptBlock.xml()` or `PromptBlock.bulletList()`
 /// and chain methods like `.add()` and `.addAll()` to construct complex prompts.
 ///
 /// ## Rendering Control
 ///
 /// Sections can be conditionally rendered by setting the `shouldRender` flag:
-/// - Use [Section.xml] to create sections with explicit rendering control
-/// - Use [Section.xmlFrom] which automatically disables rendering when the builder returns null or empty
+/// - Use [PromptBlock.xml] to create sections with explicit rendering control
+/// - Use [PromptBlock.xmlFrom] which automatically disables rendering when the builder returns null or empty
 /// - Use [copyWith] with `shouldRender: false` to disable rendering of existing sections
 /// - Check [shouldRender] to see if a section will be rendered
 ///
 /// ## Fluent API Features
 ///
-/// The Section class provides a powerful fluent API for building structured prompts:
+/// The PromptBlock class provides a powerful fluent API for building structured prompts:
 ///
 /// - **Factory Constructors**: Create sections with different formats like XML tags, bullet lists, and code blocks
-/// - **Dynamic Content Building**: Use `Section.build()` with a `ContentBuilder` for complex dynamic content
+/// - **Dynamic Content Building**: Use `PromptBlock.build()` with a `ContentBuilder` for complex dynamic content
 /// - **Conditional Rendering**: Control when sections are included with `when()` and `includeIf()`
 /// - **Collection Processing**: Add multiple sections at once with `addEach()`
 /// - **Automatic Empty Handling**: Use `omitWhenEmpty()` to automatically hide sections with no content
@@ -34,9 +35,9 @@ enum BulletType { number, hyphen, none }
 /// ```dart
 /// void main() {
 ///   // Basic section with title and content
-///   final userProfile = Section(title: '## User Profile')
+///   final userProfile = PromptBlock(title: '## User Profile')
 ///     .add(
-///       Section.bulletList([
+///       PromptBlock.bulletList([
 ///         'Currently pursuing a Master\'s degree',
 ///         'Expected graduation: September 2025',
 ///         'Interests: AI, Dart, Flutter',
@@ -44,16 +45,16 @@ enum BulletType { number, hyphen, none }
 ///     );
 ///
 ///   // XML section with attributes and nested content
-///   final conversationHistory = Section.xml('conversation_history', attributes: {'turns': '2'})
+///   final conversationHistory = PromptBlock.xml('conversation_history', attributes: {'turns': '2'})
 ///     .addAll([
-///       Section.xml('memory', attributes: {'author': 'assistant'})
-///         ..add(Section(body: ['Hey Kim! Good morning.'])),
-///       Section.xml('memory', attributes: {'author': 'user'})
-///         ..add(Section(body: ['Good morning to you too!'])),
+///       PromptBlock.xml('memory', attributes: {'author': 'assistant'})
+///         ..add(PromptBlock(body: ['Hey Kim! Good morning.'])),
+///       PromptBlock.xml('memory', attributes: {'author': 'user'})
+///         ..add(PromptBlock(body: ['Good morning to you too!'])),
 ///     ]);
 ///
 ///   // Dynamic content building
-///   final dynamicSection = Section.build((builder) {
+///   final dynamicSection = PromptBlock.build((builder) {
 ///     builder.addLine('First line');
 ///     builder.addLineIf(someCondition, 'Conditional line');
 ///     builder.addLines(['Line 2', 'Line 3']);
@@ -61,20 +62,20 @@ enum BulletType { number, hyphen, none }
 ///
 ///   // Conditional section with collection processing
 ///   final errors = ['Connection timed out', 'Authentication failed'];
-///   final errorSection = Section.xml('errors')
-///     .addEach(errors, (error) => Section.xmlText('error', error))
+///   final errorSection = PromptBlock.xml('errors')
+///     .addEach(errors, (error) => PromptBlock.xmlText('error', error))
 ///     .omitWhenEmpty();
 ///
 ///   // XML section with dynamic content from a builder
-///   final notesSection = Section.xmlFrom('notes', builder: () => getNotes());
+///   final notesSection = PromptBlock.xmlFrom('notes', builder: () => getNotes());
 ///
 ///   // Conditional rendering
-///   final debugSection = Section.xml('debug_info')
+///   final debugSection = PromptBlock.xml('debug_info')
 ///     .includeIf(isDebugMode)
-///     .add(Section.codeBlock('Session ID: abc-xyz\nTimestamp: ${DateTime.now()}'));
+///     .add(PromptBlock.codeBlock('Session ID: abc-xyz\nTimestamp: ${DateTime.now()}'));
 ///
 ///   // Assemble the final prompt
-///   final finalPrompt = Section(title: '# Final Prompt For AI')
+///   final finalPrompt = PromptBlock(title: '# Final Prompt For AI')
 ///     .add(userProfile)
 ///     .add(conversationHistory)
 ///     .add(dynamicSection)
@@ -82,8 +83,8 @@ enum BulletType { number, hyphen, none }
 ///     .add(notesSection)
 ///     .add(debugSection)
 ///     .add(
-///       Section(title: '## Task')
-///         .add(Section(body: ['Analyze the user\'s current status based on the context provided.']))
+///       PromptBlock(title: '## Task')
+///         .add(PromptBlock(body: ['Analyze the user\'s current status based on the context provided.']))
 ///     )
 ///     .output();
 ///
@@ -100,31 +101,31 @@ enum BulletType { number, hyphen, none }
 ///
 ///   String buildPrompt(bool debug, List<String> errorList) {
 ///     // Using addEach to process collections
-///     final errorSection = Section.xml('errors')
-///         .addEach(errorList, (error) => Section.xmlText('error', error).compact())
+///     final errorSection = PromptBlock.xml('errors')
+///         .addEach(errorList, (error) => PromptBlock.xmlText('error', error).compact())
 ///         .omitWhenEmpty();
 ///
-///     // Using Section.build for dynamic content
-///     final userInfoSection = Section.build((builder) {
+///     // Using PromptBlock.build for dynamic content
+///     final userInfoSection = PromptBlock.build((builder) {
 ///       builder.addLine('User ID: user-12345');
 ///       builder.addLineIf(debug, 'Debug Mode: Enabled');
 ///       builder.addLine('Timestamp: ${DateTime.now()}');
 ///     });
 ///
-///     // Using Section.xmlFrom for single-line XML content
-///     final notesSection = Section.xmlFrom('notes', builder: () => 'System notes here');
+///     // Using PromptBlock.xmlFrom for single-line XML content
+///     final notesSection = PromptBlock.xmlFrom('notes', builder: () => 'System notes here');
 ///
 ///     // Using includeIf for conditional rendering
-///     final debugSection = Section.xml('debug_info')
+///     final debugSection = PromptBlock.xml('debug_info')
 ///         .includeIf(debug)
-///         .add(Section.codeBlock('Session ID: abc-xyz\nTimestamp: 2024-01-01 12:00:00'));
+///         .add(PromptBlock.codeBlock('Session ID: abc-xyz\nTimestamp: 2024-01-01 12:00:00'));
 ///
-///     final prompt = Section(title: '# System Prompt')
+///     final prompt = PromptBlock(title: '# System Prompt')
 ///         .add(userInfoSection)
 ///         .add(errorSection)
 ///         .add(notesSection)
 ///         .add(debugSection)
-///         .add(Section(title: '## Task', body: ['Analyze the user request.']));
+///         .add(PromptBlock(title: '## Task', body: ['Analyze the user request.']));
 ///
 ///     return prompt.output();
 ///   }
@@ -148,15 +149,15 @@ enum BulletType { number, hyphen, none }
 ///
 /// This class allows you to declaratively build complex prompts using titles,
 /// XML-style tags, lists, and code blocks. Use the factory constructors like
-/// `Section.xml()` and chain methods like `.add()`, `.when()`, and `.omitWhenEmpty()`
+/// `PromptBlock.xml()` and chain methods like `.add()`, `.when()`, and `.omitWhenEmpty()`
 /// to construct your final prompt.
-class Section {
+class PromptBlock {
   final String? _title;
   final String? _xmlTag;
   final Map<String, String> _xmlAttributes;
   final List<String> _body;
   final BulletType _bodyBullet;
-  final List<Section> _children;
+  final List<PromptBlock> _children;
   final bool _isCodeBlock;
   final String? _codeBlockLanguage;
   bool _shouldRender;
@@ -165,18 +166,18 @@ class Section {
   // --- Public Getters ---
 
   /// An unmodifiable view of the children of this section.
-  List<Section> get children => UnmodifiableListView(_children);
+  List<PromptBlock> get children => UnmodifiableListView(_children);
 
   /// Returns whether this section is currently configured to be rendered.
   bool get shouldRender => _shouldRender;
 
   // --- Constructors ---
 
-  Section({
+  PromptBlock({
     String? title,
     List<String> body = const [],
     BulletType bodyBullet = BulletType.none,
-    List<Section> children = const [],
+    List<PromptBlock> children = const [],
   }) : _title = title,
        _body = body,
        _bodyBullet = bodyBullet,
@@ -188,13 +189,13 @@ class Section {
        _shouldRender = true, // Sections render by default
        _forceCompact = false;
 
-  Section._internal({
+  PromptBlock._internal({
     String? title,
     String? xmlTag,
     Map<String, String> xmlAttributes = const {},
     List<String> body = const [],
     BulletType bodyBullet = BulletType.none,
-    List<Section> children = const [],
+    List<PromptBlock> children = const [],
     bool isCodeBlock = false,
     String? codeBlockLanguage,
     bool shouldRender = true,
@@ -213,33 +214,37 @@ class Section {
   // --- Factory Constructors ---
 
   /// Creates a section wrapped in an XML-style tag.
-  factory Section.xml(
+  factory PromptBlock.xml(
     String tag, {
     Map<String, String> attributes = const {},
-    List<Section> children = const [],
+    List<PromptBlock> children = const [],
   }) {
-    return Section._internal(xmlTag: tag, xmlAttributes: attributes, children: children);
+    return PromptBlock._internal(xmlTag: tag, xmlAttributes: attributes, children: children);
   }
 
   /// A convenience factory to create an XML tag with a single text body.
-  factory Section.xmlText(String tag, String text, {Map<String, String> attributes = const {}}) {
-    return Section.xml(
+  factory PromptBlock.xmlText(
+    String tag,
+    String text, {
+    Map<String, String> attributes = const {},
+  }) {
+    return PromptBlock.xml(
       tag,
       attributes: attributes,
       children: [
-        Section(body: [text]),
+        PromptBlock(body: [text]),
       ],
     );
   }
 
   /// Creates a section formatted as a bulleted or numbered list.
-  factory Section.bulletList(List<String> items, {BulletType type = BulletType.hyphen}) {
-    return Section._internal(body: items, bodyBullet: type);
+  factory PromptBlock.bulletList(List<String> items, {BulletType type = BulletType.hyphen}) {
+    return PromptBlock._internal(body: items, bodyBullet: type);
   }
 
   /// Creates a section formatted as a code block.
-  factory Section.codeBlock(String code, {String? language}) {
-    return Section._internal(
+  factory PromptBlock.codeBlock(String code, {String? language}) {
+    return PromptBlock._internal(
       body: code.split('\n'),
       isCodeBlock: true,
       codeBlockLanguage: language,
@@ -254,7 +259,7 @@ class Section {
   ///
   /// Example:
   /// ```dart
-  /// final section = Section.build((builder) {
+  /// final section = PromptBlock.build((builder) {
   ///   builder.addLine('First line');
   ///   builder.addLineIf(someCondition, 'Conditional line');
   ///   builder.addLines(['Line 2', 'Line 3']);
@@ -263,11 +268,11 @@ class Section {
   ///
   /// See also:
   /// - [ContentBuilder] for the methods available in the builder function
-  /// - [Section.xmlFrom] for creating XML sections with dynamic single-line content
-  factory Section.build(void Function(ContentBuilder) builder) {
+  /// - [PromptBlock.xmlFrom] for creating XML sections with dynamic single-line content
+  factory PromptBlock.build(void Function(ContentBuilder) builder) {
     final contentBuilder = ContentBuilder();
     builder(contentBuilder);
-    return Section._internal(body: contentBuilder.build());
+    return PromptBlock._internal(body: contentBuilder.build());
   }
 
   /// Creates an XML section where the single-line text body comes from a builder function.
@@ -279,13 +284,13 @@ class Section {
   /// Example:
   /// ```dart
   /// prompt.add(
-  ///   Section.xmlFrom('notes', builder: () => getNotes())
+  ///   PromptBlock.xmlFrom('notes', builder: () => getNotes())
   /// );
   /// ```
   ///
   /// See also:
-  /// - [Section.build] for creating sections with multi-line dynamic content
-  factory Section.xmlFrom(
+  /// - [PromptBlock.build] for creating sections with multi-line dynamic content
+  factory PromptBlock.xmlFrom(
     String tag, {
     Map<String, String> attributes = const {},
     String? Function()? builder,
@@ -293,7 +298,7 @@ class Section {
     final content = builder?.call();
     final shouldRender = content != null && content.isNotEmpty;
 
-    return Section._internal(
+    return PromptBlock._internal(
       xmlTag: tag,
       xmlAttributes: attributes,
       body: shouldRender ? [content] : const [],
@@ -304,13 +309,13 @@ class Section {
   // --- Chainable Methods ---
 
   /// Adds a single child section and returns the parent for chaining.
-  Section add(Section child) {
+  PromptBlock add(PromptBlock child) {
     _children.add(child);
     return this;
   }
 
   /// Adds multiple child sections and returns the parent for chaining.
-  Section addAll(List<Section> children) {
+  PromptBlock addAll(List<PromptBlock> children) {
     _children.addAll(children);
     return this;
   }
@@ -329,9 +334,9 @@ class Section {
   /// ```dart
   /// List<String> errors = ['Timeout', 'Auth Failed'];
   ///
-  /// Section.xml('errors')
+  /// PromptBlock.xml('errors')
   ///   .addEach(errors, (error) =>
-  ///     Section.xmlText('error', error)
+  ///     PromptBlock.xmlText('error', error)
   ///   );
   /// ```
   ///
@@ -341,7 +346,7 @@ class Section {
   ///
   /// [items] The collection of items to iterate over.
   /// [builder] A function that takes an item and returns a Section.
-  Section addEach<T>(Iterable<T> items, Section Function(T item) builder) {
+  PromptBlock addEach<T>(Iterable<T> items, PromptBlock Function(T item) builder) {
     for (final item in items) {
       add(builder(item));
     }
@@ -353,7 +358,7 @@ class Section {
   /// The [condition] can be a `bool` or a `bool Function()`.
   /// All `when()` conditions on a section must be true for it to render.
   /// Example: `.when(isDebugMode)` or `.when(() => user.isAdmin)`
-  Section when(dynamic condition) {
+  PromptBlock when(dynamic condition) {
     if (!_shouldRender) return this; // Already disabled, do nothing
 
     bool conditionResult;
@@ -380,7 +385,7 @@ class Section {
   /// See also:
   /// - [when] for another way to conditionally render sections
   /// - [omitWhenEmpty] for automatically omitting empty sections
-  Section includeIf(dynamic condition) {
+  PromptBlock includeIf(dynamic condition) {
     if (!_shouldRender) return this; // Already disabled, do nothing
 
     bool conditionResult;
@@ -399,34 +404,98 @@ class Section {
   /// A shortcut to automatically omit the section if it has no body and no visible children.
   ///
   /// This is perfect for container tags that should disappear when empty.
-  /// Example: `Section.xml('errors').omitWhenEmpty()`
-  Section omitWhenEmpty() {
+  /// Example: `PromptBlock.xml('errors').omitWhenEmpty()`
+  PromptBlock omitWhenEmpty() {
     return when(_body.isNotEmpty || _children.any((child) => child.shouldRender));
   }
 
   /// Renders this XML section on a single compact line if it only contains a short body.
   ///
   /// This has no effect if the section contains children or is a code block.
-  /// Example: `Section.xmlText('user', 'Kim').compact()` renders `<user>Kim</user>`
-  Section compact() {
+  /// Example: `PromptBlock.xmlText('user', 'Kim').compact()` renders `<user>Kim</user>`
+  PromptBlock compact() {
     _forceCompact = true;
     return this;
   }
 
+  /// Recursively converts a map into a nested XML structure by adding child PromptBlock objects.
+  ///
+  /// This method takes a [Map<String, dynamic>] and creates XML elements for each key-value pair.
+  /// For nested maps, it creates nested XML structures. For other values, it converts them to strings.
+  ///
+  /// Example:
+  /// ```dart
+  /// final userData = {'name': 'Kim', 'isPremium': true};
+  /// final prompt = PromptBlock.xml('user_data').addMapAsXml(userData);
+  /// /* Output:
+  /// <user_data>
+  ///   <name>Kim</name>
+  ///   <isPremium>true</isPremium>
+  /// </user_data>
+  /// */
+  /// ```
+  PromptBlock addMapAsXml(Map<String, dynamic> data) {
+    for (final entry in data.entries) {
+      if (entry.value is Map<String, dynamic>) {
+        // For nested maps, recursively create XML structure
+        final nestedBlock = PromptBlock.xml(entry.key)
+          ..addMapAsXml(entry.value as Map<String, dynamic>);
+        add(nestedBlock);
+      } else {
+        // For other values, create simple XML text elements
+        add(PromptBlock.xmlText(entry.key, entry.value.toString()));
+      }
+    }
+    return this;
+  }
+
+  /// Converts a map to a nicely formatted JSON string and adds it as a code block child.
+  ///
+  /// This method takes a [Map<String, dynamic>], converts it to a formatted JSON string,
+  /// and adds it as a code block with "json" as the language.
+  ///
+  /// Example:
+  /// ```dart
+  /// final userData = {'name': 'Kim', 'isPremium': true};
+  /// final prompt = PromptBlock(title: '## Raw User Data').addMapAsCodeBlock(userData);
+  /// /* Output:
+  /// ## Raw User Data
+  ///
+  /// ```json
+  /// {
+  ///   "name": "Kim",
+  ///   "isPremium": true
+  /// }
+  /// ```
+  /// */
+  /// ```
+  PromptBlock addMapAsCodeBlock(Map<String, dynamic> data) {
+    // Convert map to formatted JSON string
+    final jsonString = _formatJson(data);
+    add(PromptBlock.codeBlock(jsonString, language: 'json'));
+    return this;
+  }
+
+  /// Helper method to convert a Map to a formatted JSON string.
+  String _formatJson(Map<String, dynamic> data) {
+    final encoder = JsonEncoder.withIndent('  ');
+    return encoder.convert(data);
+  }
+
   /// Creates a copy of this section with updated values.
-  Section copyWith({
+  PromptBlock copyWith({
     String? title,
     String? xmlTag,
     Map<String, String>? xmlAttributes,
     List<String>? body,
     BulletType? bodyBullet,
-    List<Section>? children,
+    List<PromptBlock>? children,
     bool? isCodeBlock,
     String? codeBlockLanguage,
     bool? shouldRender,
     bool? forceCompact,
   }) {
-    return Section._internal(
+    return PromptBlock._internal(
       title: title ?? _title,
       xmlTag: xmlTag ?? _xmlTag,
       xmlAttributes: xmlAttributes ?? _xmlAttributes,
