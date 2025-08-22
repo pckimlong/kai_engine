@@ -3,8 +3,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:kai_engine/src/models/core_message.dart';
 import 'package:kai_engine/src/tool_schema.dart';
 
-import 'inspector/kai_phase.dart';
-import 'inspector/phase_types.dart';
 import 'models/cancel_token.dart';
 import 'models/generation_result.dart';
 import 'models/generation_state.dart';
@@ -21,16 +19,8 @@ sealed class ToolingConfig with _$ToolingConfig {
   const factory ToolingConfig.none() = _ToolingConfigNone;
 }
 
-abstract interface class GenerationServiceBase
-    extends KaiPhase<GenerationServiceInput, GenerationServiceOutput> {
-  @override
-  Future<GenerationServiceOutput> execute(GenerationServiceInput input) async {
-    // Default implementation - should be overridden by concrete implementations
-    throw UnimplementedError(
-      'GenerationServiceBase.execute() must be implemented',
-    );
-  }
-
+/// Base class for generation services - clean, standalone, no inspection dependencies
+abstract interface class GenerationServiceBase {
   /// Process messages and return a stream of generation states.
   /// Response the generated state of IList[CoreMessage]
   /// In some case like tool calling the response might involve multiple messages steps
@@ -43,8 +33,10 @@ abstract interface class GenerationServiceBase
     Map<String, dynamic>? config,
   });
 
+  /// Count tokens for the given prompts
   Future<int> countToken(IList<CoreMessage> prompts);
 
+  /// Generate a simple response for the given prompts
   Future<String> invoke(IList<CoreMessage> prompts);
 
   /// Invoke the service with tools, must provide tools it will handle tool execution

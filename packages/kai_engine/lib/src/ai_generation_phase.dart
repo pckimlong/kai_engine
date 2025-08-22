@@ -4,6 +4,7 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
 import 'generation_service_base.dart';
 import 'inspector/kai_phase.dart';
+import 'inspector/models/timeline_types.dart';
 import 'models/cancel_token.dart';
 import 'models/core_message.dart';
 import 'models/generation_result.dart';
@@ -37,43 +38,79 @@ class AIGenerationPhase extends KaiPhase<AIGenerationInput, GenerationResult> {
   Future<GenerationResult> execute(AIGenerationInput input) async {
     addLog('Starting AI generation with ${input.prompts.length} prompts');
 
-    // Get the streaming response
-    final responseStream = _generationService.stream(
-      input.prompts,
-      cancelToken: input.cancelToken,
-      tools: input.tools,
-      config: input.config,
-    );
-
     GenerationResult? finalResult;
+    int streamEventCount = 0;
+    int totalTokens = 0;
 
     await withStep(
       'Stream AI Response',
       description: 'Processing streaming response from AI service',
+      metadata: {
+        'prompt_count': input.prompts.length,
+        'tool_count': input.tools.length,
+        'has_cancel_token': input.cancelToken != null,
+      },
       operation: (step) async {
-        await for (final state in responseStream) {
-          if (state case GenerationState<GenerationResult> result) {
-            // Update the UI with streaming state
-            input.onStateUpdate(result);
+        final stopwatch = Stopwatch()..start();
 
-            // Log key milestones
-            if (result case GenerationCompleteState complete) {
-              finalResult = complete.result;
-              addLog('Generation completed successfully');
-            } else if (result
-                case GenerationFunctionCallingState functionCall) {
-              addLog('Function calling: ${functionCall.names}');
+        try {
+          // Get the streaming response from the clean service
+          final responseStream = _generationService.stream(
+            input.prompts,
+            cancelToken: input.cancelToken,
+            tools: input.tools,
+            config: input.config,
+          );
+
+          await for (final state in responseStream) {
+            if (state case GenerationState<GenerationResult> result) {
+              streamEventCount++;
+
+              // Update the UI with streaming state
+              input.onStateUpdate(result);
+
+              // Track and log key milestones
+              if (result case GenerationStreamingTextState text) {
+                addLog('Streaming text chunk: ${text.text.length} characters');
+              } else if (result case GenerationCompleteState complete) {
+                finalResult = complete.result;
+                totalTokens = complete.result.usage?.tokenCount ?? 0;
+
+                addLog('Generation completed successfully');
+                if (totalTokens > 0) {
+                  addLog('Token usage: $totalTokens tokens');
+                  updateAggregates(tokenUsage: totalTokens);
+                }
+              } else if (result case GenerationFunctionCallingState functionCall) {
+                addLog('Function calling: ${functionCall.names}');
+              }
             }
           }
+
+          stopwatch.stop();
+          addLog(
+            'Streaming completed: $streamEventCount events in ${stopwatch.elapsedMilliseconds}ms',
+            metadata: {
+              'stream_events': streamEventCount,
+              'duration_ms': stopwatch.elapsedMilliseconds,
+              'tokens_used': totalTokens,
+            },
+          );
+
+          return finalResult;
+        } catch (error) {
+          stopwatch.stop();
+          addLog(
+            'Streaming failed after ${stopwatch.elapsedMilliseconds}ms: $error',
+            severity: TimelineLogSeverity.error,
+          );
+          rethrow;
         }
-        return finalResult;
       },
     );
 
     if (finalResult == null) {
-      throw Exception(
-        'Generation stream completed without emitting a final result',
-      );
+      throw Exception('Generation stream completed without emitting a final result');
     }
 
     addLog('AI generation completed successfully');
