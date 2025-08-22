@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../inspector/kai_inspector.dart';
-import '../../inspector/execution_timeline.dart';
+import 'package:kai_engine/src/inspector/kai_inspector.dart';
+import 'package:kai_engine/src/inspector/execution_timeline.dart';
 import 'debug_data_adapter.dart';
 import 'widgets/shared_widgets.dart';
 

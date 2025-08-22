@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import '../../../inspector/models/timeline_session.dart';
+import 'package:kai_engine/src/inspector/models/timeline_session.dart';
 import '../session_metrics_calculator.dart';
 import 'shared_widgets.dart';
 

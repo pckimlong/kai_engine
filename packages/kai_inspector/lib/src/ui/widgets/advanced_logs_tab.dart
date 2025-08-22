@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../inspector/models/timeline_session.dart';
-import '../../../inspector/models/timeline_types.dart';
+import 'package:kai_engine/src/inspector/models/timeline_session.dart';
+import 'package:kai_engine/src/inspector/models/timeline_types.dart';
 import '../debug_data_adapter.dart';
 
 /// Advanced logging interface with filtering, search, and export capabilities

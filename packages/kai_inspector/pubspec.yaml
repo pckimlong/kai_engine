@@ -1,0 +1,19 @@
+name: kai_inspector
+description: A new Flutter package for Kai Engine Inspector UI.
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: '^3.4.3'
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  kai_engine:
+    path: ../kai_engine
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^3.0.0

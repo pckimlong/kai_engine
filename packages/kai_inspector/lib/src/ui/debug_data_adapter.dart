@@ -1,8 +1,8 @@
-import '../../inspector/execution_timeline.dart';
-import '../../inspector/models/timeline_session.dart';
-import '../../inspector/models/timeline_phase.dart';
-import '../../inspector/models/timeline_step.dart';
-import '../../inspector/models/timeline_types.dart';
+import 'package:kai_engine/src/inspector/execution_timeline.dart';
+import 'package:kai_engine/src/inspector/models/timeline_session.dart';
+import 'package:kai_engine/src/inspector/models/timeline_phase.dart';
+import 'package:kai_engine/src/inspector/models/timeline_step.dart';
+import 'package:kai_engine/src/inspector/models/timeline_types.dart';
 
 /// Adapts inspector timeline data to UI-friendly format for debug screens
 class DebugDataAdapter {

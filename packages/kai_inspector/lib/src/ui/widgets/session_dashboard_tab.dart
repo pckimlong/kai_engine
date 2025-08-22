@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../inspector/models/timeline_session.dart';
-import '../../../inspector/models/timeline_types.dart';
+import 'package:kai_engine/src/inspector/models/timeline_session.dart';
+import 'package:kai_engine/src/inspector/models/timeline_types.dart';
 import '../debug_data_adapter.dart';
 import '../session_metrics_calculator.dart';
 import 'shared_widgets.dart';

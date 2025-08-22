@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../inspector/kai_inspector.dart';
-import '../../inspector/models/timeline_session.dart';
+import 'package:kai_engine/src/inspector/kai_inspector.dart';
+import 'package:kai_engine/src/inspector/models/timeline_session.dart';
 import 'debug_data_adapter.dart';
 import 'session_metrics_calculator.dart';
 import 'widgets/session_dashboard_tab.dart';
