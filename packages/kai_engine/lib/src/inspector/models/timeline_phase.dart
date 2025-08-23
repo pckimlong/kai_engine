@@ -41,6 +41,12 @@ sealed class TimelinePhase with _$TimelinePhase {
 
     /// List of logs associated with this phase.
     @Default([]) List<TimelineLog> logs,
+
+    /// List of prompt messages logs associated with this phase.
+    @Default([]) List<PromptMessagesLog> promptMessagesLogs,
+
+    /// List of generated messages logs associated with this phase.
+    @Default([]) List<GeneratedMessagesLog> generatedMessagesLogs,
   }) = _TimelinePhase;
 
   /// Creates a TimelinePhase from JSON.
@@ -63,6 +69,16 @@ sealed class TimelinePhase with _$TimelinePhase {
   /// Creates a copy of this phase with a new log entry added.
   TimelinePhase addLog(TimelineLog log) {
     return copyWith(logs: [...logs, log]);
+  }
+
+  /// Creates a copy of this phase with a new prompt messages log added.
+  TimelinePhase addPromptMessagesLog(PromptMessagesLog log) {
+    return copyWith(promptMessagesLogs: [...promptMessagesLogs, log]);
+  }
+
+  /// Creates a copy of this phase with a new generated messages log added.
+  TimelinePhase addGeneratedMessagesLog(GeneratedMessagesLog log) {
+    return copyWith(generatedMessagesLogs: [...generatedMessagesLogs, log]);
   }
 
   /// Creates a copy of this phase marked as completed.

@@ -289,7 +289,7 @@ $ConversationSessionCopyWith<$Res> get session {
 /// @nodoc
 mixin _$ContextEngineInput {
 
- QueryContext get inputQuery; IList<CoreMessage> get conversationMessages;
+ QueryContext get inputQuery; IList<CoreMessage> get conversationMessages; CoreMessage? get providedUserMessage;
 /// Create a copy of ContextEngineInput
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -300,16 +300,16 @@ $ContextEngineInputCopyWith<ContextEngineInput> get copyWith => _$ContextEngineI
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ContextEngineInput&&(identical(other.inputQuery, inputQuery) || other.inputQuery == inputQuery)&&const DeepCollectionEquality().equals(other.conversationMessages, conversationMessages));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ContextEngineInput&&(identical(other.inputQuery, inputQuery) || other.inputQuery == inputQuery)&&const DeepCollectionEquality().equals(other.conversationMessages, conversationMessages)&&(identical(other.providedUserMessage, providedUserMessage) || other.providedUserMessage == providedUserMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,inputQuery,const DeepCollectionEquality().hash(conversationMessages));
+int get hashCode => Object.hash(runtimeType,inputQuery,const DeepCollectionEquality().hash(conversationMessages),providedUserMessage);
 
 @override
 String toString() {
-  return 'ContextEngineInput(inputQuery: $inputQuery, conversationMessages: $conversationMessages)';
+  return 'ContextEngineInput(inputQuery: $inputQuery, conversationMessages: $conversationMessages, providedUserMessage: $providedUserMessage)';
 }
 
 
@@ -320,11 +320,11 @@ abstract mixin class $ContextEngineInputCopyWith<$Res>  {
   factory $ContextEngineInputCopyWith(ContextEngineInput value, $Res Function(ContextEngineInput) _then) = _$ContextEngineInputCopyWithImpl;
 @useResult
 $Res call({
- QueryContext inputQuery, IList<CoreMessage> conversationMessages
+ QueryContext inputQuery, IList<CoreMessage> conversationMessages, CoreMessage? providedUserMessage
 });
 
 
-$QueryContextCopyWith<$Res> get inputQuery;
+$QueryContextCopyWith<$Res> get inputQuery;$CoreMessageCopyWith<$Res>? get providedUserMessage;
 
 }
 /// @nodoc
@@ -337,11 +337,12 @@ class _$ContextEngineInputCopyWithImpl<$Res>
 
 /// Create a copy of ContextEngineInput
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? inputQuery = null,Object? conversationMessages = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? inputQuery = null,Object? conversationMessages = null,Object? providedUserMessage = freezed,}) {
   return _then(_self.copyWith(
 inputQuery: null == inputQuery ? _self.inputQuery : inputQuery // ignore: cast_nullable_to_non_nullable
 as QueryContext,conversationMessages: null == conversationMessages ? _self.conversationMessages : conversationMessages // ignore: cast_nullable_to_non_nullable
-as IList<CoreMessage>,
+as IList<CoreMessage>,providedUserMessage: freezed == providedUserMessage ? _self.providedUserMessage : providedUserMessage // ignore: cast_nullable_to_non_nullable
+as CoreMessage?,
   ));
 }
 /// Create a copy of ContextEngineInput
@@ -352,6 +353,18 @@ $QueryContextCopyWith<$Res> get inputQuery {
   
   return $QueryContextCopyWith<$Res>(_self.inputQuery, (value) {
     return _then(_self.copyWith(inputQuery: value));
+  });
+}/// Create a copy of ContextEngineInput
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CoreMessageCopyWith<$Res>? get providedUserMessage {
+    if (_self.providedUserMessage == null) {
+    return null;
+  }
+
+  return $CoreMessageCopyWith<$Res>(_self.providedUserMessage!, (value) {
+    return _then(_self.copyWith(providedUserMessage: value));
   });
 }
 }
@@ -432,10 +445,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( QueryContext inputQuery,  IList<CoreMessage> conversationMessages)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( QueryContext inputQuery,  IList<CoreMessage> conversationMessages,  CoreMessage? providedUserMessage)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ContextEngineInput() when $default != null:
-return $default(_that.inputQuery,_that.conversationMessages);case _:
+return $default(_that.inputQuery,_that.conversationMessages,_that.providedUserMessage);case _:
   return orElse();
 
 }
@@ -453,10 +466,10 @@ return $default(_that.inputQuery,_that.conversationMessages);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( QueryContext inputQuery,  IList<CoreMessage> conversationMessages)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( QueryContext inputQuery,  IList<CoreMessage> conversationMessages,  CoreMessage? providedUserMessage)  $default,) {final _that = this;
 switch (_that) {
 case _ContextEngineInput():
-return $default(_that.inputQuery,_that.conversationMessages);}
+return $default(_that.inputQuery,_that.conversationMessages,_that.providedUserMessage);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -470,10 +483,10 @@ return $default(_that.inputQuery,_that.conversationMessages);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( QueryContext inputQuery,  IList<CoreMessage> conversationMessages)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( QueryContext inputQuery,  IList<CoreMessage> conversationMessages,  CoreMessage? providedUserMessage)?  $default,) {final _that = this;
 switch (_that) {
 case _ContextEngineInput() when $default != null:
-return $default(_that.inputQuery,_that.conversationMessages);case _:
+return $default(_that.inputQuery,_that.conversationMessages,_that.providedUserMessage);case _:
   return null;
 
 }
@@ -485,11 +498,12 @@ return $default(_that.inputQuery,_that.conversationMessages);case _:
 
 
 class _ContextEngineInput implements ContextEngineInput {
-  const _ContextEngineInput({required this.inputQuery, required this.conversationMessages});
+  const _ContextEngineInput({required this.inputQuery, required this.conversationMessages, required this.providedUserMessage});
   
 
 @override final  QueryContext inputQuery;
 @override final  IList<CoreMessage> conversationMessages;
+@override final  CoreMessage? providedUserMessage;
 
 /// Create a copy of ContextEngineInput
 /// with the given fields replaced by the non-null parameter values.
@@ -501,16 +515,16 @@ _$ContextEngineInputCopyWith<_ContextEngineInput> get copyWith => __$ContextEngi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ContextEngineInput&&(identical(other.inputQuery, inputQuery) || other.inputQuery == inputQuery)&&const DeepCollectionEquality().equals(other.conversationMessages, conversationMessages));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ContextEngineInput&&(identical(other.inputQuery, inputQuery) || other.inputQuery == inputQuery)&&const DeepCollectionEquality().equals(other.conversationMessages, conversationMessages)&&(identical(other.providedUserMessage, providedUserMessage) || other.providedUserMessage == providedUserMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,inputQuery,const DeepCollectionEquality().hash(conversationMessages));
+int get hashCode => Object.hash(runtimeType,inputQuery,const DeepCollectionEquality().hash(conversationMessages),providedUserMessage);
 
 @override
 String toString() {
-  return 'ContextEngineInput(inputQuery: $inputQuery, conversationMessages: $conversationMessages)';
+  return 'ContextEngineInput(inputQuery: $inputQuery, conversationMessages: $conversationMessages, providedUserMessage: $providedUserMessage)';
 }
 
 
@@ -521,11 +535,11 @@ abstract mixin class _$ContextEngineInputCopyWith<$Res> implements $ContextEngin
   factory _$ContextEngineInputCopyWith(_ContextEngineInput value, $Res Function(_ContextEngineInput) _then) = __$ContextEngineInputCopyWithImpl;
 @override @useResult
 $Res call({
- QueryContext inputQuery, IList<CoreMessage> conversationMessages
+ QueryContext inputQuery, IList<CoreMessage> conversationMessages, CoreMessage? providedUserMessage
 });
 
 
-@override $QueryContextCopyWith<$Res> get inputQuery;
+@override $QueryContextCopyWith<$Res> get inputQuery;@override $CoreMessageCopyWith<$Res>? get providedUserMessage;
 
 }
 /// @nodoc
@@ -538,11 +552,12 @@ class __$ContextEngineInputCopyWithImpl<$Res>
 
 /// Create a copy of ContextEngineInput
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? inputQuery = null,Object? conversationMessages = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? inputQuery = null,Object? conversationMessages = null,Object? providedUserMessage = freezed,}) {
   return _then(_ContextEngineInput(
 inputQuery: null == inputQuery ? _self.inputQuery : inputQuery // ignore: cast_nullable_to_non_nullable
 as QueryContext,conversationMessages: null == conversationMessages ? _self.conversationMessages : conversationMessages // ignore: cast_nullable_to_non_nullable
-as IList<CoreMessage>,
+as IList<CoreMessage>,providedUserMessage: freezed == providedUserMessage ? _self.providedUserMessage : providedUserMessage // ignore: cast_nullable_to_non_nullable
+as CoreMessage?,
   ));
 }
 
@@ -554,6 +569,18 @@ $QueryContextCopyWith<$Res> get inputQuery {
   
   return $QueryContextCopyWith<$Res>(_self.inputQuery, (value) {
     return _then(_self.copyWith(inputQuery: value));
+  });
+}/// Create a copy of ContextEngineInput
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CoreMessageCopyWith<$Res>? get providedUserMessage {
+    if (_self.providedUserMessage == null) {
+    return null;
+  }
+
+  return $CoreMessageCopyWith<$Res>(_self.providedUserMessage!, (value) {
+    return _then(_self.copyWith(providedUserMessage: value));
   });
 }
 }

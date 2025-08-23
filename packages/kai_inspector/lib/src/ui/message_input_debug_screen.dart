@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:kai_engine/src/inspector/execution_timeline.dart';
-import 'package:kai_engine/src/inspector/kai_inspector.dart';
+import 'package:kai_engine/kai_engine.dart';
+import 'package:kai_inspector/src/ui/playground_screen.dart';
 
 import 'debug_data_adapter.dart';
 import 'widgets/shared_widgets.dart';
@@ -14,6 +14,8 @@ class MessageInputDebugScreen extends StatefulWidget {
   final String messageId; // This is both the CoreMessage ID and timeline ID
   final KaiInspector inspector;
   final String? userInput; // Optional: display the original user input
+  /// Allow playground feature if provided
+  final GenerationServiceBase? generationService;
 
   const MessageInputDebugScreen({
     super.key,
@@ -21,11 +23,11 @@ class MessageInputDebugScreen extends StatefulWidget {
     required this.messageId,
     required this.inspector,
     this.userInput,
+    this.generationService,
   });
 
   @override
-  State<MessageInputDebugScreen> createState() =>
-      _MessageInputDebugScreenState();
+  State<MessageInputDebugScreen> createState() => _MessageInputDebugScreenState();
 }
 
 class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
@@ -56,8 +58,7 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
         // Find the timeline with the matching message ID
         final timeline = session.timelines.firstWhere(
           (t) => t.id == widget.messageId,
-          orElse: () => throw Exception(
-              'Timeline not found for message ID: ${widget.messageId}'),
+          orElse: () => throw Exception('Timeline not found for message ID: ${widget.messageId}'),
         );
 
         setState(() {
@@ -89,8 +90,7 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
             );
             setState(() {
               _timeline = timeline;
-              _timelineData =
-                  DebugDataAdapter.convertTimelineOverview(timeline);
+              _timelineData = DebugDataAdapter.convertTimelineOverview(timeline);
             });
           } catch (e) {
             // Timeline might not exist yet or might have been removed
@@ -166,6 +166,22 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
     }
 
     return Scaffold(
+      floatingActionButton: widget.generationService != null && _timelineData != null
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => PlaygroundScreen(
+                      generationService: widget.generationService!,
+                      data: _timelineData!,
+                    ),
+                  ),
+                );
+              },
+              tooltip: 'Open Playground',
+              child: const Icon(Icons.science_outlined),
+            )
+          : null,
       appBar: AppBar(
         title: Text('Message: ${widget.messageId.substring(0, 8)}...'),
         actions: [
@@ -231,8 +247,7 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
     buffer.writeln('Message ID: ${timeline.id}');
     buffer.writeln('User Input: ${timeline.userMessage}');
     buffer.writeln('Start Time: ${timeline.startTime.toIso8601String()}');
-    buffer.writeln(
-        'End Time: ${timeline.endTime?.toIso8601String() ?? 'In Progress'}');
+    buffer.writeln('End Time: ${timeline.endTime?.toIso8601String() ?? 'In Progress'}');
     buffer.writeln('Duration: ${data.duration?.inMilliseconds ?? 'N/A'}ms');
     buffer.writeln('Status: ${timeline.status}');
     buffer.writeln();
@@ -249,8 +264,7 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
     buffer.writeln('=== Phase Breakdown ===');
     for (final phase in data.phases) {
       buffer.writeln('${phase.phaseName}:');
-      buffer
-          .writeln('  Duration: ${phase.duration?.inMilliseconds ?? 'N/A'}ms');
+      buffer.writeln('  Duration: ${phase.duration?.inMilliseconds ?? 'N/A'}ms');
       buffer.writeln('  Steps: ${phase.stepCount}');
       buffer.writeln('  Logs: ${phase.logCount}');
       if (phase.tokenMetadata != null && phase.tokenMetadata!.totalTokens > 0) {
@@ -258,8 +272,7 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
         buffer.writeln(
             '  Tokens: ${token.totalTokens} (${token.inputTokens ?? 0} in, ${token.outputTokens ?? 0} out)');
         if (token.tokensPerSecond != null) {
-          buffer.writeln(
-              '  Speed: ${token.tokensPerSecond!.toStringAsFixed(1)} tokens/sec');
+          buffer.writeln('  Speed: ${token.tokensPerSecond!.toStringAsFixed(1)} tokens/sec');
         }
       }
       if (phase.streamingMetadata != null) {
@@ -271,8 +284,7 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
         }
       }
       if (phase.errorCount > 0 || phase.warningCount > 0) {
-        buffer.writeln(
-            '  Issues: ${phase.errorCount} errors, ${phase.warningCount} warnings');
+        buffer.writeln('  Issues: ${phase.errorCount} errors, ${phase.warningCount} warnings');
       }
       buffer.writeln();
     }
@@ -339,20 +351,19 @@ class _TimelineOverviewTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Prompt Pipeline Section (NEW - Top Priority)
-          _PromptPipelineSection(
+          // 1. Overview Section (Simple timeline summary)
+          _OverviewSection(
             timeline: timeline,
             timelineData: timelineData,
-            userInput: userInput,
           ),
           const SizedBox(height: 16),
           // 2. Conversation Flow Section (NEW)
           _ConversationFlowSection(
-            timeline: timeline,
+            timelineData: timelineData,
             userInput: userInput,
           ),
           const SizedBox(height: 16),
@@ -367,416 +378,25 @@ class _TimelineOverviewTab extends StatelessWidget {
   }
 }
 
-/// NEW: Comprehensive Prompt Pipeline Section showing complete prompt construction
-class _PromptPipelineSection extends StatefulWidget {
+/// Simple Overview Section showing basic timeline information
+class _OverviewSection extends StatelessWidget {
   final ExecutionTimeline timeline;
   final TimelineOverviewData timelineData;
-  final String? userInput;
 
-  const _PromptPipelineSection({
+  const _OverviewSection({
     required this.timeline,
     required this.timelineData,
-    this.userInput,
   });
 
   @override
-  State<_PromptPipelineSection> createState() => _PromptPipelineSectionState();
-}
-
-class _PromptPipelineSectionState extends State<_PromptPipelineSection> {
-  bool _isExpanded = false;
-
-  @override
   Widget build(BuildContext context) {
-    final promptData = _extractPromptData();
-    final totalChars = promptData.totalCharacters;
+    final startTime = timeline.startTime;
+    final endTime = timeline.endTime;
+    final duration = timelineData.duration;
+    final status = timeline.status;
 
     return Card(
       elevation: 2,
-      child: Column(
-        children: [
-          // Collapsed Header
-          InkWell(
-            onTap: () => setState(() => _isExpanded = !_isExpanded),
-            borderRadius: BorderRadius.vertical(
-              top: const Radius.circular(12),
-              bottom: Radius.circular(_isExpanded ? 0 : 12),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).primaryColor.withAlpha(13),
-                    Colors.transparent,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.vertical(
-                  top: const Radius.circular(12),
-                  bottom: Radius.circular(_isExpanded ? 0 : 12),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor.withAlpha(26),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.code,
-                          color: Theme.of(context).primaryColor,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Prompt Pipeline Construction',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                            Text(
-                              'Total: ${_formatCharCount(totalChars)} characters',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        _isExpanded ? Icons.expand_less : Icons.expand_more,
-                        color: Colors.grey[600],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Preview of final prompt (2 lines)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: Text(
-                      promptData.preview,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontFamily: 'monospace',
-                        height: 1.4,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Expanded Content
-          if (_isExpanded)
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius:
-                    const BorderRadius.vertical(bottom: Radius.circular(12)),
-              ),
-              child: _buildExpandedPromptContent(promptData),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExpandedPromptContent(_PromptData promptData) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // System Prompt Segment
-          if (promptData.systemPrompt.isNotEmpty) ...[
-            _buildPromptSegment(
-              'System Prompt',
-              promptData.systemPrompt,
-              Colors.blue,
-              Icons.settings,
-            ),
-            const SizedBox(height: 16),
-          ],
-          // Context Messages Segment
-          if (promptData.contextMessages.isNotEmpty) ...[
-            _buildPromptSegment(
-              'Context Messages',
-              promptData.contextMessages,
-              Colors.purple,
-              Icons.history,
-            ),
-            const SizedBox(height: 16),
-          ],
-          // User Input Segment
-          _buildPromptSegment(
-            'User Input',
-            promptData.userInput,
-            Colors.green,
-            Icons.person,
-          ),
-          const SizedBox(height: 16),
-          // Copy All Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () =>
-                  _copyToClipboard(promptData.fullPrompt, 'Complete prompt'),
-              icon: const Icon(Icons.copy_all),
-              label: const Text('Copy Complete Prompt'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPromptSegment(
-      String title, String content, Color color, IconData icon) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withAlpha(77)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: color.withAlpha(26),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(8)),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, size: 16, color: color),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: color.withAlpha(204),
-                    fontSize: 14,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '${_formatCharCount(content.length)} chars',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: color.withAlpha(153),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: () => _copyToClipboard(content, title),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: color.withAlpha(51),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Icon(
-                      Icons.copy,
-                      size: 12,
-                      color: color,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              child: Text(
-                content.isEmpty ? '(No content)' : content,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                  height: 1.4,
-                  color: content.isEmpty ? Colors.grey[500] : Colors.black87,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  _PromptData _extractPromptData() {
-    // Use the actual prompt pipeline data from the timeline if available
-    final timelineOverview =
-        DebugDataAdapter.convertTimelineOverview(widget.timeline);
-    final promptPipeline = timelineOverview.promptPipeline;
-
-    if (promptPipeline != null && promptPipeline.segments.isNotEmpty) {
-      // Extract from actual prompt pipeline data
-      String systemPrompt = '';
-      String contextMessages = '';
-      String userInput = widget.userInput ?? widget.timeline.userMessage;
-
-      for (final segment in promptPipeline.segments) {
-        switch (segment.type) {
-          case PromptSegmentType.system:
-            systemPrompt = segment.content;
-            break;
-          case PromptSegmentType.context:
-            contextMessages = segment.content;
-            break;
-          case PromptSegmentType.userInput:
-            userInput = segment.content;
-            break;
-        }
-      }
-
-      final fullPrompt = promptPipeline.segments
-          .map((segment) => segment.content)
-          .join('\n\n---\n\n');
-
-      final preview = fullPrompt.length > 200
-          ? '${fullPrompt.substring(0, 200)}...'
-          : fullPrompt;
-
-      return _PromptData(
-        systemPrompt: systemPrompt,
-        contextMessages: contextMessages,
-        userInput: userInput,
-        fullPrompt: fullPrompt,
-        preview: preview,
-        totalCharacters: promptPipeline.totalCharacterCount,
-      );
-    }
-
-    // Fallback to extracting from phase logs and metadata
-    final userInput = widget.userInput ?? widget.timeline.userMessage;
-    final systemPrompt = _findSystemPrompt();
-    final contextMessages = _findContextMessages();
-
-    final fullPrompt = [systemPrompt, contextMessages, userInput]
-        .where((s) => s.isNotEmpty)
-        .join('\n\n---\n\n');
-
-    final preview = fullPrompt.length > 200
-        ? '${fullPrompt.substring(0, 200)}...'
-        : fullPrompt;
-
-    return _PromptData(
-      systemPrompt: systemPrompt,
-      contextMessages: contextMessages,
-      userInput: userInput,
-      fullPrompt: fullPrompt,
-      preview: preview,
-      totalCharacters: fullPrompt.length,
-    );
-  }
-
-  String _findSystemPrompt() {
-    // Look for system prompt in phase logs/metadata
-    for (final phase in widget.timeline.phases) {
-      for (final log in phase.logs) {
-        if (log.metadata.containsKey('system_prompt')) {
-          return log.metadata['system_prompt'].toString();
-        }
-      }
-    }
-    return 'You are a helpful AI assistant.'; // Default/mock
-  }
-
-  String _findContextMessages() {
-    // Look for context messages in phase logs/metadata
-    for (final phase in widget.timeline.phases) {
-      for (final log in phase.logs) {
-        if (log.metadata.containsKey('context_messages')) {
-          final context = log.metadata['context_messages'];
-          if (context is List) {
-            return context.map((msg) => msg.toString()).join('\n');
-          }
-          return context.toString();
-        }
-      }
-    }
-    return ''; // No context found
-  }
-
-  String _formatCharCount(int count) {
-    if (count >= 1000) {
-      return '${(count / 1000).toStringAsFixed(1)}k';
-    }
-    return count.toString();
-  }
-
-  void _copyToClipboard(String content, String label) {
-    Clipboard.setData(ClipboardData(text: content));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$label copied to clipboard')),
-    );
-  }
-}
-
-class _PromptData {
-  final String systemPrompt;
-  final String contextMessages;
-  final String userInput;
-  final String fullPrompt;
-  final String preview;
-  final int totalCharacters;
-
-  const _PromptData({
-    required this.systemPrompt,
-    required this.contextMessages,
-    required this.userInput,
-    required this.fullPrompt,
-    required this.preview,
-    required this.totalCharacters,
-  });
-}
-
-/// NEW: Conversation Flow Section showing user input and AI response
-class _ConversationFlowSection extends StatelessWidget {
-  final ExecutionTimeline timeline;
-  final String? userInput;
-
-  const _ConversationFlowSection({
-    required this.timeline,
-    this.userInput,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -784,14 +404,21 @@ class _ConversationFlowSection extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.chat,
-                  color: Theme.of(context).primaryColor,
-                  size: 20,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withAlpha(26),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.info_outline,
+                    color: Theme.of(context).primaryColor,
+                    size: 20,
+                  ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Text(
-                  'Conversation Flow',
+                  'Overview',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -799,111 +426,503 @@ class _ConversationFlowSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            // User Input Card
-            _ConversationCard(
-              title: 'User Input',
-              content: userInput ?? timeline.userMessage,
-              isUser: true,
-            ),
-            const SizedBox(height: 12),
-            // AI Response Card
-            _ConversationCard(
-              title: 'AI Response',
-              content: timeline.aiResponse ??
-                  'Response not available or still processing...',
-              isUser: false,
-            ),
+            _buildOverviewRow('Original Input', timeline.userMessage),
+            const SizedBox(height: 8),
+            _buildOverviewRow('Start Time', _formatDateTime(startTime)),
+            const SizedBox(height: 8),
+            if (endTime != null) _buildOverviewRow('End Time', _formatDateTime(endTime)),
+            if (endTime != null) const SizedBox(height: 8),
+            if (duration != null) _buildOverviewRow('Duration', '${duration.inMilliseconds}ms'),
+            if (duration != null) const SizedBox(height: 8),
+            _buildOverviewRow('Status', status.name.toUpperCase()),
+            const SizedBox(height: 8),
+            _buildOverviewRow('Total Phases', '${timelineData.phaseCount}'),
+            if (timelineData.totalTokens > 0) const SizedBox(height: 8),
+            if (timelineData.totalTokens > 0)
+              _buildOverviewRow('Total Tokens', '${timelineData.totalTokens}'),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildOverviewRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(
+            '$label:',
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+              color: Colors.grey,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}';
+  }
 }
 
-class _ConversationCard extends StatefulWidget {
-  final String title;
-  final String content;
-  final bool isUser;
+/// Enhanced Conversation Flow Section with improved visual design and interactions
+class _ConversationFlowSection extends StatelessWidget {
+  final TimelineOverviewData timelineData;
+  final String? userInput;
 
-  const _ConversationCard({
-    required this.title,
-    required this.content,
-    required this.isUser,
+  const _ConversationFlowSection({
+    required this.timelineData,
+    this.userInput,
   });
 
   @override
-  State<_ConversationCard> createState() => _ConversationCardState();
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 3,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Theme.of(context).primaryColor.withOpacity(0.02),
+              Colors.transparent,
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Enhanced header with better visual hierarchy
+              _buildSectionHeader(context),
+              const SizedBox(height: 20),
+              // Conversation flow with visual connection
+              _buildConversationFlow(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            Icons.forum_rounded,
+            color: Theme.of(context).primaryColor,
+            size: 24,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Conversation Flow',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                    ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Interactive message exchange breakdown',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                      height: 1.2,
+                    ),
+              ),
+            ],
+          ),
+        ),
+        // Quick stats
+        _buildQuickStats(),
+      ],
+    );
+  }
+
+  Widget _buildQuickStats() {
+    final promptCount = timelineData.promptMessages?.messages.length ?? 0;
+    final responseCount = timelineData.generatedMessages?.messages.length ?? 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.swap_vert, size: 14, color: Colors.grey[600]),
+          const SizedBox(width: 4),
+          Text(
+            '${promptCount + responseCount} msgs',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConversationFlow() {
+    return Column(
+      children: [
+        // User Input Card with enhanced design
+        _EnhancedUserInputCard(
+          userInput: userInput ?? timelineData.userMessage,
+          promptMessages: timelineData.promptMessages?.messages ?? [],
+        ),
+
+        // Visual connector with animation
+        _buildFlowConnector(),
+
+        // AI Response Card with enhanced design
+        _EnhancedAIResponseCard(
+          aiResponse: _getAIResponse(timelineData),
+          generatedMessages: timelineData.generatedMessages?.messages ?? [],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFlowConnector() {
+    return Container(
+      height: 40,
+      width: double.infinity,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Vertical line
+          Container(
+            width: 2,
+            height: 40,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.blue.withOpacity(0.3),
+                  Colors.green.withOpacity(0.3),
+                ],
+              ),
+            ),
+          ),
+          // Arrow indicator
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.grey[300]!, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.arrow_downward_rounded,
+              size: 16,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getAIResponse(TimelineOverviewData timelineData) {
+    // Try to get AI response from generated messages
+    if (timelineData.generatedMessages?.messages.isNotEmpty == true) {
+      final aiMessages = timelineData.generatedMessages!.messages
+          .where((msg) => msg.type == MessageType.ai)
+          .toList();
+      if (aiMessages.isNotEmpty) {
+        return aiMessages.first.content;
+      }
+    }
+    return 'Response not available or still processing...';
+  }
 }
 
-class _ConversationCardState extends State<_ConversationCard> {
+/// Enhanced User Input Card with improved design and animations
+class _EnhancedUserInputCard extends StatefulWidget {
+  final String userInput;
+  final List<MessageDisplayData> promptMessages;
+
+  const _EnhancedUserInputCard({
+    required this.userInput,
+    required this.promptMessages,
+  });
+
+  @override
+  State<_EnhancedUserInputCard> createState() => _EnhancedUserInputCardState();
+}
+
+class _EnhancedUserInputCardState extends State<_EnhancedUserInputCard>
+    with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
+  late AnimationController _animationController;
+  late Animation<double> _expandAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _expandAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _toggleExpansion() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+      if (_isExpanded) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isLongContent = widget.content.length > 200;
-    final displayContent = isLongContent && !_isExpanded
-        ? '${widget.content.substring(0, 200)}...'
-        : widget.content;
+    final color = Colors.blue[600]!;
+    final lightColor = Colors.blue[50]!;
 
-    final color = widget.isUser ? Colors.blue : Colors.green;
-    final icon = widget.isUser ? Icons.person : Icons.smart_toy;
-
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withAlpha(77)),
+        border: Border.all(
+          color: _isExpanded ? color.withOpacity(0.4) : Colors.grey[300]!,
+          width: _isExpanded ? 2 : 1,
+        ),
+        boxShadow: _isExpanded
+            ? [
+                BoxShadow(
+                  color: color.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Enhanced header
+          _buildHeader(color, lightColor),
+          // Content with smooth animation
+          _buildContent(color, lightColor),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(Color color, Color lightColor) {
+    return InkWell(
+      onTap: _toggleExpansion,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              lightColor,
+              lightColor.withOpacity(0.7),
+            ],
+          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Row(
+          children: [
+            // Enhanced icon with animation
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: _isExpanded ? color : color.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: _isExpanded
+                    ? [
+                        BoxShadow(
+                          color: color.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Icon(
+                Icons.person_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'User Input',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                      fontSize: 16,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    widget.userInput.length > 60
+                        ? '${widget.userInput.substring(0, 60)}...'
+                        : widget.userInput,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[700],
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Action buttons
+            _buildActionButtons(color),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Message count badge
+        if (widget.promptMessages.isNotEmpty)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withAlpha(26),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withOpacity(0.3)),
             ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 16, color: color),
-                const SizedBox(width: 8),
+                Icon(Icons.message, size: 12, color: color),
+                const SizedBox(width: 4),
                 Text(
-                  widget.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: color.withAlpha(204),
-                    fontSize: 14,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '${_formatCharCount(widget.content.length)} chars',
+                  '${widget.promptMessages.length}',
                   style: TextStyle(
                     fontSize: 11,
-                    color: color.withAlpha(153),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: () => _copyToClipboard(widget.content, widget.title),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: color.withAlpha(51),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Icon(
-                      Icons.copy,
-                      size: 12,
-                      color: color,
-                    ),
+                    fontWeight: FontWeight.w600,
+                    color: color,
                   ),
                 ),
               ],
             ),
           ),
+        const SizedBox(width: 8),
+        // Copy button
+        _buildActionButton(
+          icon: Icons.copy_rounded,
+          color: color,
+          onTap: () => _copyToClipboard(widget.userInput, 'User Input'),
+        ),
+        const SizedBox(width: 6),
+        // Expand button
+        _buildActionButton(
+          icon: _isExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+          color: color,
+          onTap: _toggleExpansion,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Icon(icon, size: 16, color: color),
+      ),
+    );
+  }
+
+  Widget _buildContent(Color color, Color lightColor) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      child: Column(
+        children: [
+          // Original input section
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
@@ -911,39 +930,63 @@ class _ConversationCardState extends State<_ConversationCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
+                // Input text with better formatting
+                Container(
                   width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
                   child: Text(
-                    displayContent,
+                    widget.userInput,
                     style: const TextStyle(
                       fontSize: 14,
-                      height: 1.4,
+                      height: 1.5,
+                      color: Colors.black87,
                     ),
                   ),
                 ),
-                if (isLongContent)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: InkWell(
-                      onTap: () => setState(() => _isExpanded = !_isExpanded),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: color.withAlpha(26),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          _isExpanded ? 'Show less' : 'Show more',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: color,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+
+                // Expandable messages section
+                SizeTransition(
+                  sizeFactor: _expandAnimation,
+                  child: widget.promptMessages.isNotEmpty
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: color.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.layers_rounded, size: 14, color: color),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Prompt Messages (${widget.promptMessages.length})',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: color,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ...widget.promptMessages.map((message) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: EnhancedMessageTile(message: message),
+                                )),
+                          ],
+                        )
+                      : Container(),
+                ),
               ],
             ),
           ),
@@ -952,17 +995,377 @@ class _ConversationCardState extends State<_ConversationCard> {
     );
   }
 
-  String _formatCharCount(int count) {
-    if (count >= 1000) {
-      return '${(count / 1000).toStringAsFixed(1)}k';
+  void _copyToClipboard(String content, String label) {
+    Clipboard.setData(ClipboardData(text: content));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$label copied to clipboard'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+}
+
+/// Enhanced AI Response Card with improved design and animations
+class _EnhancedAIResponseCard extends StatefulWidget {
+  final String aiResponse;
+  final List<MessageDisplayData> generatedMessages;
+
+  const _EnhancedAIResponseCard({
+    required this.aiResponse,
+    required this.generatedMessages,
+  });
+
+  @override
+  State<_EnhancedAIResponseCard> createState() => _EnhancedAIResponseCardState();
+}
+
+class _EnhancedAIResponseCardState extends State<_EnhancedAIResponseCard>
+    with SingleTickerProviderStateMixin {
+  bool _isExpanded = false;
+  late AnimationController _animationController;
+  late Animation<double> _expandAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _expandAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _toggleExpansion() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+      if (_isExpanded) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Colors.green[600]!;
+    final lightColor = Colors.green[50]!;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _isExpanded ? color.withOpacity(0.4) : Colors.grey[300]!,
+          width: _isExpanded ? 2 : 1,
+        ),
+        boxShadow: _isExpanded
+            ? [
+                BoxShadow(
+                  color: color.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Enhanced header
+          _buildHeader(color, lightColor),
+          // Content with smooth animation
+          _buildContent(color, lightColor),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(Color color, Color lightColor) {
+    return InkWell(
+      onTap: _toggleExpansion,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              lightColor,
+              lightColor.withOpacity(0.7),
+            ],
+          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        ),
+        child: Row(
+          children: [
+            // Enhanced icon with animation
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: _isExpanded ? color : color.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: _isExpanded
+                    ? [
+                        BoxShadow(
+                          color: color.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Icon(
+                Icons.smart_toy_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'AI Response',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                      fontSize: 16,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _getResponsePreview(),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[700],
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Action buttons
+            _buildActionButtons(color),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getResponsePreview() {
+    if (widget.aiResponse.isEmpty ||
+        widget.aiResponse == 'Response not available or still processing...') {
+      return 'Processing response...';
     }
-    return count.toString();
+    return widget.aiResponse.length > 60
+        ? '${widget.aiResponse.substring(0, 60)}...'
+        : widget.aiResponse;
+  }
+
+  Widget _buildActionButtons(Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Message count badge
+        if (widget.generatedMessages.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.auto_awesome, size: 12, color: color),
+                const SizedBox(width: 4),
+                Text(
+                  '${widget.generatedMessages.length}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(width: 8),
+        // Copy button
+        _buildActionButton(
+          icon: Icons.copy_rounded,
+          color: color,
+          onTap: () => _copyToClipboard(widget.aiResponse, 'AI Response'),
+        ),
+        const SizedBox(width: 6),
+        // Expand button
+        _buildActionButton(
+          icon: _isExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+          color: color,
+          onTap: _toggleExpansion,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Icon(icon, size: 16, color: color),
+      ),
+    );
+  }
+
+  Widget _buildContent(Color color, Color lightColor) {
+    final isProcessing = widget.aiResponse.isEmpty ||
+        widget.aiResponse == 'Response not available or still processing...';
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      child: Column(
+        children: [
+          // Response content section
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Response text with better formatting
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isProcessing ? Colors.orange[50] : Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isProcessing ? Colors.orange[200]! : Colors.grey[200]!,
+                    ),
+                  ),
+                  child: isProcessing
+                      ? Row(
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'AI response is being generated...',
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.5,
+                                color: Colors.orange[800],
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          widget.aiResponse,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            height: 1.5,
+                            color: Colors.black87,
+                          ),
+                        ),
+                ),
+
+                // Expandable messages section
+                SizeTransition(
+                  sizeFactor: _expandAnimation,
+                  child: widget.generatedMessages.isNotEmpty
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: color.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.auto_awesome, size: 14, color: color),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Generated Messages (${widget.generatedMessages.length})',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: color,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ...widget.generatedMessages.map((message) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: EnhancedMessageTile(message: message),
+                                )),
+                          ],
+                        )
+                      : Container(),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _copyToClipboard(String content, String label) {
     Clipboard.setData(ClipboardData(text: content));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$label copied to clipboard')),
+      SnackBar(
+        content: Text('$label copied to clipboard'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
     );
   }
 }
@@ -1175,18 +1578,14 @@ class _PhaseTimelineRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final startOffset =
-        phase.startTime.difference(timelineStart).inMilliseconds;
+    final startOffset = phase.startTime.difference(timelineStart).inMilliseconds;
     final phaseDuration = phase.duration?.inMilliseconds ?? 0;
-    final startPercent =
-        totalDuration > 0 ? (startOffset / totalDuration) : 0.0;
-    final widthPercent =
-        totalDuration > 0 ? (phaseDuration / totalDuration) : 0.1;
+    final startPercent = totalDuration > 0 ? (startOffset / totalDuration) : 0.0;
+    final widthPercent = totalDuration > 0 ? (phaseDuration / totalDuration) : 0.1;
 
     final phaseName = phase.phaseName
         .split('-')
-        .map((word) =>
-            word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
+        .map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
         .join(' ');
 
     return Padding(
@@ -1208,17 +1607,14 @@ class _PhaseTimelineRow extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                phase.duration != null
-                    ? '${phase.duration!.inMilliseconds}ms'
-                    : 'In Progress...',
+                phase.duration != null ? '${phase.duration!.inMilliseconds}ms' : 'In Progress...',
                 style: TextStyle(
                   color: Colors.grey[600],
                   fontSize: 12,
                 ),
               ),
               const Spacer(),
-              if (phase.tokenMetadata != null &&
-                  phase.tokenMetadata!.totalTokens > 0)
+              if (phase.tokenMetadata != null && phase.tokenMetadata!.totalTokens > 0)
                 InfoChip(
                   label: 'Tokens',
                   value: '${phase.tokenMetadata!.totalTokens}',
@@ -1238,8 +1634,7 @@ class _PhaseTimelineRow extends StatelessWidget {
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 500),
                   margin: EdgeInsets.only(
-                    left:
-                        MediaQuery.of(context).size.width * 0.7 * startPercent,
+                    left: MediaQuery.of(context).size.width * 0.7 * startPercent,
                   ),
                   width: MediaQuery.of(context).size.width * 0.7 * widthPercent,
                   height: 20,
@@ -1249,9 +1644,7 @@ class _PhaseTimelineRow extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      phase.duration != null
-                          ? '${phase.duration!.inMilliseconds}ms'
-                          : '...',
+                      phase.duration != null ? '${phase.duration!.inMilliseconds}ms' : '...',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -1315,8 +1708,7 @@ class _PhaseDetailCardState extends State<_PhaseDetailCard> {
   Widget build(BuildContext context) {
     final phaseName = widget.phase.phaseName
         .split('-')
-        .map((word) =>
-            word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
+        .map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
         .join(' ');
 
     return Card(
@@ -1402,11 +1794,9 @@ class _PhaseDetailCardState extends State<_PhaseDetailCard> {
                           color: Colors.green,
                           icon: Icons.token,
                         ),
-                      if (widget.phase.errorCount > 0 ||
-                          widget.phase.warningCount > 0)
+                      if (widget.phase.errorCount > 0 || widget.phase.warningCount > 0)
                         _CompactChip(
-                          label:
-                              '${widget.phase.errorCount + widget.phase.warningCount}',
+                          label: '${widget.phase.errorCount + widget.phase.warningCount}',
                           color: Colors.red,
                           icon: Icons.error_outline,
                         ),
@@ -1427,8 +1817,7 @@ class _PhaseDetailCardState extends State<_PhaseDetailCard> {
             Container(
               decoration: BoxDecoration(
                 color: Colors.grey[50],
-                borderRadius:
-                    const BorderRadius.vertical(bottom: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
               ),
               child: Column(
                 children: [
@@ -1438,8 +1827,7 @@ class _PhaseDetailCardState extends State<_PhaseDetailCard> {
                     icon: Icons.info_outline,
                     color: Colors.indigo,
                     isExpanded: _showMetadata,
-                    onToggle: () =>
-                        setState(() => _showMetadata = !_showMetadata),
+                    onToggle: () => setState(() => _showMetadata = !_showMetadata),
                     child: _PhaseMetadataContent(phase: widget.phase),
                   ),
                   // Nested Steps Section
@@ -1539,12 +1927,9 @@ class _PhaseDetailCardState extends State<_PhaseDetailCard> {
 
   IconData _getPhaseIcon(String phaseName) {
     final phase = phaseName.toLowerCase();
-    if (phase.contains('query') || phase.contains('process'))
-      return Icons.search;
-    if (phase.contains('context') || phase.contains('build'))
-      return Icons.build;
-    if (phase.contains('generation') || phase.contains('ai'))
-      return Icons.smart_toy;
+    if (phase.contains('query') || phase.contains('process')) return Icons.search;
+    if (phase.contains('context') || phase.contains('build')) return Icons.build;
+    if (phase.contains('generation') || phase.contains('ai')) return Icons.smart_toy;
     if (phase.contains('response') || phase.contains('post')) return Icons.send;
     return Icons.timeline;
   }
@@ -1600,8 +1985,7 @@ class _PhaseMetadataContent extends StatelessWidget {
       'Phase ID': phase.phaseId,
       'Start Time': phase.startTime.toIso8601String(),
       if (phase.endTime != null) 'End Time': phase.endTime!.toIso8601String(),
-      if (phase.duration != null)
-        'Duration': '${phase.duration!.inMilliseconds}ms',
+      if (phase.duration != null) 'Duration': '${phase.duration!.inMilliseconds}ms',
       'Status': phase.status.toString().split('.').last,
       'Step Count': '${phase.stepCount}',
       'Log Count': '${phase.logCount}',
@@ -1659,8 +2043,7 @@ class _NestedStepsContent extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Column(
-        children:
-            steps.map((step) => _EnhancedStepDisplay(step: step)).toList(),
+        children: steps.map((step) => _EnhancedStepDisplay(step: step)).toList(),
       ),
     );
   }
@@ -1724,8 +2107,7 @@ class _EnhancedStepDisplayState extends State<_EnhancedStepDisplay> {
                   if (widget.step.logCount > 0) ...[
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 1),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                       decoration: BoxDecoration(
                         color: Colors.orange.withAlpha(51),
                         borderRadius: BorderRadius.circular(4),
@@ -1748,8 +2130,7 @@ class _EnhancedStepDisplayState extends State<_EnhancedStepDisplay> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.grey[50],
-                borderRadius:
-                    const BorderRadius.vertical(bottom: Radius.circular(6)),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(6)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1764,16 +2145,14 @@ class _EnhancedStepDisplayState extends State<_EnhancedStepDisplay> {
                   if (widget.step.metadata.isNotEmpty) ...[
                     const Text(
                       'Metadata:',
-                      style:
-                          TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
                     ),
                     ...widget.step.metadata.entries.map(
                       (entry) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 1),
                         child: Text(
                           '${entry.key}: ${entry.value}',
-                          style: const TextStyle(
-                              fontSize: 9, fontFamily: 'monospace'),
+                          style: const TextStyle(fontSize: 9, fontFamily: 'monospace'),
                         ),
                       ),
                     ),
@@ -1782,16 +2161,14 @@ class _EnhancedStepDisplayState extends State<_EnhancedStepDisplay> {
                   if (widget.step.logs.isNotEmpty) ...[
                     Text(
                       'Logs (${widget.step.logs.length}):',
-                      style: const TextStyle(
-                          fontSize: 10, fontWeight: FontWeight.w600),
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
                     ),
                     ...widget.step.logs.take(3).map(
                           (log) => Padding(
                             padding: const EdgeInsets.symmetric(vertical: 1),
                             child: Text(
                               '[${log.severity.toString().split('.').last.toUpperCase()}] ${log.message}',
-                              style: const TextStyle(
-                                  fontSize: 9, fontFamily: 'monospace'),
+                              style: const TextStyle(fontSize: 9, fontFamily: 'monospace'),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -1837,19 +2214,13 @@ class _PhaseLogsContent extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 1),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                       decoration: BoxDecoration(
                         color: _getSeverityColor(log.severity).withAlpha(51),
                         borderRadius: BorderRadius.circular(3),
                       ),
                       child: Text(
-                        log.severity
-                            .toString()
-                            .split('.')
-                            .last
-                            .toUpperCase()
-                            .substring(0, 1),
+                        log.severity.toString().split('.').last.toUpperCase().substring(0, 1),
                         style: TextStyle(
                           fontSize: 8,
                           fontWeight: FontWeight.bold,
@@ -1960,8 +2331,7 @@ class _LogEntryCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: severityColor.withAlpha(51),
                     borderRadius: BorderRadius.circular(4),
@@ -2062,5 +2432,282 @@ class _LogEntryCard extends StatelessWidget {
         '${timestamp.minute.toString().padLeft(2, '0')}:'
         '${timestamp.second.toString().padLeft(2, '0')}'
         '.${timestamp.millisecond.toString().padLeft(3, '0')}';
+  }
+}
+
+/// Enhanced Message Tile with improved design and better interaction
+class EnhancedMessageTile extends StatefulWidget {
+  final MessageDisplayData message;
+
+  const EnhancedMessageTile({
+    super.key,
+    required this.message,
+  });
+
+  @override
+  State<EnhancedMessageTile> createState() => _EnhancedMessageTileState();
+}
+
+class _EnhancedMessageTileState extends State<EnhancedMessageTile> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = widget.message;
+    final color = _getMessageTypeColor(message.type);
+    final icon = _getMessageTypeIcon(message.type);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _isExpanded ? color.withOpacity(0.4) : color.withOpacity(0.2),
+          width: _isExpanded ? 2 : 1,
+        ),
+        color: Colors.white,
+        boxShadow: _isExpanded
+            ? [
+                BoxShadow(
+                  color: color.withOpacity(0.1),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : [],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with message type and controls
+          InkWell(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    color.withOpacity(0.08),
+                    color.withOpacity(0.04),
+                  ],
+                ),
+                borderRadius: BorderRadius.vertical(
+                  top: const Radius.circular(12),
+                  bottom: Radius.circular(_isExpanded ? 0 : 12),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Enhanced icon
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: _isExpanded ? color : color.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(icon, size: 14, color: Colors.white),
+                  ),
+                  const SizedBox(width: 10),
+                  // Message type label
+                  Text(
+                    _getMessageTypeLabel(message.type),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                      fontSize: 13,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Content preview
+                  Expanded(
+                    child: Text(
+                      _getTruncatedContent(message.content),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // Character count badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${message.characterCount}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: color,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Copy button
+                  InkWell(
+                    onTap: () => _copyToClipboard(message.content),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.copy,
+                        size: 12,
+                        color: color,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  // Expand/collapse icon
+                  AnimatedRotation(
+                    duration: const Duration(milliseconds: 200),
+                    turns: _isExpanded ? 0.5 : 0,
+                    child: Icon(
+                      Icons.expand_more,
+                      size: 16,
+                      color: color.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Expanded content with animation
+          if (_isExpanded)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Timestamp if available
+                  if (message.timestamp != null) ...[
+                    Row(
+                      children: [
+                        Icon(Icons.schedule, size: 12, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Timestamp: ${message.timestamp}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
+                  // Full message content with enhanced styling
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.02),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: color.withOpacity(0.1)),
+                    ),
+                    child: SelectableText(
+                      message.content,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontFamily: 'monospace',
+                        height: 1.4,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Color _getMessageTypeColor(MessageType type) {
+    switch (type) {
+      case MessageType.system:
+        return Colors.deepPurple;
+      case MessageType.human:
+        return Colors.blue;
+      case MessageType.ai:
+        return Colors.green;
+      case MessageType.functionCall:
+        return Colors.orange;
+      case MessageType.functionResponse:
+        return Colors.teal;
+      case MessageType.unknown:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getMessageTypeIcon(MessageType type) {
+    switch (type) {
+      case MessageType.system:
+        return Icons.settings;
+      case MessageType.human:
+        return Icons.person;
+      case MessageType.ai:
+        return Icons.smart_toy;
+      case MessageType.functionCall:
+        return Icons.functions;
+      case MessageType.functionResponse:
+        return Icons.receipt;
+      case MessageType.unknown:
+        return Icons.help_outline;
+    }
+  }
+
+  String _getMessageTypeLabel(MessageType type) {
+    switch (type) {
+      case MessageType.system:
+        return 'SYSTEM';
+      case MessageType.human:
+        return 'HUMAN';
+      case MessageType.ai:
+        return 'AI';
+      case MessageType.functionCall:
+        return 'FUNCTION CALL';
+      case MessageType.functionResponse:
+        return 'FUNCTION RESPONSE';
+      case MessageType.unknown:
+        return 'UNKNOWN';
+    }
+  }
+
+  String _getTruncatedContent(String content) {
+    if (content.length <= 50) return content;
+    return '${content.substring(0, 50)}...';
+  }
+
+  void _copyToClipboard(String content) {
+    Clipboard.setData(ClipboardData(text: content));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Message content copied to clipboard'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
   }
 }

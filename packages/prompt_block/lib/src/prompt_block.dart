@@ -222,7 +222,11 @@ class PromptBlock {
     Map<String, String> attributes = const {},
     List<PromptBlock> children = const [],
   }) {
-    return PromptBlock._internal(xmlTag: tag, xmlAttributes: attributes, children: children);
+    return PromptBlock._internal(
+      xmlTag: tag,
+      xmlAttributes: attributes,
+      children: children,
+    );
   }
 
   /// A convenience factory to create an XML tag with a single text body.
@@ -231,7 +235,11 @@ class PromptBlock {
     String text, {
     Map<String, String> attributes = const {},
   }) {
-    return PromptBlock.xml(tag, attributes: attributes, children: [PromptBlock.text(text)]);
+    return PromptBlock.xml(
+      tag,
+      attributes: attributes,
+      children: [PromptBlock.text(text)],
+    );
   }
 
   /// Creates a section with a single text body.
@@ -240,7 +248,10 @@ class PromptBlock {
   }
 
   /// Creates a section formatted as a bulleted or numbered list.
-  factory PromptBlock.bulletList(List<String> items, {BulletType type = BulletType.hyphen}) {
+  factory PromptBlock.bulletList(
+    List<String> items, {
+    BulletType type = BulletType.hyphen,
+  }) {
     return PromptBlock._internal(body: items, bodyBullet: type);
   }
 
@@ -415,7 +426,9 @@ class PromptBlock {
   /// This is perfect for container tags that should disappear when empty.
   /// Example: `PromptBlock.xml('errors').omitWhenEmpty()`
   PromptBlock omitWhenEmpty() {
-    return when(_body.isNotEmpty || _children.any((child) => child.shouldRender));
+    return when(
+      _body.isNotEmpty || _children.any((child) => child.shouldRender),
+    );
   }
 
   /// Renders this XML section on a single compact line if it only contains a short body.
@@ -539,15 +552,36 @@ class PromptBlock {
     // unless it's specifically configured not to render
     if (_xmlTag != null && !hasContent && !_shouldRender) return;
 
+    // Check if we can use compact formatting:
+    // 1. Standard case: forceCompact is true, no children, has body content, and not a code block
+    // 2. Special case for xmlText: forceCompact is true, exactly one child that is a text element, no body content, and not a code block
     final bool useCompact =
-        _forceCompact && visibleChildren.isEmpty && _body.isNotEmpty && !_isCodeBlock;
+        _forceCompact &&
+        !_isCodeBlock &&
+        ((visibleChildren.isEmpty && _body.isNotEmpty) || // Standard case
+            (visibleChildren.length == 1 &&
+                _body.isEmpty &&
+                visibleChildren[0]._xmlTag == null &&
+                visibleChildren[0]._children.isEmpty &&
+                visibleChildren[0]._body.length == 1) // xmlText case
+            );
 
     if (useCompact) {
       final attributeString = _xmlAttributes.isNotEmpty
           ? ' ${_xmlAttributes.entries.map((e) => '${e.key}="${e.value}"').join(' ')}'
           : '';
-      final bodyContent = _body.join(' ').trim();
-      buffer.writeln('$indent<$_xmlTag$attributeString>$bodyContent</$_xmlTag>');
+
+      // Determine the body content based on whether we have direct body content or a single text child
+      final bodyContent = _body.isNotEmpty
+          ? _body.join(' ').trim()
+          : (visibleChildren.length == 1 &&
+                visibleChildren[0]._body.length == 1)
+          ? visibleChildren[0]._body[0].trim()
+          : '';
+
+      buffer.writeln(
+        '$indent<$_xmlTag$attributeString>$bodyContent</$_xmlTag>',
+      );
       return;
     }
 
@@ -577,15 +611,24 @@ class PromptBlock {
 
     // 3. Recursively build all visible children
     if (visibleChildren.isNotEmpty) {
-      if (_title != null || _body.isNotEmpty) buffer.writeln(); // Spacing
-
       for (var i = 0; i < visibleChildren.length; i++) {
         final child = visibleChildren[i];
         final childIndent = _xmlTag != null ? indentLevel + 1 : indentLevel;
         child._build(buffer, childIndent);
 
+        // Add a blank line after each child except the last one, but only if either:
+        // 1. This child or the next child is not an XML element, OR
+        // 2. We're not inside an XML parent (meaning we're at the root level or inside a non-XML section)
         if (i < visibleChildren.length - 1) {
-          buffer.writeln(); // Spacing between children
+          final nextChild = visibleChildren[i + 1];
+          final thisIsXml = child._xmlTag != null;
+          final nextIsXml = nextChild._xmlTag != null;
+          final insideXmlParent = _xmlTag != null;
+
+          // Only add blank line if we're not between two XML tags inside an XML parent
+          if (!(thisIsXml && nextIsXml && insideXmlParent)) {
+            buffer.writeln();
+          }
         }
       }
     }

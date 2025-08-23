@@ -65,23 +65,23 @@ void main() {
       // Verify prompt pipeline was extracted
       expect(timelineData.promptPipeline, isNotNull);
       expect(timelineData.promptPipeline!.segments.length, greaterThan(1));
-      
+
       // Check that we have system prompt and user input segments
-      final segmentTypes = timelineData.promptPipeline!.segments
-          .map((s) => s.type)
-          .toSet();
+      final segmentTypes =
+          timelineData.promptPipeline!.segments.map((s) => s.type).toSet();
       expect(segmentTypes, contains(PromptSegmentType.system));
       expect(segmentTypes, contains(PromptSegmentType.userInput));
-      
+
       // Verify user input content matches
       final userInputSegment = timelineData.promptPipeline!.segments
           .firstWhere((s) => s.type == PromptSegmentType.userInput);
       expect(userInputSegment.content, equals('Hello, how are you?'));
-      
+
       // Check character count calculation
-      expect(timelineData.promptPipeline!.totalCharacterCount, 
-             equals(timelineData.promptPipeline!.segments
-                 .fold<int>(0, (sum, segment) => sum + segment.characterCount)));
+      expect(
+          timelineData.promptPipeline!.totalCharacterCount,
+          equals(timelineData.promptPipeline!.segments
+              .fold<int>(0, (sum, segment) => sum + segment.characterCount)));
     });
 
     test('should handle timeline without context data gracefully', () {
@@ -98,8 +98,9 @@ void main() {
 
       // Should still create basic prompt pipeline
       expect(timelineData.promptPipeline, isNotNull);
-      expect(timelineData.promptPipeline!.segments.length, greaterThanOrEqualTo(1));
-      
+      expect(timelineData.promptPipeline!.segments.length,
+          greaterThanOrEqualTo(1));
+
       // Should at least have user input
       final userInputExists = timelineData.promptPipeline!.segments
           .any((s) => s.type == PromptSegmentType.userInput);

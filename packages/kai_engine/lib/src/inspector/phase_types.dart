@@ -27,6 +27,7 @@ sealed class ContextEngineInput with _$ContextEngineInput {
   const factory ContextEngineInput({
     required QueryContext inputQuery,
     required IList<CoreMessage> conversationMessages,
+    required CoreMessage? providedUserMessage,
   }) = _ContextEngineInput;
 }
 

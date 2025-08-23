@@ -16,13 +16,19 @@ void main() {
       });
 
       test('creates section with both title and body', () {
-        final section = PromptBlock(title: '## User Profile', body: ['Name: John Doe', 'Age: 30']);
+        final section = PromptBlock(
+          title: '## User Profile',
+          body: ['Name: John Doe', 'Age: 30'],
+        );
         expect(section, isNotNull);
       });
 
       test('creates section with children', () {
         final childSection = PromptBlock(title: 'Child PromptBlock');
-        final parentSection = PromptBlock(title: 'Parent PromptBlock', children: [childSection]);
+        final parentSection = PromptBlock(
+          title: 'Parent PromptBlock',
+          children: [childSection],
+        );
         expect(parentSection, isNotNull);
       });
     });
@@ -42,7 +48,10 @@ void main() {
       });
 
       test('creates XML section with children', () {
-        final child = PromptBlock.xml('memory', attributes: {'author': 'assistant'});
+        final child = PromptBlock.xml(
+          'memory',
+          attributes: {'author': 'assistant'},
+        );
         final parent = PromptBlock.xml(
           'conversation_history',
           attributes: {'turns': '2'},

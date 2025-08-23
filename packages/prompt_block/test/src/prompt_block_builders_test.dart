@@ -33,7 +33,10 @@ void main() {
       builder.addLines(['Third line', 'Fourth line']);
       builder.addLineIf(false, 'This line should not appear');
       final content = builder.build();
-      expect(content, equals(['First line', 'Second line', 'Third line', 'Fourth line']));
+      expect(
+        content,
+        equals(['First line', 'Second line', 'Third line', 'Fourth line']),
+      );
     });
   });
 
@@ -65,13 +68,19 @@ void main() {
         builder.addLineIf(false, 'Should not be present');
       });
       final output = section.output();
-      expect(output, equals('First line\nSecond line\nThird line\nFourth line'));
+      expect(
+        output,
+        equals('First line\nSecond line\nThird line\nFourth line'),
+      );
     });
   });
 
   group('PromptBlock.xmlFrom', () {
     test('creates XML section with content from builder', () {
-      final section = PromptBlock.xmlFrom('notes', builder: () => 'This is a note');
+      final section = PromptBlock.xmlFrom(
+        'notes',
+        builder: () => 'This is a note',
+      );
       final output = section.output();
       expect(output, equals('<notes>\n  This is a note\n</notes>'));
     });
@@ -97,11 +106,17 @@ void main() {
         builder: () => 'User information',
       );
       final output = section.output();
-      expect(output, equals('<user id="123" name="John">\n  User information\n</user>'));
+      expect(
+        output,
+        equals('<user id="123" name="John">\n  User information\n</user>'),
+      );
     });
 
     test('works with complex content from builder', () {
-      final section = PromptBlock.xmlFrom('data', builder: () => 'Line 1\nLine 2\nLine 3');
+      final section = PromptBlock.xmlFrom(
+        'data',
+        builder: () => 'Line 1\nLine 2\nLine 3',
+      );
       final output = section.output();
       expect(output, equals('<data>\n  Line 1\nLine 2\nLine 3\n</data>'));
     });

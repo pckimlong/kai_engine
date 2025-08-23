@@ -115,6 +115,7 @@ abstract base class ChatControllerBase<TEntity> {
       final contextInput = ContextEngineInput(
         inputQuery: queryContext,
         conversationMessages: await _conversationManager.getMessages(),
+        providedUserMessage: userMessage,
       );
       final contextResult = await _inspector.inspectPhase(
         sessionId,
@@ -122,6 +123,21 @@ abstract base class ChatControllerBase<TEntity> {
         'Context Building',
         build(),
         contextInput,
+      );
+
+      // Log the actual prompt messages for debugging
+      await _inspector.recordPromptMessagesLog(
+        sessionId,
+        timelineId,
+        'Context Building',
+        PromptMessagesLog(
+          message:
+              'Context building completed with ${contextResult.prompts.length} prompt messages',
+          timestamp: DateTime.now(),
+          promptMessages: contextResult.prompts.toList(),
+          severity: TimelineLogSeverity.info,
+          metadata: {'prompt_count': contextResult.prompts.length},
+        ),
       );
 
       // Phase 3: AI Generation
@@ -142,6 +158,24 @@ abstract base class ChatControllerBase<TEntity> {
         'AI Generation',
         AIGenerationPhase(_generationService),
         aiGenerationInput,
+      );
+
+      // Log the actual generated messages for debugging
+      await _inspector.recordGeneratedMessagesLog(
+        sessionId,
+        timelineId,
+        'AI Generation',
+        GeneratedMessagesLog(
+          message:
+              'AI generation completed with ${generationResult.generatedMessages.length} generated messages',
+          timestamp: DateTime.now(),
+          generatedMessages: generationResult.generatedMessages.toList(),
+          severity: TimelineLogSeverity.info,
+          metadata: {
+            'generated_count': generationResult.generatedMessages.length,
+            'total_tokens': generationResult.usage?.tokenCount,
+          },
+        ),
       );
 
       // Save the AI-generated messages to the conversation
@@ -175,7 +209,6 @@ abstract base class ChatControllerBase<TEntity> {
         timelineId,
         aiResponse: aiResponse,
       );
-      await _inspector.endSession(sessionId);
       final generationState = GenerationState<GenerationResult>.complete(
         generationResult,
       );

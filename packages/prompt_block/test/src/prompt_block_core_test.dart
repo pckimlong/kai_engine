@@ -6,9 +6,9 @@ void main() {
   group('PromptBlock', () {
     group('Hierarchical nesting', () {
       test('creates nested sections with add method', () {
-        final section = PromptBlock(
-          title: '# Root',
-        ).add(PromptBlock(title: '## Child 1')).add(PromptBlock(title: '## Child 2'));
+        final section = PromptBlock(title: '# Root')
+            .add(PromptBlock(title: '## Child 1'))
+            .add(PromptBlock(title: '## Child 2'));
         expect(section, isNotNull);
       });
 
@@ -26,7 +26,11 @@ void main() {
         final section = PromptBlock(title: '# Root')
             .add(
               PromptBlock(title: '## Level 1')
-                  .add(PromptBlock(title: '### Level 2').add(PromptBlock(title: '#### Level 3')))
+                  .add(
+                    PromptBlock(
+                      title: '### Level 2',
+                    ).add(PromptBlock(title: '#### Level 3')),
+                  )
                   .add(PromptBlock(title: '## Another Level 1')),
             )
             .add(PromptBlock(title: '## Another Root Child'));
@@ -57,9 +61,10 @@ void main() {
 
       test('adds sections for each item in an iterable', () {
         final numbers = Iterable<int>.generate(3); // 0, 1, 2
-        final section = PromptBlock.xml(
-          'numbers',
-        ).addEach(numbers, (number) => PromptBlock.xmlText('number', number.toString()));
+        final section = PromptBlock.xml('numbers').addEach(
+          numbers,
+          (number) => PromptBlock.xmlText('number', number.toString()),
+        );
 
         expect(section, isNotNull);
         expect(section.children, hasLength(3));
@@ -94,9 +99,15 @@ void main() {
       test('returns parent section for chaining', () {
         final items = ['item1', 'item2'];
         final parent = PromptBlock.xml('parent');
-        final result = parent.addEach(items, (item) => PromptBlock.xmlText('child', item));
+        final result = parent.addEach(
+          items,
+          (item) => PromptBlock.xmlText('child', item),
+        );
 
-        expect(result, same(parent)); // Should return the same instance for chaining
+        expect(
+          result,
+          same(parent),
+        ); // Should return the same instance for chaining
       });
 
       test('works with empty iterable', () {
@@ -118,13 +129,18 @@ void main() {
       });
 
       test('outputs basic section with body', () {
-        final section = PromptBlock(body: ['This is a body line', 'This is another line']);
+        final section = PromptBlock(
+          body: ['This is a body line', 'This is another line'],
+        );
         final output = section.output();
         expect(output, equals('This is a body line\nThis is another line'));
       });
 
       test('outputs section with title and body', () {
-        final section = PromptBlock(title: '## User Profile', body: ['Name: John Doe', 'Age: 30']);
+        final section = PromptBlock(
+          title: '## User Profile',
+          body: ['Name: John Doe', 'Age: 30'],
+        );
         final output = section.output();
         expect(output, equals('## User Profile\nName: John Doe\nAge: 30'));
       });
@@ -141,7 +157,10 @@ void main() {
           attributes: {'name': 'Kim', 'role': 'developer'},
         );
         final output = section.output();
-        expect(output, equals('<user_context name="Kim" role="developer">\n</user_context>'));
+        expect(
+          output,
+          equals('<user_context name="Kim" role="developer">\n</user_context>'),
+        );
       });
 
       test('outputs XML section with body content', () {
@@ -149,7 +168,12 @@ void main() {
           'user_context',
         ).add(PromptBlock(body: ['User ID: 123', 'Status: Active']));
         final output = section.output();
-        expect(output, equals('<user_context>\n  User ID: 123\n  Status: Active\n</user_context>'));
+        expect(
+          output,
+          equals(
+            '<user_context>\n  User ID: 123\n  Status: Active\n</user_context>',
+          ),
+        );
       });
 
       test('outputs bullet list with number type', () {
@@ -189,15 +213,18 @@ void main() {
       });
 
       test('outputs code block with language', () {
-        final section = PromptBlock.codeBlock('print("Hello");\nint x = 5;', language: 'dart');
+        final section = PromptBlock.codeBlock(
+          'print("Hello");\nint x = 5;',
+          language: 'dart',
+        );
         final output = section.output();
         expect(output, equals('```dart\nprint("Hello");\nint x = 5;\n```'));
       });
 
       test('outputs nested sections correctly', () {
-        final section = PromptBlock(
-          title: '# Root',
-        ).add(PromptBlock(title: '## Child 1')).add(PromptBlock(title: '## Child 2'));
+        final section = PromptBlock(title: '# Root')
+            .add(PromptBlock(title: '## Child 1'))
+            .add(PromptBlock(title: '## Child 2'));
         final output = section.output();
         expect(output, equals('# Root\n\n## Child 1\n## Child 2'));
       });
@@ -233,7 +260,10 @@ void main() {
                     ),
                   )
                   .add(
-                    PromptBlock.xml('conversation_history', attributes: {'turns': '2'}).addAll([
+                    PromptBlock.xml(
+                      'conversation_history',
+                      attributes: {'turns': '2'},
+                    ).addAll([
                       PromptBlock.xml(
                         'memory',
                         attributes: {'author': 'assistant'},
@@ -248,7 +278,9 @@ void main() {
             .add(
               PromptBlock(title: '## Task').add(
                 PromptBlock(
-                  body: ['Summarize the user\'s current status based on the context provided.'],
+                  body: [
+                    'Summarize the user\'s current status based on the context provided.',
+                  ],
                 ),
               ),
             );
@@ -284,9 +316,9 @@ void main() {
 
       test('includes section when condition function returns true', () {
         bool isDebugMode = true;
-        final section = PromptBlock.xml(
-          'debug',
-        ).includeIf(() => isDebugMode).add(PromptBlock(body: ['Debug information']));
+        final section = PromptBlock.xml('debug')
+            .includeIf(() => isDebugMode)
+            .add(PromptBlock(body: ['Debug information']));
 
         final output = section.output();
         expect(output, contains('<debug>'));
@@ -295,16 +327,18 @@ void main() {
 
       test('omits section when condition function returns false', () {
         bool isDebugMode = false;
-        final section = PromptBlock.xml(
-          'debug',
-        ).includeIf(() => isDebugMode).add(PromptBlock(body: ['Debug information']));
+        final section = PromptBlock.xml('debug')
+            .includeIf(() => isDebugMode)
+            .add(PromptBlock(body: ['Debug information']));
 
         final output = section.output();
         expect(output, equals(''));
       });
 
       test('works with omitWhenEmpty() in combination', () {
-        final section = PromptBlock.xml('errors').includeIf(true).omitWhenEmpty();
+        final section = PromptBlock.xml(
+          'errors',
+        ).includeIf(true).omitWhenEmpty();
 
         final output = section.output();
         expect(output, equals('')); // Should be omitted because it's empty

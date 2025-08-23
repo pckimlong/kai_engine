@@ -66,7 +66,9 @@ void main() {
     group('addMapAsCodeBlock method', () {
       test('converts map to JSON code block', () {
         final userData = {'name': 'Kim', 'isPremium': true};
-        final section = PromptBlock(title: '## Raw User Data').addMapAsCodeBlock(userData);
+        final section = PromptBlock(
+          title: '## Raw User Data',
+        ).addMapAsCodeBlock(userData);
         final output = section.output();
 
         expect(output, contains('## Raw User Data'));
@@ -81,7 +83,9 @@ void main() {
           'name': 'Kim',
           'profile': {'age': 30, 'isPremium': true},
         };
-        final section = PromptBlock(title: '## Formatted JSON').addMapAsCodeBlock(userData);
+        final section = PromptBlock(
+          title: '## Formatted JSON',
+        ).addMapAsCodeBlock(userData);
         final output = section.output();
 
         expect(output, contains('## Formatted JSON'));

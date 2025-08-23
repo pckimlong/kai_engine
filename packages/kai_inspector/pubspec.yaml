@@ -12,6 +12,8 @@ dependencies:
     sdk: flutter
   kai_engine:
     path: ../kai_engine
+  prompt_block: 
+    path: ../prompt_block
 
 dev_dependencies:
   flutter_test:

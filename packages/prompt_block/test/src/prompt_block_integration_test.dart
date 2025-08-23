@@ -26,7 +26,10 @@ void main() {
           attributes: {'attr': 'value with "quotes" and <tags>'},
         );
         final output = section.output();
-        expect(output, equals('<tag attr="value with "quotes" and <tags>">\n</tag>'));
+        expect(
+          output,
+          equals('<tag attr="value with "quotes" and <tags>">\n</tag>'),
+        );
       });
 
       test('handles XML section with empty tag', () {
@@ -39,8 +42,18 @@ void main() {
         final section = PromptBlock.xml('root')
             .add(
               PromptBlock.xml('level1')
-                  .add(PromptBlock.bulletList(['Item 1', 'Item 2'], type: BulletType.number))
-                  .add(PromptBlock.codeBlock('print("Hello");', language: 'dart').omitWhenEmpty()),
+                  .add(
+                    PromptBlock.bulletList([
+                      'Item 1',
+                      'Item 2',
+                    ], type: BulletType.number),
+                  )
+                  .add(
+                    PromptBlock.codeBlock(
+                      'print("Hello");',
+                      language: 'dart',
+                    ).omitWhenEmpty(),
+                  ),
             )
             .add(
               PromptBlock(title: '## Title Section')
@@ -70,17 +83,29 @@ void main() {
         final section = PromptBlock(title: '# System Prompt')
             .add(PromptBlock.xmlText('user_id', 'user-123'))
             .add(
-              PromptBlock.xml(
-                'debug_info',
-              ).includeIf(debugMode).add(PromptBlock.codeBlock('Debug data here')),
+              PromptBlock.xml('debug_info')
+                  .includeIf(debugMode)
+                  .add(PromptBlock.codeBlock('Debug data here')),
             )
             .add(
               PromptBlock.xml('errors')
                   .includeIf(hasErrors)
-                  .addEach(errors, (error) => PromptBlock.xmlText('error', error)),
+                  .addEach(
+                    errors,
+                    (error) => PromptBlock.xmlText('error', error),
+                  ),
             )
-            .add(PromptBlock.xmlFrom('notes', builder: () => notes).omitWhenEmpty())
-            .add(PromptBlock(title: '## Task').add(PromptBlock(body: ['Process the request'])));
+            .add(
+              PromptBlock.xmlFrom(
+                'notes',
+                builder: () => notes,
+              ).omitWhenEmpty(),
+            )
+            .add(
+              PromptBlock(
+                title: '## Task',
+              ).add(PromptBlock(body: ['Process the request'])),
+            );
 
         final output = section.output();
         expect(output, contains('# System Prompt'));
@@ -168,7 +193,10 @@ void main() {
             .add(PromptBlock(body: ['Should not appear']));
 
         final output = section.output();
-        expect(output, equals('')); // Should be empty because condition2 is false
+        expect(
+          output,
+          equals(''),
+        ); // Should be empty because condition2 is false
       });
 
       test('handles omitWhenEmpty with nested conditional sections', () {
@@ -179,7 +207,9 @@ void main() {
               ).includeIf(false).add(PromptBlock(body: ['Should not appear'])),
             )
             .add(
-              PromptBlock.xml('another').includeIf(true).add(PromptBlock(body: ['Should appear'])),
+              PromptBlock.xml(
+                'another',
+              ).includeIf(true).add(PromptBlock(body: ['Should appear'])),
             )
             .omitWhenEmpty();
 
@@ -253,7 +283,10 @@ void main() {
             .add(
               PromptBlock.xml('system_errors')
                   .includeIf(errors.isNotEmpty)
-                  .addEach(errors, (error) => PromptBlock.xmlText('error', error).compact())
+                  .addEach(
+                    errors,
+                    (error) => PromptBlock.xmlText('error', error).compact(),
+                  )
                   .omitWhenEmpty(),
             )
             .add(
@@ -315,21 +348,36 @@ void main() {
 
         String buildPrompt() {
           return PromptBlock(title: '# System Analysis Prompt')
-              .add(PromptBlock.xmlText('timestamp', DateTime.now().toIso8601String()))
+              .add(
+                PromptBlock.xmlText(
+                  'timestamp',
+                  DateTime.now().toIso8601String(),
+                ),
+              )
               .add(
                 PromptBlock.xml('debug_info')
                     .includeIf(isDebugMode)
-                    .add(PromptBlock(title: '## System Metrics').addMapAsCodeBlock(systemMetrics))
                     .add(
                       PromptBlock(
-                        title: '## Warnings',
-                      ).add(PromptBlock.bulletList(warnings, type: BulletType.hyphen)),
+                        title: '## System Metrics',
+                      ).addMapAsCodeBlock(systemMetrics),
+                    )
+                    .add(
+                      PromptBlock(title: '## Warnings').add(
+                        PromptBlock.bulletList(
+                          warnings,
+                          type: BulletType.hyphen,
+                        ),
+                      ),
                     ),
               )
               .add(
                 PromptBlock.build((builder) {
                   builder.addLine('Analyze the system status.');
-                  builder.addLineIf(isDebugMode, 'Include detailed technical information.');
+                  builder.addLineIf(
+                    isDebugMode,
+                    'Include detailed technical information.',
+                  );
                   builder.addLine('Provide recommendations for optimization.');
                 }),
               )
@@ -406,9 +454,18 @@ void main() {
             .add(
               PromptBlock.build((builder) {
                 builder.addLine('Generate comprehensive documentation.');
-                builder.addLineIf(includeTechnicalDetails, 'Focus on technical depth.');
-                builder.addLineIf(includeExamples, 'Include practical examples.');
-                builder.addLineIf(includeReferences, 'Provide authoritative references.');
+                builder.addLineIf(
+                  includeTechnicalDetails,
+                  'Focus on technical depth.',
+                );
+                builder.addLineIf(
+                  includeExamples,
+                  'Include practical examples.',
+                );
+                builder.addLineIf(
+                  includeReferences,
+                  'Provide authoritative references.',
+                );
               }),
             );
 
@@ -453,15 +510,19 @@ void main() {
                     .add(
                       PromptBlock.xml('skills_list').addEach(
                         userData['skills'] as List<dynamic>,
-                        (skill) => PromptBlock.xmlText('skill', skill.toString()),
+                        (skill) =>
+                            PromptBlock.xmlText('skill', skill.toString()),
                       ),
                     ),
               ),
             )
             .add(
-              PromptBlock(
-                title: '## Requirements',
-              ).add(PromptBlock.bulletList(projectRequirements, type: BulletType.hyphen)),
+              PromptBlock(title: '## Requirements').add(
+                PromptBlock.bulletList(
+                  projectRequirements,
+                  type: BulletType.hyphen,
+                ),
+              ),
             )
             .add(
               PromptBlock.xml('implementation_guidelines')

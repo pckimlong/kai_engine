@@ -254,11 +254,7 @@ void main() {
         const PromptTemplate.input(),
       ]);
 
-      await engine.generate(
-        source: sourceMessages,
-        inputQuery: queryContext,
-        onStageStart: (name) => stages.add(name),
-      );
+      await engine.generate(source: sourceMessages, inputQuery: queryContext);
 
       expect(stages, isNotEmpty);
       expect(stages, contains('MockParallelContextBuilder'));

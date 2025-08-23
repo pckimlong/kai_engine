@@ -24,7 +24,9 @@ mixin _$TimelinePhase {
  TimelineStatus get status;/// Additional metadata about the phase.
  Map<String, dynamic> get metadata;/// List of steps that occurred within this phase.
  List<TimelineStep> get steps;/// List of logs associated with this phase.
- List<TimelineLog> get logs;
+ List<TimelineLog> get logs;/// List of prompt messages logs associated with this phase.
+ List<PromptMessagesLog> get promptMessagesLogs;/// List of generated messages logs associated with this phase.
+ List<GeneratedMessagesLog> get generatedMessagesLogs;
 /// Create a copy of TimelinePhase
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -37,16 +39,16 @@ $TimelinePhaseCopyWith<TimelinePhase> get copyWith => _$TimelinePhaseCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelinePhase&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.metadata, metadata)&&const DeepCollectionEquality().equals(other.steps, steps)&&const DeepCollectionEquality().equals(other.logs, logs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelinePhase&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.metadata, metadata)&&const DeepCollectionEquality().equals(other.steps, steps)&&const DeepCollectionEquality().equals(other.logs, logs)&&const DeepCollectionEquality().equals(other.promptMessagesLogs, promptMessagesLogs)&&const DeepCollectionEquality().equals(other.generatedMessagesLogs, generatedMessagesLogs));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,startTime,endTime,status,const DeepCollectionEquality().hash(metadata),const DeepCollectionEquality().hash(steps),const DeepCollectionEquality().hash(logs));
+int get hashCode => Object.hash(runtimeType,id,name,description,startTime,endTime,status,const DeepCollectionEquality().hash(metadata),const DeepCollectionEquality().hash(steps),const DeepCollectionEquality().hash(logs),const DeepCollectionEquality().hash(promptMessagesLogs),const DeepCollectionEquality().hash(generatedMessagesLogs));
 
 @override
 String toString() {
-  return 'TimelinePhase(id: $id, name: $name, description: $description, startTime: $startTime, endTime: $endTime, status: $status, metadata: $metadata, steps: $steps, logs: $logs)';
+  return 'TimelinePhase(id: $id, name: $name, description: $description, startTime: $startTime, endTime: $endTime, status: $status, metadata: $metadata, steps: $steps, logs: $logs, promptMessagesLogs: $promptMessagesLogs, generatedMessagesLogs: $generatedMessagesLogs)';
 }
 
 
@@ -57,7 +59,7 @@ abstract mixin class $TimelinePhaseCopyWith<$Res>  {
   factory $TimelinePhaseCopyWith(TimelinePhase value, $Res Function(TimelinePhase) _then) = _$TimelinePhaseCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String? description, DateTime startTime, DateTime? endTime, TimelineStatus status, Map<String, dynamic> metadata, List<TimelineStep> steps, List<TimelineLog> logs
+ String id, String name, String? description, DateTime startTime, DateTime? endTime, TimelineStatus status, Map<String, dynamic> metadata, List<TimelineStep> steps, List<TimelineLog> logs, List<PromptMessagesLog> promptMessagesLogs, List<GeneratedMessagesLog> generatedMessagesLogs
 });
 
 
@@ -74,7 +76,7 @@ class _$TimelinePhaseCopyWithImpl<$Res>
 
 /// Create a copy of TimelinePhase
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? startTime = null,Object? endTime = freezed,Object? status = null,Object? metadata = null,Object? steps = null,Object? logs = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? startTime = null,Object? endTime = freezed,Object? status = null,Object? metadata = null,Object? steps = null,Object? logs = null,Object? promptMessagesLogs = null,Object? generatedMessagesLogs = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -85,7 +87,9 @@ as DateTime?,status: null == status ? _self.status : status // ignore: cast_null
 as TimelineStatus,metadata: null == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,steps: null == steps ? _self.steps : steps // ignore: cast_nullable_to_non_nullable
 as List<TimelineStep>,logs: null == logs ? _self.logs : logs // ignore: cast_nullable_to_non_nullable
-as List<TimelineLog>,
+as List<TimelineLog>,promptMessagesLogs: null == promptMessagesLogs ? _self.promptMessagesLogs : promptMessagesLogs // ignore: cast_nullable_to_non_nullable
+as List<PromptMessagesLog>,generatedMessagesLogs: null == generatedMessagesLogs ? _self.generatedMessagesLogs : generatedMessagesLogs // ignore: cast_nullable_to_non_nullable
+as List<GeneratedMessagesLog>,
   ));
 }
 
@@ -167,10 +171,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelineStep> steps,  List<TimelineLog> logs)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelineStep> steps,  List<TimelineLog> logs,  List<PromptMessagesLog> promptMessagesLogs,  List<GeneratedMessagesLog> generatedMessagesLogs)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TimelinePhase() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.steps,_that.logs);case _:
+return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.steps,_that.logs,_that.promptMessagesLogs,_that.generatedMessagesLogs);case _:
   return orElse();
 
 }
@@ -188,10 +192,10 @@ return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endT
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelineStep> steps,  List<TimelineLog> logs)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelineStep> steps,  List<TimelineLog> logs,  List<PromptMessagesLog> promptMessagesLogs,  List<GeneratedMessagesLog> generatedMessagesLogs)  $default,) {final _that = this;
 switch (_that) {
 case _TimelinePhase():
-return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.steps,_that.logs);}
+return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.steps,_that.logs,_that.promptMessagesLogs,_that.generatedMessagesLogs);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -205,10 +209,10 @@ return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endT
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? description,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelineStep> steps,  List<TimelineLog> logs)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? description,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelineStep> steps,  List<TimelineLog> logs,  List<PromptMessagesLog> promptMessagesLogs,  List<GeneratedMessagesLog> generatedMessagesLogs)?  $default,) {final _that = this;
 switch (_that) {
 case _TimelinePhase() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.steps,_that.logs);case _:
+return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.steps,_that.logs,_that.promptMessagesLogs,_that.generatedMessagesLogs);case _:
   return null;
 
 }
@@ -220,7 +224,7 @@ return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endT
 @JsonSerializable()
 
 class _TimelinePhase extends TimelinePhase {
-  const _TimelinePhase({required this.id, required this.name, this.description, required this.startTime, this.endTime, this.status = TimelineStatus.running, final  Map<String, dynamic> metadata = const {}, final  List<TimelineStep> steps = const [], final  List<TimelineLog> logs = const []}): _metadata = metadata,_steps = steps,_logs = logs,super._();
+  const _TimelinePhase({required this.id, required this.name, this.description, required this.startTime, this.endTime, this.status = TimelineStatus.running, final  Map<String, dynamic> metadata = const {}, final  List<TimelineStep> steps = const [], final  List<TimelineLog> logs = const [], final  List<PromptMessagesLog> promptMessagesLogs = const [], final  List<GeneratedMessagesLog> generatedMessagesLogs = const []}): _metadata = metadata,_steps = steps,_logs = logs,_promptMessagesLogs = promptMessagesLogs,_generatedMessagesLogs = generatedMessagesLogs,super._();
   factory _TimelinePhase.fromJson(Map<String, dynamic> json) => _$TimelinePhaseFromJson(json);
 
 /// Unique identifier for this phase.
@@ -262,6 +266,24 @@ class _TimelinePhase extends TimelinePhase {
   return EqualUnmodifiableListView(_logs);
 }
 
+/// List of prompt messages logs associated with this phase.
+ final  List<PromptMessagesLog> _promptMessagesLogs;
+/// List of prompt messages logs associated with this phase.
+@override@JsonKey() List<PromptMessagesLog> get promptMessagesLogs {
+  if (_promptMessagesLogs is EqualUnmodifiableListView) return _promptMessagesLogs;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_promptMessagesLogs);
+}
+
+/// List of generated messages logs associated with this phase.
+ final  List<GeneratedMessagesLog> _generatedMessagesLogs;
+/// List of generated messages logs associated with this phase.
+@override@JsonKey() List<GeneratedMessagesLog> get generatedMessagesLogs {
+  if (_generatedMessagesLogs is EqualUnmodifiableListView) return _generatedMessagesLogs;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_generatedMessagesLogs);
+}
+
 
 /// Create a copy of TimelinePhase
 /// with the given fields replaced by the non-null parameter values.
@@ -276,16 +298,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TimelinePhase&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other._metadata, _metadata)&&const DeepCollectionEquality().equals(other._steps, _steps)&&const DeepCollectionEquality().equals(other._logs, _logs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TimelinePhase&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other._metadata, _metadata)&&const DeepCollectionEquality().equals(other._steps, _steps)&&const DeepCollectionEquality().equals(other._logs, _logs)&&const DeepCollectionEquality().equals(other._promptMessagesLogs, _promptMessagesLogs)&&const DeepCollectionEquality().equals(other._generatedMessagesLogs, _generatedMessagesLogs));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,startTime,endTime,status,const DeepCollectionEquality().hash(_metadata),const DeepCollectionEquality().hash(_steps),const DeepCollectionEquality().hash(_logs));
+int get hashCode => Object.hash(runtimeType,id,name,description,startTime,endTime,status,const DeepCollectionEquality().hash(_metadata),const DeepCollectionEquality().hash(_steps),const DeepCollectionEquality().hash(_logs),const DeepCollectionEquality().hash(_promptMessagesLogs),const DeepCollectionEquality().hash(_generatedMessagesLogs));
 
 @override
 String toString() {
-  return 'TimelinePhase(id: $id, name: $name, description: $description, startTime: $startTime, endTime: $endTime, status: $status, metadata: $metadata, steps: $steps, logs: $logs)';
+  return 'TimelinePhase(id: $id, name: $name, description: $description, startTime: $startTime, endTime: $endTime, status: $status, metadata: $metadata, steps: $steps, logs: $logs, promptMessagesLogs: $promptMessagesLogs, generatedMessagesLogs: $generatedMessagesLogs)';
 }
 
 
@@ -296,7 +318,7 @@ abstract mixin class _$TimelinePhaseCopyWith<$Res> implements $TimelinePhaseCopy
   factory _$TimelinePhaseCopyWith(_TimelinePhase value, $Res Function(_TimelinePhase) _then) = __$TimelinePhaseCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String? description, DateTime startTime, DateTime? endTime, TimelineStatus status, Map<String, dynamic> metadata, List<TimelineStep> steps, List<TimelineLog> logs
+ String id, String name, String? description, DateTime startTime, DateTime? endTime, TimelineStatus status, Map<String, dynamic> metadata, List<TimelineStep> steps, List<TimelineLog> logs, List<PromptMessagesLog> promptMessagesLogs, List<GeneratedMessagesLog> generatedMessagesLogs
 });
 
 
@@ -313,7 +335,7 @@ class __$TimelinePhaseCopyWithImpl<$Res>
 
 /// Create a copy of TimelinePhase
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? startTime = null,Object? endTime = freezed,Object? status = null,Object? metadata = null,Object? steps = null,Object? logs = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? startTime = null,Object? endTime = freezed,Object? status = null,Object? metadata = null,Object? steps = null,Object? logs = null,Object? promptMessagesLogs = null,Object? generatedMessagesLogs = null,}) {
   return _then(_TimelinePhase(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -324,7 +346,9 @@ as DateTime?,status: null == status ? _self.status : status // ignore: cast_null
 as TimelineStatus,metadata: null == metadata ? _self._metadata : metadata // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,steps: null == steps ? _self._steps : steps // ignore: cast_nullable_to_non_nullable
 as List<TimelineStep>,logs: null == logs ? _self._logs : logs // ignore: cast_nullable_to_non_nullable
-as List<TimelineLog>,
+as List<TimelineLog>,promptMessagesLogs: null == promptMessagesLogs ? _self._promptMessagesLogs : promptMessagesLogs // ignore: cast_nullable_to_non_nullable
+as List<PromptMessagesLog>,generatedMessagesLogs: null == generatedMessagesLogs ? _self._generatedMessagesLogs : generatedMessagesLogs // ignore: cast_nullable_to_non_nullable
+as List<GeneratedMessagesLog>,
   ));
 }
 

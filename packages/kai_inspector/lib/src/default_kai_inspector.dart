@@ -256,6 +256,74 @@ class DefaultKaiInspector implements KaiInspector {
   }
 
   @override
+  Future<void> recordPromptMessagesLog(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    PromptMessagesLog log,
+  ) async {
+    final session = _sessions[sessionId];
+    if (session == null) return;
+
+    final timelineIndex =
+        session.timelines.indexWhere((t) => t.id == timelineId);
+    if (timelineIndex == -1) return;
+
+    final timeline = session.timelines[timelineIndex];
+    final phaseIndex =
+        timeline.phases.indexWhere((p) => p.id == phaseId || p.name == phaseId);
+    if (phaseIndex == -1) return;
+
+    final phase = timeline.phases[phaseIndex];
+    final updatedPhase = phase.addPromptMessagesLog(log);
+
+    final updatedPhases = List<TimelinePhase>.from(timeline.phases);
+    updatedPhases[phaseIndex] = updatedPhase;
+
+    final updatedTimeline = timeline.copyWith(phases: updatedPhases);
+    final updatedTimelines = List<ExecutionTimeline>.from(session.timelines);
+    updatedTimelines[timelineIndex] = updatedTimeline;
+
+    final updatedSession = session.copyWith(timelines: updatedTimelines);
+    _sessions[sessionId] = updatedSession;
+    _sessionStreams[sessionId]?.add(updatedSession);
+  }
+
+  @override
+  Future<void> recordGeneratedMessagesLog(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    GeneratedMessagesLog log,
+  ) async {
+    final session = _sessions[sessionId];
+    if (session == null) return;
+
+    final timelineIndex =
+        session.timelines.indexWhere((t) => t.id == timelineId);
+    if (timelineIndex == -1) return;
+
+    final timeline = session.timelines[timelineIndex];
+    final phaseIndex =
+        timeline.phases.indexWhere((p) => p.id == phaseId || p.name == phaseId);
+    if (phaseIndex == -1) return;
+
+    final phase = timeline.phases[phaseIndex];
+    final updatedPhase = phase.addGeneratedMessagesLog(log);
+
+    final updatedPhases = List<TimelinePhase>.from(timeline.phases);
+    updatedPhases[phaseIndex] = updatedPhase;
+
+    final updatedTimeline = timeline.copyWith(phases: updatedPhases);
+    final updatedTimelines = List<ExecutionTimeline>.from(session.timelines);
+    updatedTimelines[timelineIndex] = updatedTimeline;
+
+    final updatedSession = session.copyWith(timelines: updatedTimelines);
+    _sessions[sessionId] = updatedSession;
+    _sessionStreams[sessionId]?.add(updatedSession);
+  }
+
+  @override
   Future<void> recordStepLog(
     String sessionId,
     String timelineId,

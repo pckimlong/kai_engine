@@ -2,11 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kai_engine/src/inspector/execution_timeline.dart';
 import 'package:kai_engine/src/inspector/models/timeline_phase.dart';
 import 'package:kai_engine/src/inspector/models/timeline_types.dart';
+import 'package:kai_engine/src/models/core_message.dart';
 import 'package:kai_inspector/src/ui/debug_data_adapter.dart';
 
 void main() {
   group('Message Input Debug Screen Integration Tests', () {
-    test('should integrate prompt pipeline extraction with comprehensive UI data', () {
+    test(
+        'should integrate prompt pipeline extraction with comprehensive UI data',
+        () {
       // Create phases with realistic logs that match our extraction logic
       final contextPhase = TimelinePhase(
         id: 'context-phase-1',
@@ -30,6 +33,21 @@ void main() {
           ),
         ],
         steps: [],
+        promptMessagesLogs: [
+          PromptMessagesLog(
+            message: 'Context building completed with 3 prompt messages',
+            timestamp: DateTime(2024, 1, 1, 10, 0, 0, 145),
+            promptMessages: [
+              CoreMessage.system('You are a helpful assistant.'),
+              CoreMessage.user(content: 'What is the weather like?'),
+              CoreMessage.ai(
+                  content:
+                      'I need more information about your location to provide weather information.'),
+            ],
+            severity: TimelineLogSeverity.info,
+            metadata: {'prompt_count': 3},
+          ),
+        ],
       );
 
       final generationPhase = TimelinePhase(
@@ -58,6 +76,26 @@ void main() {
           ),
         ],
         steps: [],
+        generatedMessagesLogs: [
+          GeneratedMessagesLog(
+            message: 'AI generation completed with 2 generated messages',
+            timestamp: DateTime(2024, 1, 1, 10, 0, 1, 485),
+            generatedMessages: [
+              CoreMessage.ai(
+                  content:
+                      'I need more information about your location to provide accurate weather information.'),
+              CoreMessage(
+                messageId: 'func-123',
+                type: CoreMessageType.function,
+                content:
+                    '{"action": "request_location", "reason": "weather_query"}',
+                timestamp: DateTime(2024, 1, 1, 10, 0, 1, 400),
+              ),
+            ],
+            severity: TimelineLogSeverity.info,
+            metadata: {'generated_count': 2, 'total_tokens': 256},
+          ),
+        ],
       );
 
       final timeline = ExecutionTimeline(
@@ -75,44 +113,44 @@ void main() {
 
       // Verify comprehensive data extraction
       expect(timelineData.timelineId, equals('msg-123456789'));
-      expect(timelineData.userMessage, 
-             equals('Can you help me understand how neural networks work?'));
+      expect(timelineData.userMessage,
+          equals('Can you help me understand how neural networks work?'));
       expect(timelineData.phaseCount, equals(2));
       expect(timelineData.totalTokens, equals(256));
-      
+
       // Test prompt pipeline data extraction
       expect(timelineData.promptPipeline, isNotNull);
       final promptPipeline = timelineData.promptPipeline!;
-      
+
       // Should have multi-part prompt structure based on metadata
       expect(promptPipeline.segments.length, greaterThanOrEqualTo(2));
-      
+
       // Should include system prompt (inferred from template count >= 3)
       final systemSegments = promptPipeline.segments
           .where((s) => s.type == PromptSegmentType.system);
       expect(systemSegments.isNotEmpty, isTrue);
-      
+
       // Should include user input
       final userSegment = promptPipeline.segments
           .where((s) => s.type == PromptSegmentType.userInput)
           .first;
-      expect(userSegment.content, 
-             equals('Can you help me understand how neural networks work?'));
+      expect(userSegment.content,
+          equals('Can you help me understand how neural networks work?'));
       expect(userSegment.characterCount, equals(userSegment.content.length));
-      
+
       // Verify character count calculation is consistent
       final expectedTotal = promptPipeline.segments
           .fold<int>(0, (sum, segment) => sum + segment.characterCount);
       expect(promptPipeline.totalCharacterCount, equals(expectedTotal));
 
       // Test phase data conversion with token metadata
-      final generationPhaseData = timelineData.phases
-          .firstWhere((p) => p.phaseName == 'AI Generation');
+      final generationPhaseData =
+          timelineData.phases.firstWhere((p) => p.phaseName == 'AI Generation');
       expect(generationPhaseData.tokenMetadata, isNotNull);
       expect(generationPhaseData.tokenMetadata!.totalTokens, equals(256));
       expect(generationPhaseData.tokenMetadata!.inputTokens, equals(128));
       expect(generationPhaseData.tokenMetadata!.outputTokens, equals(128));
-      
+
       print('✅ Comprehensive debugging tool integration test passed!');
       print('📊 Extracted ${promptPipeline.segments.length} prompt segments');
       print('⏱️  Processed ${timelineData.phaseCount} phases with token data');
@@ -131,12 +169,12 @@ void main() {
       final data = DebugDataAdapter.convertTimelineOverview(timeline);
       expect(data.promptPipeline, isNotNull);
       expect(data.promptPipeline!.segments.isNotEmpty, isTrue);
-      
+
       // Should at least have user input segment
       final userInputSegment = data.promptPipeline!.segments
           .firstWhere((s) => s.type == PromptSegmentType.userInput);
       expect(userInputSegment.content, equals('Hello'));
-      
+
       print('✅ Minimal data handling verified!');
     });
   });

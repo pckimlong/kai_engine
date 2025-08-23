@@ -31,6 +31,7 @@ abstract base class ContextEngine
     final result = await generate(
       source: input.conversationMessages,
       inputQuery: input.inputQuery,
+      providedUserMessage: input.providedUserMessage,
     );
     return ContextEngineOutput(prompts: result.prompts);
   }
@@ -57,7 +58,6 @@ abstract base class ContextEngine
     /// Source messages to build context from, usually this is the message available in chat context
     required IList<CoreMessage> source,
     required QueryContext inputQuery,
-    void Function(String name)? onStageStart,
     CoreMessage? providedUserMessage,
   }) async {
     // Extract messageId for debug tracking
@@ -120,14 +120,12 @@ abstract base class ContextEngine
       parallelItems,
       source,
       inputQuery,
-      onStageStart,
       messageId,
     );
     final sequentialFuture = _buildSequentialWithIndex(
       sequentialItems,
       source,
       inputQuery,
-      onStageStart,
       messageId,
     );
 
@@ -212,7 +210,6 @@ abstract base class ContextEngine
     List<({int index, PromptTemplate builder})> items,
     IList<CoreMessage> source,
     QueryContext inputQuery,
-    void Function(String name)? onStageStart,
     String messageId,
   ) async {
     return await Future.wait(
@@ -224,8 +221,6 @@ abstract base class ContextEngine
         return await withStep(
           builderName,
           operation: (step) async {
-            onStageStart?.call('${builder.runtimeType}');
-
             try {
               final result = await builder.build(inputQuery, source);
 
@@ -263,7 +258,6 @@ abstract base class ContextEngine
     List<({int index, PromptTemplate builder})> items,
     IList<CoreMessage> source,
     QueryContext inputQuery,
-    void Function(String name)? onStageStart,
     String messageId,
   ) async {
     final results = <({int index, List<CoreMessage> result})>[];
@@ -277,8 +271,6 @@ abstract base class ContextEngine
       final context = await withStep(
         builderName,
         operation: (step) async {
-          onStageStart?.call('${builder.runtimeType}');
-
           try {
             final context = await builder.build(inputQuery, currentContext);
 

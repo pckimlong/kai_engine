@@ -73,6 +73,22 @@ abstract class KaiInspector {
     TimelineLog log,
   );
 
+  /// Records a prompt messages log entry for the given phase.
+  Future<void> recordPromptMessagesLog(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    PromptMessagesLog log,
+  );
+
+  /// Records a generated messages log entry for the given phase.
+  Future<void> recordGeneratedMessagesLog(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    GeneratedMessagesLog log,
+  );
+
   /// Records a log entry for the given step.
   Future<void> recordStepLog(
     String sessionId,
@@ -216,6 +232,22 @@ class NoOpKaiInspector implements KaiInspector {
     String timelineId,
     String phaseId,
     TimelineLog log,
+  ) async {}
+
+  @override
+  Future<void> recordPromptMessagesLog(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    PromptMessagesLog log,
+  ) async {}
+
+  @override
+  Future<void> recordGeneratedMessagesLog(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    GeneratedMessagesLog log,
   ) async {}
 
   @override
