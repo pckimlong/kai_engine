@@ -224,8 +224,7 @@ void main() {
       verify(() => mockBuilder2.build(any(), any())).called(1);
     });
 
-    test('calls onStageStart callback for each stage', () async {
-      final stages = <String>[];
+    test('processes parallel and sequential builders correctly', () async {
       final mockParallelBuilder = MockParallelContextBuilder();
       final mockSequentialBuilder = MockSequentialContextBuilder();
 
@@ -254,11 +253,23 @@ void main() {
         const PromptTemplate.input(),
       ]);
 
-      await engine.generate(source: sourceMessages, inputQuery: queryContext);
+      final result = await engine.generate(
+        source: sourceMessages,
+        inputQuery: queryContext,
+      );
 
-      expect(stages, isNotEmpty);
-      expect(stages, contains('MockParallelContextBuilder'));
-      expect(stages, contains('MockSequentialContextBuilder'));
+      // Verify both builders were called
+      verify(() => mockParallelBuilder.build(any(), any())).called(1);
+      verify(() => mockSequentialBuilder.build(any(), any())).called(1);
+
+      // Verify the result structure includes all prompts
+      expect(
+        result.prompts,
+        hasLength(4),
+      ); // system + parallel + sequential + user input
+      expect(result.prompts[0].content, 'You are a helpful assistant');
+      expect(result.prompts[1].content, 'Parallel context');
+      expect(result.prompts[2].content, 'Sequential context');
     });
 
     test('throws assertion error when no input template is provided', () async {

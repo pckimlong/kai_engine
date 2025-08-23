@@ -211,12 +211,12 @@ return $default(_that.rawInput,_that.session,_that.histories);case _:
 
 
 class _QueryEngineInput implements QueryEngineInput {
-  const _QueryEngineInput({required this.rawInput, required this.session, this.histories = const IList<CoreMessage>.empty()});
+  const _QueryEngineInput({required this.rawInput, required this.session, required this.histories});
   
 
 @override final  String rawInput;
 @override final  ConversationSession session;
-@override@JsonKey() final  IList<CoreMessage> histories;
+@override final  IList<CoreMessage> histories;
 
 /// Create a copy of QueryEngineInput
 /// with the given fields replaced by the non-null parameter values.

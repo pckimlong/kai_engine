@@ -70,7 +70,7 @@ abstract base class ContextEngine
     await withStep(
       'context-engine-processing',
       operation: (step) async {
-        addLog(
+        await step.addLogMessage(
           'Processing prompt templates',
           metadata: {
             'prompt-templates': promptBuilder.length,
@@ -105,7 +105,7 @@ abstract base class ContextEngine
     await withStep(
       'builder-distribution',
       operation: (step) async {
-        addLog(
+        await step.addLogMessage(
           'Builder distribution',
           metadata: {
             'parallel-builders': parallelItems.length,
@@ -178,7 +178,7 @@ abstract base class ContextEngine
     await withStep(
       'final-results',
       operation: (step) async {
-        addLog(
+        await step.addLogMessage(
           'Final context results',
           metadata: {
             'final-context-messages': finalContexts.length,
@@ -224,12 +224,12 @@ abstract base class ContextEngine
             try {
               final result = await builder.build(inputQuery, source);
 
-              addLog('Built ${result.length} messages');
+              await step.addLogMessage('Built ${result.length} messages');
               return (index: item.index, result: result);
             } catch (e) {
-              addLog(
+              await step.addLogMessage(
                 'Failed to build: $e',
-                severity: TimelineLogSeverity.error,
+                metadata: {'error': e.toString()},
               );
               rethrow;
             }
@@ -274,12 +274,15 @@ abstract base class ContextEngine
           try {
             final context = await builder.build(inputQuery, currentContext);
 
-            addLog(
+            await step.addLogMessage(
               'Built ${context.length} messages from context size ${currentContext.length}',
             );
             return context;
           } catch (e) {
-            addLog('Failed to build: $e', severity: TimelineLogSeverity.error);
+            await step.addLogMessage(
+              'Failed to build: $e',
+              metadata: {'error': e.toString()},
+            );
             rethrow;
           }
         },

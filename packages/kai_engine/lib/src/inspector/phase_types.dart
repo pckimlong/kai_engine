@@ -17,7 +17,7 @@ sealed class QueryEngineInput with _$QueryEngineInput {
   const factory QueryEngineInput({
     required String rawInput,
     required ConversationSession session,
-    @Default(IList<CoreMessage>.empty()) IList<CoreMessage> histories,
+    required IList<CoreMessage> histories,
   }) = _QueryEngineInput;
 }
 

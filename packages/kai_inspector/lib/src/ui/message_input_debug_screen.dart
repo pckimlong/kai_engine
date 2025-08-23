@@ -1752,78 +1752,164 @@ class _PhaseDetailCardState extends State<_PhaseDetailCard> {
                   bottom: Radius.circular(_isExpanded ? 0 : 12),
                 ),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: getPhaseColor(widget.phase.phaseName),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      _getPhaseIcon(widget.phase.phaseName),
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 600;
+                  
+                  if (isMobile) {
+                    // Mobile layout: Stack vertically
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          phaseName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
+                        Row(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: getPhaseColor(widget.phase.phaseName),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                _getPhaseIcon(widget.phase.phaseName),
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                phaseName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              _isExpanded ? Icons.expand_less : Icons.expand_more,
+                              size: 20,
+                              color: Colors.grey[600],
+                            ),
+                          ],
                         ),
-                        if (widget.phase.description != null)
+                        if (widget.phase.description != null) ...[
+                          const SizedBox(height: 4),
                           Text(
                             widget.phase.description!,
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 11,
                               color: Colors.grey[600],
                             ),
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
+                        ],
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: [
+                            if (widget.phase.duration != null)
+                              _CompactChip(
+                                label: '${widget.phase.duration!.inMilliseconds}ms',
+                                color: Colors.blue,
+                                icon: Icons.timer,
+                              ),
+                            if (widget.phase.tokenMetadata != null &&
+                                widget.phase.tokenMetadata!.totalTokens > 0)
+                              _CompactChip(
+                                label: '${widget.phase.tokenMetadata!.totalTokens}',
+                                color: Colors.green,
+                                icon: Icons.token,
+                              ),
+                            if (widget.phase.errorCount > 0 || widget.phase.warningCount > 0)
+                              _CompactChip(
+                                label: '${widget.phase.errorCount + widget.phase.warningCount}',
+                                color: Colors.red,
+                                icon: Icons.error_outline,
+                              ),
+                          ],
+                        ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Wrap(
-                    spacing: 6,
-                    children: [
-                      if (widget.phase.duration != null)
-                        _CompactChip(
-                          label: '${widget.phase.duration!.inMilliseconds}ms',
-                          color: Colors.blue,
-                          icon: Icons.timer,
+                    );
+                  } else {
+                    // Desktop layout: Row layout
+                    return Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: getPhaseColor(widget.phase.phaseName),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            _getPhaseIcon(widget.phase.phaseName),
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
-                      if (widget.phase.tokenMetadata != null &&
-                          widget.phase.tokenMetadata!.totalTokens > 0)
-                        _CompactChip(
-                          label: '${widget.phase.tokenMetadata!.totalTokens}',
-                          color: Colors.green,
-                          icon: Icons.token,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                phaseName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              if (widget.phase.description != null)
+                                Text(
+                                  widget.phase.description!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                            ],
+                          ),
                         ),
-                      if (widget.phase.errorCount > 0 || widget.phase.warningCount > 0)
-                        _CompactChip(
-                          label: '${widget.phase.errorCount + widget.phase.warningCount}',
-                          color: Colors.red,
-                          icon: Icons.error_outline,
+                        const SizedBox(width: 8),
+                        Wrap(
+                          spacing: 6,
+                          children: [
+                            if (widget.phase.duration != null)
+                              _CompactChip(
+                                label: '${widget.phase.duration!.inMilliseconds}ms',
+                                color: Colors.blue,
+                                icon: Icons.timer,
+                              ),
+                            if (widget.phase.tokenMetadata != null &&
+                                widget.phase.tokenMetadata!.totalTokens > 0)
+                              _CompactChip(
+                                label: '${widget.phase.tokenMetadata!.totalTokens}',
+                                color: Colors.green,
+                                icon: Icons.token,
+                              ),
+                            if (widget.phase.errorCount > 0 || widget.phase.warningCount > 0)
+                              _CompactChip(
+                                label: '${widget.phase.errorCount + widget.phase.warningCount}',
+                                color: Colors.red,
+                                icon: Icons.error_outline,
+                              ),
+                          ],
                         ),
-                    ],
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    _isExpanded ? Icons.expand_less : Icons.expand_more,
-                    size: 20,
-                    color: Colors.grey[600],
-                  ),
-                ],
+                        const SizedBox(width: 8),
+                        Icon(
+                          _isExpanded ? Icons.expand_less : Icons.expand_more,
+                          size: 20,
+                          color: Colors.grey[600],
+                        ),
+                      ],
+                    );
+                  }
+                },
               ),
             ),
           ),
@@ -2024,30 +2110,77 @@ class _PhaseMetadataContent extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.all(12),
-      child: Column(
-        children: metadataItems.entries
-            .map((entry) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 100,
-                        child: Text(
-                          '${entry.key}:',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 600;
+          
+          if (isMobile) {
+            // Mobile layout: Stack vertically for better readability
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: metadataItems.entries
+                  .map((entry) => Container(
+                        margin: const EdgeInsets.symmetric(vertical: 3.0),
+                        padding: const EdgeInsets.all(8.0),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.grey[200]!),
                         ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          entry.value,
-                          style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              entry.key,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              entry.value,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'monospace',
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                ))
-            .toList(),
+                      ))
+                  .toList(),
+            );
+          } else {
+            // Desktop layout: Traditional row layout
+            return Column(
+              children: metadataItems.entries
+                  .map((entry) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 120,
+                              child: Text(
+                                '${entry.key}:',
+                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                entry.value,
+                                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ))
+                  .toList(),
+            );
+          }
+        },
       ),
     );
   }
@@ -2089,13 +2222,20 @@ class _StepDetailEntryState extends State<_StepDetailEntry> {
     final hasChildren = step.steps.isNotEmpty;
     final hasContent = step.logs.isNotEmpty || step.metadata.isNotEmpty;
 
-    return Container(
-      margin: EdgeInsets.only(left: widget.depth * 16.0, bottom: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-        color: Colors.white,
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        final leftMargin = isMobile 
+            ? widget.depth * 8.0  // Reduced margin on mobile
+            : widget.depth * 16.0;
+            
+        return Container(
+          margin: EdgeInsets.only(left: leftMargin, bottom: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[300]!),
+            color: Colors.white,
+          ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2172,6 +2312,8 @@ class _StepDetailEntryState extends State<_StepDetailEntry> {
             ),
         ],
       ),
+        );
+      },
     );
   }
 
@@ -2317,31 +2459,71 @@ class _MetadataTable extends StatelessWidget {
         color: Colors.grey[100],
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Table(
-        columnWidths: const {
-          0: IntrinsicColumnWidth(),
-          1: FlexColumnWidth(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 400;
+          
+          if (isMobile) {
+            // Mobile layout: Stack vertically
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: metadata.entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.key,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[700],
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        entry.value.toString(),
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            );
+          } else {
+            // Desktop layout: Table format
+            return Table(
+              columnWidths: const {
+                0: IntrinsicColumnWidth(),
+                1: FlexColumnWidth(),
+              },
+              children: metadata.entries.map((entry) {
+                return TableRow(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 16.0, top: 4, bottom: 4),
+                      child: Text(
+                        '${entry.key}:',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[700]),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Text(
+                        entry.value.toString(),
+                        style: const TextStyle(fontFamily: 'monospace'),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            );
+          }
         },
-        children: metadata.entries.map((entry) {
-          return TableRow(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 16.0, top: 4, bottom: 4),
-                child: Text(
-                  '${entry.key}:',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[700]),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Text(
-                  entry.value.toString(),
-                  style: const TextStyle(fontFamily: 'monospace'),
-                ),
-              ),
-            ],
-          );
-        }).toList(),
       ),
     );
   }

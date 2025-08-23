@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kai_engine/kai_engine.dart';
 
 /// Widget for displaying user input and AI response messages
@@ -267,6 +268,16 @@ class MessageBubble extends StatelessWidget {
                         onPressed: onResetPressed,
                         tooltip: 'Reset to original',
                       ),
+
+                    _ActionButton(
+                      icon: Icons.copy,
+                      color: labelColor,
+                      onPressed: () {
+                        // Copy message content to clipboard
+                        Clipboard.setData(ClipboardData(text: message.content));
+                      },
+                      tooltip: 'Copy message content',
+                    ),
 
                     // Expand/Collapse button
                     _ActionButton(

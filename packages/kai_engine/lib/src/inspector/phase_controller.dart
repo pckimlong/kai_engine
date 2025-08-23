@@ -42,7 +42,13 @@ class PhaseController {
 
   /// Records a step within this phase.
   Future<void> recordStep(TimelineStep step, {String? parentStepId}) async {
-    await inspector.recordStep(sessionId, timelineId, phaseId, step, parentStepId: parentStepId);
+    await inspector.recordStep(
+      sessionId,
+      timelineId,
+      phaseId,
+      step,
+      parentStepId: parentStepId,
+    );
   }
 
   /// Updates an existing step within this phase.

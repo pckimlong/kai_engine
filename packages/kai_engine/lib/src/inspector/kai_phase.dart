@@ -40,9 +40,9 @@ abstract class KaiPhase<Input, Output> {
   ///
   /// Usage:
   /// ```dart
-  /// await withStep('Fetch RAG documents', (step) async {
+  /// await withStep('Fetch RAG documents', operation: (step) async {
   ///   final documents = await fetchDocuments();
-  ///   step.addLog('Found ${documents.length} documents.');
+  ///   await step.addLogMessage('Found ${documents.length} documents.');
   ///   return documents;
   /// });
   /// ```
@@ -50,11 +50,13 @@ abstract class KaiPhase<Input, Output> {
     String stepName, {
     String? description,
     Map<String, dynamic>? metadata,
-    required Future<T> Function(TimelineStep step) operation,
+    required Future<T> Function(ManagedTimelineStep step) operation,
   }) async {
     if (_phaseController == null) {
       // If no inspector is active, just run the operation
-      return operation(_createDummyStep(stepName, description, metadata));
+      final dummyStep = _createDummyStep(stepName, description, metadata);
+      final managedStep = ManagedTimelineStep(dummyStep, null);
+      return operation(managedStep);
     }
 
     final stepId = _generateId();
@@ -71,8 +73,15 @@ abstract class KaiPhase<Input, Output> {
     try {
       await _phaseController!.recordStep(initialStep, parentStepId: parentStepId);
       _stepStack.add(initialStep.id);
-      final result = await operation(initialStep);
-      final completedStep = initialStep.complete(status: TimelineStatus.completed);
+
+      // Create managed step with update callback
+      final managedStep = ManagedTimelineStep(
+        initialStep,
+        (updatedStep) => _phaseController!.updateStep(updatedStep),
+      );
+
+      final result = await operation(managedStep);
+      final completedStep = managedStep.step.complete(status: TimelineStatus.completed);
       await _phaseController!.updateStep(completedStep);
       _stepStack.removeLast();
       return result;
