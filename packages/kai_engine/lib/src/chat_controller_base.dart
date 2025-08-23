@@ -5,10 +5,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../kai_engine.dart';
 
-typedef GenerationExecuteConfig = ({
-  List<ToolSchema> tools,
-  Map<String, dynamic>? config,
-});
+typedef GenerationExecuteConfig = ({List<ToolSchema> tools, Map<String, dynamic>? config});
 
 /// Base orchestrator for chat interactions
 /// override to add more configuration
@@ -35,10 +32,9 @@ abstract base class ChatControllerBase<TEntity> {
        _inspector = inspector ?? NoOpKaiInspector();
 
   /// Handle generation state updates
-  final _generationStateController =
-      BehaviorSubject<GenerationState<GenerationResult>>.seeded(
-        GenerationState.initial(),
-      );
+  final _generationStateController = BehaviorSubject<GenerationState<GenerationResult>>.seeded(
+    GenerationState.initial(),
+  );
 
   ContextEngine build();
 
@@ -58,8 +54,7 @@ abstract base class ChatControllerBase<TEntity> {
 
     // Use ConversationSession ID for inspector session and user message ID as timeline ID
     final sessionId = _conversationManager.session.id;
-    final timelineId = userMessage
-        .messageId; // Use user message ID to track this specific input
+    final timelineId = userMessage.messageId; // Use user message ID to track this specific input
 
     await _inspector.startSession(sessionId);
     await _inspector.startTimeline(sessionId, timelineId, input);
@@ -88,27 +83,21 @@ abstract base class ChatControllerBase<TEntity> {
 
       // Add user message to conversation, no await
       unawaited(
-        _conversationManager.addMessages([userMessage].lock).then((
-          inserted,
-        ) async {
+        _conversationManager.addMessages([userMessage].lock).then((inserted) async {
           userMessage = inserted.first;
         }),
       );
 
       // Phase 1: Query Processing
       _setLoadingPhase(LoadingPhase.processingQuery());
-      final queryInput = QueryEngineInput(
-        rawInput: input,
-        session: _conversationManager.session,
+      final queryInput = QueryEngineInput(rawInput: input, session: _conversationManager.session);
+      final queryContext = await _inspector.inspectPhase<QueryEngineInput, QueryContext>(
+        sessionId,
+        timelineId,
+        'Query Processing',
+        _queryEngine,
+        queryInput,
       );
-      final queryContext = await _inspector
-          .inspectPhase<QueryEngineInput, QueryContext>(
-            sessionId,
-            timelineId,
-            'Query Processing',
-            _queryEngine,
-            queryInput,
-          );
 
       // Phase 2: Context Building
       _setLoadingPhase(LoadingPhase.buildContext());
@@ -143,6 +132,7 @@ abstract base class ChatControllerBase<TEntity> {
       // Phase 3: AI Generation
       final configs = generativeConfigs(contextResult.prompts);
       _setLoadingPhase(LoadingPhase.generatingResponse());
+      onPromptsReady(contextResult.prompts);
 
       final aiGenerationInput = AIGenerationInput(
         prompts: contextResult.prompts,
@@ -180,9 +170,7 @@ abstract base class ChatControllerBase<TEntity> {
 
       // Save the AI-generated messages to the conversation
       if (generationResult.generatedMessages.isNotEmpty) {
-        await _conversationManager.addMessages(
-          generationResult.generatedMessages,
-        );
+        await _conversationManager.addMessages(generationResult.generatedMessages);
       }
 
       // Phase 4: Post-Response Processing
@@ -204,22 +192,12 @@ abstract base class ChatControllerBase<TEntity> {
       // Extract AI response text from the generation result
       final aiResponse = generationResult.displayMessage.content;
 
-      await _inspector.endTimeline(
-        sessionId,
-        timelineId,
-        aiResponse: aiResponse,
-      );
-      final generationState = GenerationState<GenerationResult>.complete(
-        generationResult,
-      );
+      await _inspector.endTimeline(sessionId, timelineId, aiResponse: aiResponse);
+      final generationState = GenerationState<GenerationResult>.complete(generationResult);
       _generationStateController.add(generationState);
       return _mapGenerationState(generationState);
     } catch (error, stackTrace) {
-      await _inspector.endTimeline(
-        sessionId,
-        timelineId,
-        status: TimelineStatus.failed,
-      );
+      await _inspector.endTimeline(sessionId, timelineId, status: TimelineStatus.failed);
 
       if (revertInputOnError) {
         await _conversationManager.removeMessages([userMessage].lock);
@@ -238,10 +216,8 @@ abstract base class ChatControllerBase<TEntity> {
     _setState(GenerationState.error(KaiException.cancelled()));
   }
 
-  Stream<IList<CoreMessage>> get messagesStream =>
-      _conversationManager.messagesStream;
-  Future<IList<CoreMessage>> getAllMessages() =>
-      _conversationManager.getMessages();
+  Stream<IList<CoreMessage>> get messagesStream => _conversationManager.messagesStream;
+  Future<IList<CoreMessage>> getAllMessages() => _conversationManager.getMessages();
 
   Stream<GenerationState<CoreMessage>> get generationStateStream =>
       _generationStateController.stream.map(_mapGenerationState);
@@ -252,9 +228,7 @@ abstract base class ChatControllerBase<TEntity> {
     _cancelToken.cancel();
   }
 
-  GenerationState<CoreMessage> _mapGenerationState(
-    GenerationState<GenerationResult> state,
-  ) {
+  GenerationState<CoreMessage> _mapGenerationState(GenerationState<GenerationResult> state) {
     return state.map(
       loading: (l) => GenerationState.loading(l.phase),
       initial: (value) => GenerationState.initial(),
@@ -267,8 +241,18 @@ abstract base class ChatControllerBase<TEntity> {
     );
   }
 
-  void _setState(GenerationState<GenerationResult> state) =>
-      _generationStateController.add(state);
-  void _setLoadingPhase(LoadingPhase phase) =>
-      _setState(GenerationState.loading(phase));
+  void _setState(GenerationState<GenerationResult> state) {
+    _generationStateController.add(state);
+    onStateChange(state);
+  }
+
+  void _setLoadingPhase(LoadingPhase phase) => _setState(GenerationState.loading(phase));
+
+  /// Callback to listen for state changes, this helpful for implementing custom logic or log the
+  /// state provide more flexible. default to do nothing
+  void onStateChange(GenerationState<GenerationResult> state) {}
+
+  /// Execute before the final generation step, allow to track what being send for generation
+  /// this allow to track what being sent for generation. this helpful for logging etc
+  void onPromptsReady(IList<CoreMessage> messages) {}
 }

@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kai_engine/kai_engine.dart';
 import 'package:kai_inspector/src/ui/debug_data_adapter.dart';
-import 'package:prompt_block/prompt_block.dart';
 
-/// Allow to play around with the message processing timeline
+import 'playground/edit_generate_screen.dart';
+import 'playground/message_bubble.dart';
+import 'playground/system_message_bubble.dart';
+
+/// Simplified playground screen for viewing messages and launching editor
 class PlaygroundScreen extends StatefulWidget {
   const PlaygroundScreen({
     super.key,
@@ -20,184 +23,260 @@ class PlaygroundScreen extends StatefulWidget {
 }
 
 class _PlaygroundScreenState extends State<PlaygroundScreen> {
-  List<CoreMessage> _requestedMessages = [];
-  List<CoreMessage> _generatedMessages = [];
-  @override
-  void initState() {
-    super.initState();
+  // Simple UI state
+  final Map<String, bool> _expandedStates = {};
 
-    // Initialize the requested messages with the user input
-    _requestedMessages = widget.data.promptMessages!.messages.map((e) => e.coreMessage).toList();
-    _generatedMessages = widget.data.generatedMessages!.messages.map((e) => e.coreMessage).toList();
+  // Original messages converted to CoreMessages for display
+  List<CoreMessage> get _originalMessages {
+    return widget.data.promptMessages?.messages
+            .map((e) => e.coreMessage)
+            .toList() ??
+        [];
   }
 
-  String _conversationToXml(List<CoreMessage> messages) {
-    final result = PromptBlock.xml('conversation').addEach(messages, (mgs) {
-      return PromptBlock.xmlText(
-        mgs.type.name,
-        mgs.content,
-        attributes: {'timestamp': mgs.timestamp.toIso8601String()},
-      );
+  List<CoreMessage> get _generatedMessages {
+    return widget.data.generatedMessages?.messages
+            .map((e) => e.coreMessage)
+            .toList() ??
+        [];
+  }
+
+  /// Toggle message expansion state
+  void _toggleExpansion(String messageId) {
+    setState(() {
+      _expandedStates[messageId] = !(_expandedStates[messageId] ?? false);
     });
-    return result.toString();
   }
 
-  /// This allows comparing two prompts and copying the result to the clipboard.
-  /// this helpful to paste to other AI chatbot to analyze the differences.
-  /// and provide insights for improvement.
-  void _copyComparedPrompt(
-    List<CoreMessage> prompt1,
-    List<CoreMessage> prompts, {
-    required String request,
-  }) {
-    final conversation1 = _conversationToXml(prompt1);
-    final conversation2 = _conversationToXml(prompts);
-    final result = _comparePrompt(conversation1, conversation2, request);
-    _copyToClipboard(result);
-  }
-
-  void _copyConversationAnalysis(
-    List<CoreMessage> requestPrompts,
-    List<CoreMessage> result, {
-    required String userRequest,
-  }) {
-    final analysis = _analyzeConversation(
-      _conversationToXml(requestPrompts),
-      _conversationToXml(result),
-      userRequest,
+  /// Open the Edit & Generate screen
+  void _openEditScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => EditGenerateScreen(
+          originalMessages: _originalMessages,
+          generationService: widget.generationService,
+        ),
+      ),
     );
-    _copyToClipboard(analysis);
   }
 
-  void _copyToClipboard(String content) async {
-    await Clipboard.setData(ClipboardData(text: content));
+  /// Copy request messages as XML to clipboard
+  void _copyRequest() {
+    final xml = _messagesToXml(_originalMessages);
+    Clipboard.setData(ClipboardData(text: xml));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Copied to clipboard')),
+      const SnackBar(
+        content: Text('Request copied to clipboard'),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
+  }
+
+  /// Convert messages to XML format
+  String _messagesToXml(List<CoreMessage> messages) {
+    final result = StringBuffer();
+    for (final msg in messages) {
+      final tagName = msg.type.name;
+      result
+          .writeln('<$tagName timestamp="${msg.timestamp.toIso8601String()}">');
+      result.writeln(msg.content);
+      result.writeln('</$tagName>');
+    }
+    return result.toString();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Playground'),
+        title: const Text(
+          'AI Playground',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+            ],
+          ),
+        ),
+        child: _buildContent(),
       ),
     );
   }
-}
 
-String _comparePrompt(String con1, String con2, String userRequest) {
-  return '''You are an AI conversation analyst tasked with comparing and analyzing two AI conversation histories. Your goal is to provide insights that will help improve AI responses and identify key areas of confusion or improvement. Follow these instructions carefully:
+  Widget _buildContent() {
+    if (_originalMessages.isEmpty && _generatedMessages.isEmpty) {
+      return const Center(
+        child: Text('No messages to display'),
+      );
+    }
 
-1. You will be given two AI conversation histories, each including a system prompt and subsequent interactions. These will be provided in the following format:
+    return ListView.builder(
+      padding: const EdgeInsets.all(16.0),
+      itemCount: _originalMessages.length + 1 + _generatedMessages.length + 1,
+      itemBuilder: (context, index) {
+        // Original messages
+        if (index < _originalMessages.length) {
+          final message = _originalMessages[index];
+          return _buildMessageBubble(message, false);
+        }
 
-<conversation1>
-$con1
-</conversation1>
+        // Action bar between request and response
+        if (index == _originalMessages.length) {
+          return _buildActionBar();
+        }
 
-<conversation2>
-$con2
-</conversation2>
+        // Generated messages
+        if (index < _originalMessages.length + 1 + _generatedMessages.length) {
+          final messageIndex = index - _originalMessages.length - 1;
+          final message = _generatedMessages[messageIndex];
+          return _buildMessageBubble(message, false);
+        }
 
-2. You will also receive a specific user request or purpose for the comparison:
+        // Bottom padding
+        return const SizedBox(height: 80);
+      },
+    );
+  }
 
-<user_request>
-$userRequest
-</user_request>
+  Widget _buildMessageBubble(CoreMessage message, bool isEditable) {
+    // System message gets special treatment
+    if (message.type == CoreMessageType.system) {
+      return SystemMessageBubble(
+        message: message,
+        isExpanded: _expandedStates[message.messageId] ?? false,
+        onToggleExpanded: () => _toggleExpansion(message.messageId),
+        showEditControls: false,
+      );
+    }
 
-3. Analyze both conversations, paying close attention to:
-   a. The system prompts and how they differ
-   b. The AI's responses and how well they align with the system prompts
-   c. Any areas where the AI seems confused or provides inconsistent answers
-   d. The overall quality and coherence of the AI's responses
+    // Regular message bubble (read-only)
+    return MessageBubble(
+      message: message,
+      isRequest: message.type != CoreMessageType.ai,
+      isEdited: false,
+      hasUnregeneratedEdit: false,
+      isExpanded: _expandedStates[message.messageId] ?? false,
+      onToggleExpanded: () => _toggleExpansion(message.messageId),
+      // Remove all editing functionality
+      onEditPressed: () {},
+      onResetPressed: () {},
+      showEditControls: false,
+      showSelectionControls: false,
+    );
+  }
 
-4. Compare the two conversations based on the following criteria:
-   a. Adherence to the system prompt
-   b. Consistency of responses
-   c. Clarity and coherence of answers
-   d. Ability to handle complex or ambiguous queries
-   e. Any specific aspects mentioned in the user request
-
-5. In your analysis, use the following format:
-   <analysis>
-   [Your detailed analysis here]
-   </analysis>
-
-6. Based on your analysis, provide recommendations for improving the AI's performance. This may include:
-   a. Suggestions for modifying the system prompt
-   b. Identifying areas where additional training or data might be beneficial
-   c. Proposing changes to the AI's response strategy
-
-   Present your recommendations in the following format:
-   <recommendations>
-   [Your recommendations here]
-   </recommendations>
-
-7. If the user request asks for a specific comparison or analysis not covered in the above points, address it explicitly in a separate section:
-   <specific_analysis>
-   [Your analysis addressing the user's specific request]
-   </specific_analysis>
-
-8. Conclude your analysis with a summary of which conversation performed better overall and why. If elements from both conversations could be combined for an optimal result, explain how:
-   <conclusion>
-   [Your conclusion here]
-   </conclusion>
-
-Remember, your primary goal is to provide insights that will help improve the AI's responses and identify key areas of confusion or potential enhancement. Focus on practical, actionable feedback that can lead to tangible improvements in AI performance.
-
-Your final output should include only the <analysis>, <recommendations>, <specific_analysis> (if applicable), and <conclusion> sections. Do not include any other text or explanations outside these tags.''';
-}
-
-String _analyzeConversation(String requestPrompts, String result, String userRequest) {
-  return '''You are an AI assistant tasked with analyzing a conversation history, a generated response, and a user's request for improvement or clarification. Your goal is to provide a clear and helpful analysis to assist the user in achieving their desired outcome.
-
-First, carefully read and analyze the following:
-
-<prompt_history>
-$requestPrompts
-</prompt_history>
-
-This is the conversation history leading up to the generated response. Pay close attention to any system prompts or specific instructions given to the AI.
-
-Next, examine the generated response:
-
-<generated_response>
-$result
-</generated_response>
-
-Now, consider the user's request:
-
-<user_request>
-$userRequest
-</user_request>
-
-To provide a helpful analysis:
-
-1. Identify the key elements of the prompt history, particularly any system prompts or specific instructions that influenced the generated response.
-
-2. Analyze how well the generated response aligns with the prompt history and any given instructions.
-
-3. Determine the user's goal based on their request. Are they seeking clarification, improvement, or a different approach?
-
-4. Consider how the prompt history and generated response relate to the user's request.
-
-5. Formulate clear and actionable suggestions to help the user achieve their goal. This may include:
-   - Explaining why the AI generated the response it did
-   - Suggesting modifications to the prompt or instructions
-   - Proposing alternative approaches
-   - Highlighting areas for improvement in the generated response
-
-6. Provide a concise summary of your analysis and recommendations.
-
-Your final output should be structured as follows:
-
-<analysis>
-1. Key observations from the prompt history
-2. Assessment of the generated response
-3. Understanding of the user's request
-4. Suggestions for improvement or clarification
-5. Summary of recommendations
-</analysis>
-
-Ensure that your analysis is clear, concise, and directly addresses the user's request. Focus on providing actionable insights that will help the user achieve their desired outcome.''';
+  Widget _buildActionBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 24.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(16.0),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.05),
+            blurRadius: 8.0,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Use a responsive layout that adapts to screen size
+          if (constraints.maxWidth < 400) {
+            // Vertical layout for small screens
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _copyRequest,
+                    icon: const Icon(Icons.content_copy_outlined),
+                    label: const Text('Copy Request'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14.0),
+                      elevation: 2.0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8.0),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _openEditScreen,
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Edit & Generate'),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14.0),
+                      elevation: 2.0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          } else {
+            // Horizontal layout for larger screens
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _copyRequest,
+                  icon: const Icon(Icons.content_copy_outlined),
+                  label: const Text('Copy Request'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 14.0,
+                    ),
+                    elevation: 2.0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16.0),
+                FilledButton.icon(
+                  onPressed: _openEditScreen,
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Edit & Generate'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 14.0,
+                    ),
+                    elevation: 2.0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+        },
+      ),
+    );
+  }
 }
