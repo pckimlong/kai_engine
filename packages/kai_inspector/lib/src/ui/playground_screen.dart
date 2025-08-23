@@ -14,10 +14,14 @@ class PlaygroundScreen extends StatefulWidget {
     super.key,
     required this.generationService,
     required this.data,
+    required this.appContext,
   });
 
   final TimelineOverviewData data;
   final GenerationServiceBase generationService;
+
+  /// Provide app context to analyze prompt for ai to easier analyze it
+  final String? appContext;
 
   @override
   State<PlaygroundScreen> createState() => _PlaygroundScreenState();
@@ -94,6 +98,7 @@ class _PlaygroundScreenState extends State<PlaygroundScreen> {
       _originalMessages,
       _generatedMessages,
       instruction,
+      widget.appContext,
     );
     Clipboard.setData(ClipboardData(text: prompt));
     ScaffoldMessenger.of(context).showSnackBar(

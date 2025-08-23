@@ -39,11 +39,13 @@ class EditGenerateScreen extends StatefulWidget {
     required this.originalMessages,
     this.generatedMessages = const [],
     required this.generationService,
+    this.appContext,
   });
 
   final List<CoreMessage> originalMessages;
   final List<CoreMessage> generatedMessages;
   final GenerationServiceBase generationService;
+  final String? appContext;
 
   @override
   State<EditGenerateScreen> createState() => _EditGenerateScreenState();
@@ -213,6 +215,7 @@ class _EditGenerateScreenState extends State<EditGenerateScreen> {
       conversationForAnalysis,
       generatedResponse,
       instruction,
+      widget.appContext,
     );
     Clipboard.setData(ClipboardData(text: prompt));
     ScaffoldMessenger.of(context).showSnackBar(
@@ -238,6 +241,7 @@ class _EditGenerateScreenState extends State<EditGenerateScreen> {
       originalConversation,
       [editedConversation],
       instruction,
+      widget.appContext,
     );
     Clipboard.setData(ClipboardData(text: prompt));
     ScaffoldMessenger.of(context).showSnackBar(

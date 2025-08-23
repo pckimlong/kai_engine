@@ -7,6 +7,16 @@ import 'package:kai_inspector/src/ui/playground_screen.dart';
 import 'debug_data_adapter.dart';
 import 'widgets/shared_widgets.dart';
 
+Color getPhaseColor(String phaseName) {
+  final lower = phaseName.toLowerCase();
+  if (lower.contains('context')) return Colors.blue;
+  if (lower.contains('generation')) return Colors.green;
+  if (lower.contains('response')) return Colors.purple;
+  if (lower.contains('query')) return Colors.orange;
+  // Fallback color
+  return Colors.grey[300 + (phaseName.hashCode % 4) * 100]!;
+}
+
 /// Debug screen for analyzing a specific user input message and its processing timeline
 /// Shows detailed breakdown of what happened during processing of a single message
 class MessageInputDebugScreen extends StatefulWidget {
@@ -17,6 +27,9 @@ class MessageInputDebugScreen extends StatefulWidget {
   /// Allow playground feature if provided
   final GenerationServiceBase? generationService;
 
+  /// Provide app context to analyze prompt for ai to easier analyze it
+  final String? appContext;
+
   const MessageInputDebugScreen({
     super.key,
     required this.sessionId,
@@ -24,6 +37,7 @@ class MessageInputDebugScreen extends StatefulWidget {
     required this.inspector,
     this.userInput,
     this.generationService,
+    this.appContext,
   });
 
   @override
@@ -174,6 +188,7 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
                     builder: (context) => PlaygroundScreen(
                       generationService: widget.generationService!,
                       data: _timelineData!,
+                      appContext: widget.appContext,
                     ),
                   ),
                 );
@@ -295,7 +310,7 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
       if (phase.logs.isNotEmpty) {
         buffer.writeln('--- ${phase.phaseName} ---');
         for (final log in phase.logs) {
-          buffer.writeln('[${_formatTimestamp(log.timestamp)}] '
+          buffer.writeln('[$_formatTimestamp(log.timestamp)] '
               '[${log.severity.toString().split('.').last.toUpperCase()}] '
               '${log.message}');
           if (log.metadata.isNotEmpty) {
@@ -312,7 +327,7 @@ class _MessageInputDebugScreenState extends State<MessageInputDebugScreen>
         if (step.logs.isNotEmpty) {
           buffer.writeln('--- ${phase.phaseName} / ${step.stepName} ---');
           for (final log in step.logs) {
-            buffer.writeln('[${_formatTimestamp(log.timestamp)}] '
+            buffer.writeln('[$_formatTimestamp(log.timestamp)] '
                 '[${log.severity.toString().split('.').last.toUpperCase()}] '
                 '${log.message}');
             if (log.metadata.isNotEmpty) {
@@ -1701,7 +1716,7 @@ class _PhaseDetailCard extends StatefulWidget {
 class _PhaseDetailCardState extends State<_PhaseDetailCard> {
   bool _isExpanded = false;
   bool _showMetadata = false;
-  bool _showSteps = false;
+  bool _showSteps = true;
   bool _showLogs = false;
 
   @override
@@ -1812,46 +1827,69 @@ class _PhaseDetailCardState extends State<_PhaseDetailCard> {
               ),
             ),
           ),
-          // Level 2: Expandable sections
-          if (_isExpanded)
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-              ),
-              child: Column(
-                children: [
-                  // Phase Metadata Section
-                  _buildExpandableSection(
-                    title: 'Phase Metadata',
-                    icon: Icons.info_outline,
-                    color: Colors.indigo,
-                    isExpanded: _showMetadata,
-                    onToggle: () => setState(() => _showMetadata = !_showMetadata),
-                    child: _PhaseMetadataContent(phase: widget.phase),
-                  ),
-                  // Nested Steps Section
-                  if (widget.phase.steps.isNotEmpty)
-                    _buildExpandableSection(
-                      title: 'Nested Steps (${widget.phase.steps.length})',
-                      icon: Icons.list_alt,
-                      color: Colors.teal,
-                      isExpanded: _showSteps,
-                      onToggle: () => setState(() => _showSteps = !_showSteps),
-                      child: _NestedStepsContent(steps: widget.phase.steps),
-                    ),
-                  // Phase Logs Section
-                  if (widget.phase.logs.isNotEmpty)
-                    _buildExpandableSection(
-                      title: 'Phase Logs (${widget.phase.logs.length})',
-                      icon: Icons.article,
-                      color: Colors.purple,
-                      isExpanded: _showLogs,
-                      onToggle: () => setState(() => _showLogs = !_showLogs),
-                      child: _PhaseLogsContent(logs: widget.phase.logs),
-                    ),
-                ],
-              ),
+          if (_isExpanded) _PhaseDetailContent(phase: widget.phase),
+        ],
+      ),
+    );
+  }
+
+  IconData _getPhaseIcon(String phaseName) {
+    final phase = phaseName.toLowerCase();
+    if (phase.contains('query') || phase.contains('process')) return Icons.search;
+    if (phase.contains('context') || phase.contains('build')) return Icons.build;
+    if (phase.contains('generation') || phase.contains('ai')) return Icons.smart_toy;
+    if (phase.contains('response') || phase.contains('post')) return Icons.send;
+    return Icons.timeline;
+  }
+}
+
+class _PhaseDetailContent extends StatefulWidget {
+  final PhaseOverviewData phase;
+  const _PhaseDetailContent({required this.phase});
+
+  @override
+  State<_PhaseDetailContent> createState() => _PhaseDetailContentState();
+}
+
+class _PhaseDetailContentState extends State<_PhaseDetailContent> {
+  bool _showMetadata = false;
+  bool _showSteps = true; // Default to showing steps
+  bool _showLogs = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+      ),
+      child: Column(
+        children: [
+          _buildExpandableSection(
+            title: 'Phase Metadata',
+            icon: Icons.info_outline,
+            color: Colors.indigo,
+            isExpanded: _showMetadata,
+            onToggle: () => setState(() => _showMetadata = !_showMetadata),
+            child: _PhaseMetadataContent(phase: widget.phase),
+          ),
+          if (widget.phase.steps.isNotEmpty)
+            _buildExpandableSection(
+              title: 'Nested Steps (${widget.phase.stepCount})',
+              icon: Icons.list_alt,
+              color: Colors.teal,
+              isExpanded: _showSteps,
+              onToggle: () => setState(() => _showSteps = !_showSteps),
+              child: _NestedStepsContent(steps: widget.phase.steps),
+            ),
+          if (widget.phase.logs.isNotEmpty)
+            _buildExpandableSection(
+              title: 'Phase Logs (${widget.phase.logCount})',
+              icon: Icons.article,
+              color: Colors.purple,
+              isExpanded: _showLogs,
+              onToggle: () => setState(() => _showLogs = !_showLogs),
+              child: _LogsContent(logs: widget.phase.logs),
             ),
         ],
       ),
@@ -1911,9 +1949,9 @@ class _PhaseDetailCardState extends State<_PhaseDetailCard> {
               ),
             ),
           ),
-          // Level 3: Nested content
           if (isExpanded)
             Container(
+              width: double.infinity,
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
@@ -1923,15 +1961,6 @@ class _PhaseDetailCardState extends State<_PhaseDetailCard> {
         ],
       ),
     );
-  }
-
-  IconData _getPhaseIcon(String phaseName) {
-    final phase = phaseName.toLowerCase();
-    if (phase.contains('query') || phase.contains('process')) return Icons.search;
-    if (phase.contains('context') || phase.contains('build')) return Icons.build;
-    if (phase.contains('generation') || phase.contains('ai')) return Icons.smart_toy;
-    if (phase.contains('response') || phase.contains('post')) return Icons.send;
-    return Icons.timeline;
   }
 }
 
@@ -1997,36 +2026,27 @@ class _PhaseMetadataContent extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       child: Column(
         children: metadataItems.entries
-            .map(
-              (entry) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 100,
-                      child: Text(
-                        '${entry.key}:',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[600],
+            .map((entry) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 100,
+                        child: Text(
+                          '${entry.key}:',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        entry.value,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontFamily: 'monospace',
+                      Expanded(
+                        child: Text(
+                          entry.value,
+                          style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            )
+                    ],
+                  ),
+                ))
             .toList(),
       ),
     );
@@ -2041,145 +2061,112 @@ class _NestedStepsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(12.0),
       child: Column(
-        children: steps.map((step) => _EnhancedStepDisplay(step: step)).toList(),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: steps.map((step) => _StepDetailEntry(step: step)).toList(),
       ),
     );
   }
 }
 
-class _EnhancedStepDisplay extends StatefulWidget {
+class _StepDetailEntry extends StatefulWidget {
   final StepOverviewData step;
+  final int depth;
 
-  const _EnhancedStepDisplay({required this.step});
+  const _StepDetailEntry({required this.step, this.depth = 0});
 
   @override
-  State<_EnhancedStepDisplay> createState() => _EnhancedStepDisplayState();
+  State<_StepDetailEntry> createState() => _StepDetailEntryState();
 }
 
-class _EnhancedStepDisplayState extends State<_EnhancedStepDisplay> {
-  bool _showStepDetails = false;
+class _StepDetailEntryState extends State<_StepDetailEntry> {
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
+    final step = widget.step;
+    final hasChildren = step.steps.isNotEmpty;
+    final hasContent = step.logs.isNotEmpty || step.metadata.isNotEmpty;
+
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 2),
+      margin: EdgeInsets.only(left: widget.depth * 16.0, bottom: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey[300]!),
+        color: Colors.white,
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () => setState(() => _showStepDetails = !_showStepDetails),
+            onTap:
+                hasChildren || hasContent ? () => setState(() => _isExpanded = !_isExpanded) : null,
             borderRadius: BorderRadius.vertical(
-              top: const Radius.circular(6),
-              bottom: Radius.circular(_showStepDetails ? 0 : 6),
+              top: const Radius.circular(8),
+              bottom: Radius.circular(_isExpanded ? 0 : 8),
             ),
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
                   Icon(
-                    _showStepDetails ? Icons.expand_less : Icons.expand_more,
-                    size: 16,
-                    color: Colors.grey[600],
+                    _getStepIcon(step.stepName),
+                    size: 18,
+                    color: Colors.grey[700],
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      widget.step.stepName,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          step.stepName,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        if (step.description != null)
+                          Text(
+                            step.description!,
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          ),
+                      ],
                     ),
                   ),
-                  if (widget.step.duration != null)
+                  if (step.duration != null)
                     Text(
-                      '${widget.step.duration!.inMilliseconds}ms',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey[600],
-                      ),
+                      '${step.duration!.inMilliseconds}ms',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
-                  if (widget.step.logCount > 0) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withAlpha(51),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${widget.step.logCount}',
-                        style: TextStyle(
-                          fontSize: 9,
-                          color: Colors.orange[700],
-                        ),
-                      ),
-                    ),
-                  ],
+                  if (hasChildren || hasContent)
+                    Icon(_isExpanded ? Icons.expand_less : Icons.expand_more),
                 ],
               ),
             ),
           ),
-          if (_showStepDetails)
+          if (_isExpanded)
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.grey[50],
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(6)),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (widget.step.description != null) ...[
-                    Text(
-                      'Description: ${widget.step.description}',
-                      style: const TextStyle(fontSize: 10),
-                    ),
+                  if (step.metadata.isNotEmpty) ...[
+                    const Text('Metadata', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
+                    _MetadataTable(metadata: step.metadata),
+                    const SizedBox(height: 8),
                   ],
-                  if (widget.step.metadata.isNotEmpty) ...[
-                    const Text(
-                      'Metadata:',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
-                    ),
-                    ...widget.step.metadata.entries.map(
-                      (entry) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 1),
-                        child: Text(
-                          '${entry.key}: ${entry.value}',
-                          style: const TextStyle(fontSize: 9, fontFamily: 'monospace'),
-                        ),
-                      ),
-                    ),
+                  if (step.logs.isNotEmpty) ...[
+                    const Text('Logs', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
+                    ...step.logs.map((log) => _LogEntryWidget(log: log))
                   ],
-                  if (widget.step.logs.isNotEmpty) ...[
-                    Text(
-                      'Logs (${widget.step.logs.length}):',
-                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
-                    ),
-                    ...widget.step.logs.take(3).map(
-                          (log) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 1),
-                            child: Text(
-                              '[${log.severity.toString().split('.').last.toUpperCase()}] ${log.message}',
-                              style: const TextStyle(fontSize: 9, fontFamily: 'monospace'),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                    if (widget.step.logs.length > 3)
-                      Text(
-                        '... and ${widget.step.logs.length - 3} more',
-                        style: TextStyle(fontSize: 9, color: Colors.grey[600]),
-                      ),
-                  ],
+                  if (hasChildren)
+                    ...step.steps.map(
+                        (childStep) => _StepDetailEntry(step: childStep, depth: widget.depth + 1)),
                 ],
               ),
             ),
@@ -2187,81 +2174,30 @@ class _EnhancedStepDisplayState extends State<_EnhancedStepDisplay> {
       ),
     );
   }
+
+  IconData _getStepIcon(String stepName) {
+    final name = stepName.toLowerCase();
+    if (name.contains('combine') || name.contains('context')) return Icons.merge_type;
+    if (name.contains('build')) return Icons.build;
+    if (name.contains('call') || name.contains('invoke')) return Icons.call_made;
+    return Icons.arrow_right;
+  }
 }
 
-class _PhaseLogsContent extends StatelessWidget {
+class _LogsContent extends StatelessWidget {
   final List<LogEntryData> logs;
 
-  const _PhaseLogsContent({required this.logs});
+  const _LogsContent({required this.logs});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
       child: Column(
-        children: logs
-            .take(10)
-            .map(
-              (log) => // Show first 10 logs
-                  Container(
-                margin: const EdgeInsets.symmetric(vertical: 1),
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: _getSeverityColor(log.severity).withAlpha(51),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: Text(
-                        log.severity.toString().split('.').last.toUpperCase().substring(0, 1),
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                          color: _getSeverityColor(log.severity),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        log.message,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          height: 1.2,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: logs.map((log) => _LogEntryWidget(log: log)).toList(),
       ),
     );
-  }
-
-  Color _getSeverityColor(dynamic severity) {
-    switch (severity.toString()) {
-      case 'TimelineLogSeverity.debug':
-        return Colors.grey;
-      case 'TimelineLogSeverity.info':
-        return Colors.blue;
-      case 'TimelineLogSeverity.warning':
-        return Colors.orange;
-      case 'TimelineLogSeverity.error':
-        return Colors.red;
-      default:
-        return Colors.black;
-    }
   }
 }
 
@@ -2272,159 +2208,66 @@ class _LogsAndMetadataTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final allLogs = <LogEntryData>[];
-
-    // Collect all logs from phases and steps
-    for (final phase in timelineData.phases) {
-      allLogs.addAll(phase.logs);
-      for (final step in phase.steps) {
-        allLogs.addAll(step.logs);
-      }
-    }
-
-    // Sort by timestamp
+    final allLogs = timelineData.phases.expand((p) => p.logs).toList();
+    final allStepLogs = timelineData.phases.expand((p) => p.steps).expand((s) => s.logs).toList();
+    allLogs.addAll(allStepLogs);
     allLogs.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-    return SingleChildScrollView(
+    if (allLogs.isEmpty) {
+      return const Center(child: Text('No logs available.'));
+    }
+
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Timeline Logs (${allLogs.length})',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: 16),
-          if (allLogs.isEmpty)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('No logs available'),
-              ),
-            )
-          else
-            ...allLogs.map((log) => _LogEntryCard(log: log)),
-        ],
-      ),
+      itemCount: allLogs.length,
+      itemBuilder: (context, index) {
+        return _LogEntryWidget(log: allLogs[index]);
+      },
     );
   }
 }
 
-class _LogEntryCard extends StatelessWidget {
+class _LogEntryWidget extends StatelessWidget {
   final LogEntryData log;
 
-  const _LogEntryCard({required this.log});
+  const _LogEntryWidget({required this.log});
 
   @override
   Widget build(BuildContext context) {
-    final severityColor = _getSeverityColor(log.severity);
-
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 2),
+      margin: const EdgeInsets.symmetric(vertical: 4),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: severityColor.withAlpha(51),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    log.severity.toString().split('.').last.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: severityColor,
-                    ),
-                  ),
+                Icon(
+                  _getSeverityIcon(log.severity),
+                  color: _getSeverityColor(log.severity),
+                  size: 16,
                 ),
                 const SizedBox(width: 8),
                 Text(
+                  log.message,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                Text(
                   _formatTimestamp(log.timestamp),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              log.message,
-              style: const TextStyle(fontSize: 13),
-            ),
             if (log.metadata.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: log.metadata.entries
-                      .map(
-                        (entry) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 1),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 100,
-                                child: Text(
-                                  '${entry.key}:',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  entry.value.toString(),
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontFamily: 'monospace',
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
+              _MetadataTable(metadata: log.metadata),
             ],
           ],
         ),
       ),
     );
-  }
-
-  Color _getSeverityColor(dynamic severity) {
-    switch (severity.toString()) {
-      case 'TimelineLogSeverity.debug':
-        return Colors.grey;
-      case 'TimelineLogSeverity.info':
-        return Colors.blue;
-      case 'TimelineLogSeverity.warning':
-        return Colors.orange;
-      case 'TimelineLogSeverity.error':
-        return Colors.red;
-      default:
-        return Colors.black;
-    }
   }
 
   String _formatTimestamp(DateTime timestamp) {
@@ -2433,281 +2276,144 @@ class _LogEntryCard extends StatelessWidget {
         '${timestamp.second.toString().padLeft(2, '0')}'
         '.${timestamp.millisecond.toString().padLeft(3, '0')}';
   }
+
+  IconData _getSeverityIcon(TimelineLogSeverity severity) {
+    switch (severity) {
+      case TimelineLogSeverity.debug:
+        return Icons.bug_report;
+      case TimelineLogSeverity.info:
+        return Icons.info_outline;
+      case TimelineLogSeverity.warning:
+        return Icons.warning_amber_rounded;
+      case TimelineLogSeverity.error:
+        return Icons.error_outline;
+    }
+  }
+
+  Color _getSeverityColor(TimelineLogSeverity severity) {
+    switch (severity) {
+      case TimelineLogSeverity.debug:
+        return Colors.grey;
+      case TimelineLogSeverity.info:
+        return Colors.blue;
+      case TimelineLogSeverity.warning:
+        return Colors.orange;
+      case TimelineLogSeverity.error:
+        return Colors.red;
+    }
+  }
 }
 
-/// Enhanced Message Tile with improved design and better interaction
-class EnhancedMessageTile extends StatefulWidget {
-  final MessageDisplayData message;
+class _MetadataTable extends StatelessWidget {
+  final Map<String, dynamic> metadata;
 
-  const EnhancedMessageTile({
-    super.key,
-    required this.message,
-  });
-
-  @override
-  State<EnhancedMessageTile> createState() => _EnhancedMessageTileState();
-}
-
-class _EnhancedMessageTileState extends State<EnhancedMessageTile> {
-  bool _isExpanded = false;
+  const _MetadataTable({required this.metadata});
 
   @override
   Widget build(BuildContext context) {
-    final message = widget.message;
-    final color = _getMessageTypeColor(message.type);
-    final icon = _getMessageTypeIcon(message.type);
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.symmetric(vertical: 4),
+    return Container(
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _isExpanded ? color.withOpacity(0.4) : color.withOpacity(0.2),
-          width: _isExpanded ? 2 : 1,
-        ),
-        color: Colors.white,
-        boxShadow: _isExpanded
-            ? [
-                BoxShadow(
-                  color: color.withOpacity(0.1),
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : [],
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with message type and controls
-          InkWell(
-            onTap: () => setState(() => _isExpanded = !_isExpanded),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    color.withOpacity(0.08),
-                    color.withOpacity(0.04),
-                  ],
-                ),
-                borderRadius: BorderRadius.vertical(
-                  top: const Radius.circular(12),
-                  bottom: Radius.circular(_isExpanded ? 0 : 12),
+      child: Table(
+        columnWidths: const {
+          0: IntrinsicColumnWidth(),
+          1: FlexColumnWidth(),
+        },
+        children: metadata.entries.map((entry) {
+          return TableRow(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0, top: 4, bottom: 4),
+                child: Text(
+                  '${entry.key}:',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[700]),
                 ),
               ),
-              child: Row(
-                children: [
-                  // Enhanced icon
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: _isExpanded ? color : color.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Icon(icon, size: 14, color: Colors.white),
-                  ),
-                  const SizedBox(width: 10),
-                  // Message type label
-                  Text(
-                    _getMessageTypeLabel(message.type),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: color,
-                      fontSize: 13,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Content preview
-                  Expanded(
-                    child: Text(
-                      _getTruncatedContent(message.content),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[700],
-                        height: 1.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  // Character count badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${message.characterCount}',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: color,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Copy button
-                  InkWell(
-                    onTap: () => _copyToClipboard(message.content),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Icon(
-                        Icons.copy,
-                        size: 12,
-                        color: color,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  // Expand/collapse icon
-                  AnimatedRotation(
-                    duration: const Duration(milliseconds: 200),
-                    turns: _isExpanded ? 0.5 : 0,
-                    child: Icon(
-                      Icons.expand_more,
-                      size: 16,
-                      color: color.withOpacity(0.7),
-                    ),
-                  ),
-                ],
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Text(
+                  entry.value.toString(),
+                  style: const TextStyle(fontFamily: 'monospace'),
+                ),
               ),
-            ),
-          ),
-          // Expanded content with animation
-          if (_isExpanded)
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
-              ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class EnhancedMessageTile extends StatelessWidget {
+  final MessageDisplayData message;
+
+  const EnhancedMessageTile({super.key, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(_getIconForType(message.type), color: Colors.grey[600]),
+            const SizedBox(width: 12),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Timestamp if available
-                  if (message.timestamp != null) ...[
-                    Row(
-                      children: [
-                        Icon(Icons.schedule, size: 12, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Timestamp: ${message.timestamp}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-
-                  // Full message content with enhanced styling
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.02),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: color.withOpacity(0.1)),
-                    ),
-                    child: SelectableText(
-                      message.content,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontFamily: 'monospace',
-                        height: 1.4,
-                        color: Colors.black87,
-                      ),
-                    ),
+                  Text(
+                    _getTitleForType(message.type),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
+                  const SizedBox(height: 4),
+                  Text(message.content),
                 ],
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Color _getMessageTypeColor(MessageType type) {
-    switch (type) {
-      case MessageType.system:
-        return Colors.deepPurple;
-      case MessageType.human:
-        return Colors.blue;
-      case MessageType.ai:
-        return Colors.green;
-      case MessageType.functionCall:
-        return Colors.orange;
-      case MessageType.functionResponse:
-        return Colors.teal;
-      case MessageType.unknown:
-        return Colors.grey;
-    }
-  }
-
-  IconData _getMessageTypeIcon(MessageType type) {
+  IconData _getIconForType(MessageType type) {
     switch (type) {
       case MessageType.system:
         return Icons.settings;
       case MessageType.human:
         return Icons.person;
       case MessageType.ai:
-        return Icons.smart_toy;
+        return Icons.auto_awesome;
       case MessageType.functionCall:
         return Icons.functions;
       case MessageType.functionResponse:
-        return Icons.receipt;
+        return Icons.settings;
       case MessageType.unknown:
-        return Icons.help_outline;
+        return Icons.question_mark;
     }
   }
 
-  String _getMessageTypeLabel(MessageType type) {
+  String _getTitleForType(MessageType type) {
     switch (type) {
       case MessageType.system:
-        return 'SYSTEM';
+        return 'System Message';
       case MessageType.human:
-        return 'HUMAN';
+        return 'User Message';
       case MessageType.ai:
-        return 'AI';
+        return 'AI Message';
       case MessageType.functionCall:
-        return 'FUNCTION CALL';
+        return 'Function Call';
       case MessageType.functionResponse:
-        return 'FUNCTION RESPONSE';
+        return 'Function Response';
       case MessageType.unknown:
-        return 'UNKNOWN';
+        return 'Unknown Message';
     }
-  }
-
-  String _getTruncatedContent(String content) {
-    if (content.length <= 50) return content;
-    return '${content.substring(0, 50)}...';
-  }
-
-  void _copyToClipboard(String content) {
-    Clipboard.setData(ClipboardData(text: content));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Message content copied to clipboard'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
   }
 }

@@ -16,7 +16,11 @@ String _messagesToXml(List<CoreMessage> messages) {
 class PlaygroundPrompts {
   /// Generates a prompt for comparing two conversations
   static String comparePrompt(
-      List<CoreMessage> messages1, List<List<CoreMessage>> message2, String userRequest) {
+    List<CoreMessage> messages1,
+    List<List<CoreMessage>> message2,
+    String userRequest,
+    String? appContext,
+  ) {
     return '''You are an AI conversation analyst tasked with comparing and analyzing two AI conversation histories. Your goal is to provide insights that will help improve AI responses and identify key areas of confusion or improvement. Follow these instructions carefully:
 
 1. You will be given two AI conversation histories, each including a system prompt and subsequent interactions. These will be provided in the following format:
@@ -31,6 +35,7 @@ ${message2.map(_messagesToXml).join('\n')}
 
 2. You will also receive a specific user request or purpose for the comparison:
 
+${appContext != null ? '<app_context>\n$appContext\n</app_context>\n' : ''}
 <user_request>
 $userRequest
 </user_request>
@@ -83,6 +88,7 @@ Your final output should include only the <analysis>, <recommendations>, <specif
     List<CoreMessage> requestPrompts,
     List<CoreMessage> result,
     String userRequest,
+    String? appContext,
   ) {
     return '''You are an AI assistant tasked with analyzing a conversation history, a generated response, and a user's request for improvement or clarification. Your goal is to provide a clear and helpful analysis to assist the user in achieving their desired outcome.
 
@@ -101,6 +107,8 @@ ${_messagesToXml(result)}
 </generated_response>
 
 Now, consider the user's request:
+
+${appContext != null ? '<app_context>\n$appContext\n</app_context>\n' : ''}
 
 <user_request>
 $userRequest
