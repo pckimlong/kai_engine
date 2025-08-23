@@ -165,6 +165,7 @@ class DebugDataAdapter {
       logCount: step.logs.length,
       metadata: step.metadata,
       logs: step.logs.map(convertLog).toList(),
+      steps: const [], // TimelineStep is flat, so this is always empty.
     );
   }
 
@@ -616,6 +617,7 @@ class StepOverviewData {
   final int logCount;
   final Map<String, dynamic> metadata;
   final List<LogEntryData> logs;
+  final List<StepOverviewData> steps;
 
   const StepOverviewData({
     required this.stepId,
@@ -628,6 +630,7 @@ class StepOverviewData {
     required this.logCount,
     required this.metadata,
     required this.logs,
+    required this.steps,
   });
 }
 
