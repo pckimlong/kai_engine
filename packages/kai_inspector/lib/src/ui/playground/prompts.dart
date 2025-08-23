@@ -1,17 +1,32 @@
+import 'package:kai_engine/kai_engine.dart';
+
+/// Convert messages to XML format
+String _messagesToXml(List<CoreMessage> messages) {
+  final result = StringBuffer();
+  for (final msg in messages) {
+    final tagName = msg.type.name;
+    result.writeln('<${tagName}_message timestamp="${msg.timestamp.toIso8601String()}">');
+    result.writeln(msg.content);
+    result.writeln('</${tagName}_message>');
+  }
+  return result.toString();
+}
+
 /// Utility functions for generating comparison and analysis prompts
 class PlaygroundPrompts {
   /// Generates a prompt for comparing two conversations
-  static String comparePrompt(String con1, String con2, String userRequest) {
+  static String comparePrompt(
+      List<CoreMessage> messages1, List<List<CoreMessage>> message2, String userRequest) {
     return '''You are an AI conversation analyst tasked with comparing and analyzing two AI conversation histories. Your goal is to provide insights that will help improve AI responses and identify key areas of confusion or improvement. Follow these instructions carefully:
 
 1. You will be given two AI conversation histories, each including a system prompt and subsequent interactions. These will be provided in the following format:
 
 <conversation1>
-$con1
+${_messagesToXml(messages1)}
 </conversation1>
 
 <conversation2>
-$con2
+${message2.map(_messagesToXml).join('\n')}
 </conversation2>
 
 2. You will also receive a specific user request or purpose for the comparison:
@@ -64,13 +79,17 @@ Your final output should include only the <analysis>, <recommendations>, <specif
   }
 
   /// Generates a prompt for analyzing a conversation
-  static String analyzeConversation(String requestPrompts, String result, String userRequest) {
+  static String analyzeConversation(
+    List<CoreMessage> requestPrompts,
+    List<CoreMessage> result,
+    String userRequest,
+  ) {
     return '''You are an AI assistant tasked with analyzing a conversation history, a generated response, and a user's request for improvement or clarification. Your goal is to provide a clear and helpful analysis to assist the user in achieving their desired outcome.
 
 First, carefully read and analyze the following:
 
 <prompt_history>
-$requestPrompts
+${_messagesToXml(requestPrompts)}
 </prompt_history>
 
 This is the conversation history leading up to the generated response. Pay close attention to any system prompts or specific instructions given to the AI.
@@ -78,7 +97,7 @@ This is the conversation history leading up to the generated response. Pay close
 Next, examine the generated response:
 
 <generated_response>
-$result
+${_messagesToXml(result)}
 </generated_response>
 
 Now, consider the user's request:
