@@ -105,7 +105,6 @@ class DebugDataAdapter {
   static PhaseOverviewData convertPhaseOverview(TimelinePhase phase) {
     final tokenMetadata = _extractTokenMetadata(phase);
     final streamingMetadata = _extractStreamingMetadata(phase);
-    final steps = _deduplicateSteps(phase.steps);
 
     return PhaseOverviewData(
       phaseId: phase.id,
@@ -115,41 +114,15 @@ class DebugDataAdapter {
       endTime: phase.endTime,
       duration: phase.duration,
       status: phase.status,
-      stepCount: steps.length,
+      stepCount: phase.steps.length,
       logCount: phase.logs.length,
       errorCount: _countLogsByLevel(phase.logs, TimelineLogSeverity.error),
       warningCount: _countLogsByLevel(phase.logs, TimelineLogSeverity.warning),
       tokenMetadata: tokenMetadata,
       streamingMetadata: streamingMetadata,
-      steps: steps.map(convertStepOverview).toList(),
+      steps: phase.steps.map(convertStepOverview).toList(),
       logs: phase.logs.map(convertLog).toList(),
     );
-  }
-
-  /// De-duplicates steps to handle cases where a step is added and then updated.
-  static List<TimelineStep> _deduplicateSteps(List<TimelineStep> originalSteps) {
-    final stepMap = <String, TimelineStep>{};
-
-    for (final step in originalSteps) {
-      final existing = stepMap[step.id];
-
-      if (existing == null) {
-        stepMap[step.id] = step;
-      } else {
-        // A step with this ID already exists. Decide which one to keep.
-        // Prefer the one that is completed.
-        // If both have same status, prefer the one with more logs.
-        if (step.status == TimelineStatus.completed && existing.status != TimelineStatus.completed) {
-          stepMap[step.id] = step; // The new one is better because it's completed.
-        } else if (step.status == existing.status && step.logs.length > existing.logs.length) {
-          stepMap[step.id] = step; // The new one is better because it has more logs.
-        } else if (step.logs.isNotEmpty && existing.logs.isEmpty) {
-          stepMap[step.id] = step; // The new one has logs, the old one doesn't.
-        }
-        // Otherwise, keep the existing one.
-      }
-    }
-    return stepMap.values.toList();
   }
 
   /// Converts TimelineStep to UI step data
@@ -165,7 +138,7 @@ class DebugDataAdapter {
       logCount: step.logs.length,
       metadata: step.metadata,
       logs: step.logs.map(convertLog).toList(),
-      steps: const [], // TimelineStep is flat, so this is always empty.
+      steps: step.steps.map(convertStepOverview).toList(),
     );
   }
 

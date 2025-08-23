@@ -23,7 +23,8 @@ mixin _$TimelineStep {
  DateTime? get endTime;/// Current status of the step.
  TimelineStatus get status;/// Additional metadata about the step.
  Map<String, dynamic> get metadata;/// List of logs associated with this step.
- List<TimelineLog> get logs;
+ List<TimelineLog> get logs;/// List of nested steps.
+ List<TimelineStep> get steps;
 /// Create a copy of TimelineStep
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -36,16 +37,16 @@ $TimelineStepCopyWith<TimelineStep> get copyWith => _$TimelineStepCopyWithImpl<T
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelineStep&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.metadata, metadata)&&const DeepCollectionEquality().equals(other.logs, logs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelineStep&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.metadata, metadata)&&const DeepCollectionEquality().equals(other.logs, logs)&&const DeepCollectionEquality().equals(other.steps, steps));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,startTime,endTime,status,const DeepCollectionEquality().hash(metadata),const DeepCollectionEquality().hash(logs));
+int get hashCode => Object.hash(runtimeType,id,name,description,startTime,endTime,status,const DeepCollectionEquality().hash(metadata),const DeepCollectionEquality().hash(logs),const DeepCollectionEquality().hash(steps));
 
 @override
 String toString() {
-  return 'TimelineStep(id: $id, name: $name, description: $description, startTime: $startTime, endTime: $endTime, status: $status, metadata: $metadata, logs: $logs)';
+  return 'TimelineStep(id: $id, name: $name, description: $description, startTime: $startTime, endTime: $endTime, status: $status, metadata: $metadata, logs: $logs, steps: $steps)';
 }
 
 
@@ -56,7 +57,7 @@ abstract mixin class $TimelineStepCopyWith<$Res>  {
   factory $TimelineStepCopyWith(TimelineStep value, $Res Function(TimelineStep) _then) = _$TimelineStepCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String? description, DateTime startTime, DateTime? endTime, TimelineStatus status, Map<String, dynamic> metadata, List<TimelineLog> logs
+ String id, String name, String? description, DateTime startTime, DateTime? endTime, TimelineStatus status, Map<String, dynamic> metadata, List<TimelineLog> logs, List<TimelineStep> steps
 });
 
 
@@ -73,7 +74,7 @@ class _$TimelineStepCopyWithImpl<$Res>
 
 /// Create a copy of TimelineStep
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? startTime = null,Object? endTime = freezed,Object? status = null,Object? metadata = null,Object? logs = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? startTime = null,Object? endTime = freezed,Object? status = null,Object? metadata = null,Object? logs = null,Object? steps = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -83,7 +84,8 @@ as DateTime,endTime: freezed == endTime ? _self.endTime : endTime // ignore: cas
 as DateTime?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TimelineStatus,metadata: null == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,logs: null == logs ? _self.logs : logs // ignore: cast_nullable_to_non_nullable
-as List<TimelineLog>,
+as List<TimelineLog>,steps: null == steps ? _self.steps : steps // ignore: cast_nullable_to_non_nullable
+as List<TimelineStep>,
   ));
 }
 
@@ -165,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelineLog> logs)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelineLog> logs,  List<TimelineStep> steps)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TimelineStep() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.logs);case _:
+return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.logs,_that.steps);case _:
   return orElse();
 
 }
@@ -186,10 +188,10 @@ return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endT
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelineLog> logs)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelineLog> logs,  List<TimelineStep> steps)  $default,) {final _that = this;
 switch (_that) {
 case _TimelineStep():
-return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.logs);}
+return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.logs,_that.steps);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -203,10 +205,10 @@ return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endT
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? description,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelineLog> logs)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? description,  DateTime startTime,  DateTime? endTime,  TimelineStatus status,  Map<String, dynamic> metadata,  List<TimelineLog> logs,  List<TimelineStep> steps)?  $default,) {final _that = this;
 switch (_that) {
 case _TimelineStep() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.logs);case _:
+return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endTime,_that.status,_that.metadata,_that.logs,_that.steps);case _:
   return null;
 
 }
@@ -218,7 +220,7 @@ return $default(_that.id,_that.name,_that.description,_that.startTime,_that.endT
 @JsonSerializable()
 
 class _TimelineStep extends TimelineStep {
-  const _TimelineStep({required this.id, required this.name, this.description, required this.startTime, this.endTime, this.status = TimelineStatus.running, final  Map<String, dynamic> metadata = const {}, final  List<TimelineLog> logs = const []}): _metadata = metadata,_logs = logs,super._();
+  const _TimelineStep({required this.id, required this.name, this.description, required this.startTime, this.endTime, this.status = TimelineStatus.running, final  Map<String, dynamic> metadata = const {}, final  List<TimelineLog> logs = const [], final  List<TimelineStep> steps = const []}): _metadata = metadata,_logs = logs,_steps = steps,super._();
   factory _TimelineStep.fromJson(Map<String, dynamic> json) => _$TimelineStepFromJson(json);
 
 /// Unique identifier for this step.
@@ -251,6 +253,15 @@ class _TimelineStep extends TimelineStep {
   return EqualUnmodifiableListView(_logs);
 }
 
+/// List of nested steps.
+ final  List<TimelineStep> _steps;
+/// List of nested steps.
+@override@JsonKey() List<TimelineStep> get steps {
+  if (_steps is EqualUnmodifiableListView) return _steps;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_steps);
+}
+
 
 /// Create a copy of TimelineStep
 /// with the given fields replaced by the non-null parameter values.
@@ -265,16 +276,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TimelineStep&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other._metadata, _metadata)&&const DeepCollectionEquality().equals(other._logs, _logs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TimelineStep&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other._metadata, _metadata)&&const DeepCollectionEquality().equals(other._logs, _logs)&&const DeepCollectionEquality().equals(other._steps, _steps));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,startTime,endTime,status,const DeepCollectionEquality().hash(_metadata),const DeepCollectionEquality().hash(_logs));
+int get hashCode => Object.hash(runtimeType,id,name,description,startTime,endTime,status,const DeepCollectionEquality().hash(_metadata),const DeepCollectionEquality().hash(_logs),const DeepCollectionEquality().hash(_steps));
 
 @override
 String toString() {
-  return 'TimelineStep(id: $id, name: $name, description: $description, startTime: $startTime, endTime: $endTime, status: $status, metadata: $metadata, logs: $logs)';
+  return 'TimelineStep(id: $id, name: $name, description: $description, startTime: $startTime, endTime: $endTime, status: $status, metadata: $metadata, logs: $logs, steps: $steps)';
 }
 
 
@@ -285,7 +296,7 @@ abstract mixin class _$TimelineStepCopyWith<$Res> implements $TimelineStepCopyWi
   factory _$TimelineStepCopyWith(_TimelineStep value, $Res Function(_TimelineStep) _then) = __$TimelineStepCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String? description, DateTime startTime, DateTime? endTime, TimelineStatus status, Map<String, dynamic> metadata, List<TimelineLog> logs
+ String id, String name, String? description, DateTime startTime, DateTime? endTime, TimelineStatus status, Map<String, dynamic> metadata, List<TimelineLog> logs, List<TimelineStep> steps
 });
 
 
@@ -302,7 +313,7 @@ class __$TimelineStepCopyWithImpl<$Res>
 
 /// Create a copy of TimelineStep
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? startTime = null,Object? endTime = freezed,Object? status = null,Object? metadata = null,Object? logs = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? startTime = null,Object? endTime = freezed,Object? status = null,Object? metadata = null,Object? logs = null,Object? steps = null,}) {
   return _then(_TimelineStep(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -312,7 +323,8 @@ as DateTime,endTime: freezed == endTime ? _self.endTime : endTime // ignore: cas
 as DateTime?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TimelineStatus,metadata: null == metadata ? _self._metadata : metadata // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,logs: null == logs ? _self._logs : logs // ignore: cast_nullable_to_non_nullable
-as List<TimelineLog>,
+as List<TimelineLog>,steps: null == steps ? _self._steps : steps // ignore: cast_nullable_to_non_nullable
+as List<TimelineStep>,
   ));
 }
 

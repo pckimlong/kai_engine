@@ -24,6 +24,11 @@ _TimelineStep _$TimelineStepFromJson(Map<String, dynamic> json) =>
               ?.map((e) => TimelineLog.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
+      steps:
+          (json['steps'] as List<dynamic>?)
+              ?.map((e) => TimelineStep.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$TimelineStepToJson(_TimelineStep instance) =>
@@ -36,6 +41,7 @@ Map<String, dynamic> _$TimelineStepToJson(_TimelineStep instance) =>
       'status': _$TimelineStatusEnumMap[instance.status]!,
       'metadata': instance.metadata,
       'logs': instance.logs,
+      'steps': instance.steps,
     };
 
 const _$TimelineStatusEnumMap = {

@@ -62,6 +62,15 @@ abstract class KaiInspector {
     String sessionId,
     String timelineId,
     String phaseId,
+    TimelineStep step, {
+    String? parentStepId,
+  });
+
+  /// Updates an existing step within the given phase.
+  Future<void> updateStep(
+    String sessionId,
+    String timelineId,
+    String phaseId,
     TimelineStep step,
   );
 
@@ -220,6 +229,15 @@ class NoOpKaiInspector implements KaiInspector {
 
   @override
   Future<void> recordStep(
+    String sessionId,
+    String timelineId,
+    String phaseId,
+    TimelineStep step, {
+    String? parentStepId,
+  }) async {}
+
+  @override
+  Future<void> updateStep(
     String sessionId,
     String timelineId,
     String phaseId,

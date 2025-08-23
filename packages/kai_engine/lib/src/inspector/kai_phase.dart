@@ -16,6 +16,7 @@ import 'phase_controller.dart';
 
 abstract class KaiPhase<Input, Output> {
   PhaseController? _phaseController;
+  final List<String> _stepStack = [];
 
   /// The developer-facing method to implement the phase's logic.
   Future<Output> execute(Input input);
@@ -23,6 +24,7 @@ abstract class KaiPhase<Input, Output> {
   /// Internal method called by ChatController to run the phase with inspection.
   Future<Output> run(Input input, PhaseController phaseController) async {
     _phaseController = phaseController;
+    _stepStack.clear();
 
     try {
       final result = await execute(input);
@@ -56,7 +58,7 @@ abstract class KaiPhase<Input, Output> {
     }
 
     final stepId = _generateId();
-    final step = TimelineStep(
+    final initialStep = TimelineStep(
       id: stepId,
       name: stepName,
       description: description,
@@ -64,15 +66,20 @@ abstract class KaiPhase<Input, Output> {
       metadata: metadata ?? {},
     );
 
+    final parentStepId = _stepStack.isEmpty ? null : _stepStack.last;
+
     try {
-      await _phaseController!.recordStep(step);
-      final result = await operation(step);
-      step.complete(status: TimelineStatus.completed);
-      await _phaseController!.recordStep(step);
+      await _phaseController!.recordStep(initialStep, parentStepId: parentStepId);
+      _stepStack.add(initialStep.id);
+      final result = await operation(initialStep);
+      final completedStep = initialStep.complete(status: TimelineStatus.completed);
+      await _phaseController!.updateStep(completedStep);
+      _stepStack.removeLast();
       return result;
     } catch (error) {
-      step.complete(status: TimelineStatus.failed);
-      await _phaseController!.recordStep(step);
+      final failedStep = initialStep.complete(status: TimelineStatus.failed);
+      await _phaseController!.updateStep(failedStep);
+      _stepStack.removeLast();
       rethrow;
     }
   }
@@ -110,18 +117,11 @@ abstract class KaiPhase<Input, Output> {
   void updateAggregates({int? tokenUsage, double? cost}) {
     if (_phaseController == null) return;
 
-    _phaseController!.updateSessionAggregates(
-      tokenUsage: tokenUsage,
-      cost: cost,
-    );
+    _phaseController!.updateSessionAggregates(tokenUsage: tokenUsage, cost: cost);
   }
 
   /// Creates a dummy step for when no inspector is active.
-  TimelineStep _createDummyStep(
-    String name,
-    String? description,
-    Map<String, dynamic>? metadata,
-  ) {
+  TimelineStep _createDummyStep(String name, String? description, Map<String, dynamic>? metadata) {
     return TimelineStep(
       id: 'dummy',
       name: name,

@@ -37,6 +37,9 @@ sealed class TimelineStep with _$TimelineStep {
 
     /// List of logs associated with this step.
     @Default([]) List<TimelineLog> logs,
+
+    /// List of nested steps.
+    @Default([]) List<TimelineStep> steps,
   }) = _TimelineStep;
 
   /// Creates a TimelineStep from JSON.
@@ -54,6 +57,11 @@ sealed class TimelineStep with _$TimelineStep {
   /// Creates a copy of this step with a new log entry added.
   TimelineStep addLog(TimelineLog log) {
     return copyWith(logs: [...logs, log]);
+  }
+
+  /// Creates a copy of this step with a new nested step added.
+  TimelineStep addStep(TimelineStep step) {
+    return copyWith(steps: [...steps, step]);
   }
 
   TimelineStep addLogMessage(String message) {
