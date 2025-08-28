@@ -15,14 +15,13 @@ class _EditableMessage {
   CoreMessage get currentMessage {
     final content = controller.text;
     switch (originalMessage.type) {
-      case CoreMessageType.system:
-        return CoreMessage.system(content);
-      case CoreMessageType.user:
-        return CoreMessage.user(content: content);
       case CoreMessageType.ai:
-        return CoreMessage.ai(content: content);
       case CoreMessageType.function:
-      case CoreMessageType.unknown:
+        //! remember this won't work, modify data of it won't effect the data which send to the AI
+        // because the data which will send to AI, usually nested inside Content/Parts (gemini)
+        // so modify this won't take effect
+        return originalMessage.copyWith(content: content);
+      default:
         return originalMessage.copyWith(content: content);
     }
   }
