@@ -94,14 +94,15 @@ class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> 
     // Handle empty text cases which might be function call or system message
     // this helpful for debugging, but not actual use
     if (text.isEmpty) {
-      if (messageType == CoreMessageType.system && parts.whereType<FunctionCall>().isNotEmpty) {
+      final hasFunctionCall = parts.whereType<FunctionCall>().isNotEmpty;
+      if (messageType == CoreMessageType.ai && hasFunctionCall) {
         text = jsonEncode(parts.whereType<FunctionCall>().first.toJson());
       } else if (messageType == CoreMessageType.function) {
         text = jsonEncode(parts.whereType<FunctionResponse>().firstOrNull?.toJson());
       }
     }
 
-    return CoreMessage.create(type: messageType, content: combinedText, extensions: extensions);
+    return CoreMessage.create(type: messageType, content: text, extensions: extensions);
   }
 
   /// Helper method to manually reconstruct parts that Firebase AI's parseContent doesn't handle
