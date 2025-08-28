@@ -5,11 +5,9 @@ import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
 
 // Mock implementations for testing
-class MockParallelContextBuilder extends Mock
-    implements ParallelContextBuilder {}
+class MockParallelContextBuilder extends Mock implements ParallelContextBuilder {}
 
-class MockSequentialContextBuilder extends Mock
-    implements SequentialContextBuilder {}
+class MockSequentialContextBuilder extends Mock implements SequentialContextBuilder {}
 
 // Test implementation of ContextEngine
 final class TestContextEngine extends ContextEngine {
@@ -49,10 +47,7 @@ void main() {
         const PromptTemplate.input(),
       ]);
 
-      final result = await engine.generate(
-        source: sourceMessages,
-        inputQuery: queryContext,
-      );
+      final result = await engine.generate(source: sourceMessages, inputQuery: queryContext);
 
       expect(result, isNotNull);
       expect(result.userMessage, isA<CoreMessage>());
@@ -71,11 +66,8 @@ void main() {
       final mockBuilder = MockParallelContextBuilder();
       when(() => mockBuilder.build(any(), any())).thenAnswer(
         (_) async => [
-          CoreMessage.user(
-            messageId: const Uuid().v4(),
-            content: 'Current date: 2023-01-01',
-          ),
-        ],
+          CoreMessage.user(messageId: const Uuid().v4(), content: 'Current date: 2023-01-01'),
+        ].lock,
       );
 
       final engine = TestContextEngine([
@@ -84,10 +76,7 @@ void main() {
         const PromptTemplate.input(),
       ]);
 
-      final result = await engine.generate(
-        source: sourceMessages,
-        inputQuery: queryContext,
-      );
+      final result = await engine.generate(source: sourceMessages, inputQuery: queryContext);
 
       expect(result, isNotNull);
       // Should have system message + parallel message + user message
@@ -102,12 +91,8 @@ void main() {
     test('generates prompt with sequential builders', () async {
       final mockBuilder = MockSequentialContextBuilder();
       when(() => mockBuilder.build(any(), any())).thenAnswer(
-        (_) async => [
-          CoreMessage.user(
-            messageId: const Uuid().v4(),
-            content: 'Processed history',
-          ),
-        ],
+        (_) async =>
+            [CoreMessage.user(messageId: const Uuid().v4(), content: 'Processed history')].lock,
       );
 
       final engine = TestContextEngine([
@@ -116,10 +101,7 @@ void main() {
         const PromptTemplate.input(),
       ]);
 
-      final result = await engine.generate(
-        source: sourceMessages,
-        inputQuery: queryContext,
-      );
+      final result = await engine.generate(source: sourceMessages, inputQuery: queryContext);
 
       expect(result, isNotNull);
       // Should have system message + sequential message + user message
@@ -138,16 +120,12 @@ void main() {
       // Simulate different execution times
       when(() => mockBuilder1.build(any(), any())).thenAnswer((_) async {
         await Future.delayed(const Duration(milliseconds: 100));
-        return [
-          CoreMessage.user(messageId: const Uuid().v4(), content: 'Parallel 1'),
-        ];
+        return [CoreMessage.user(messageId: const Uuid().v4(), content: 'Parallel 1')].lock;
       });
 
       when(() => mockBuilder2.build(any(), any())).thenAnswer((_) async {
         await Future.delayed(const Duration(milliseconds: 100));
-        return [
-          CoreMessage.user(messageId: const Uuid().v4(), content: 'Parallel 2'),
-        ];
+        return [CoreMessage.user(messageId: const Uuid().v4(), content: 'Parallel 2')].lock;
       });
 
       final engine = TestContextEngine([
@@ -179,32 +157,22 @@ void main() {
 
       final callOrder = <String>[];
 
-      when(() => mockBuilder1.build(any(), any())).thenAnswer((
-        invocation,
-      ) async {
+      when(() => mockBuilder1.build(any(), any())).thenAnswer((invocation) async {
         callOrder.add('builder1');
         final previous = invocation.positionalArguments[1] as List<CoreMessage>;
         return [
           ...previous,
-          CoreMessage.user(
-            messageId: const Uuid().v4(),
-            content: 'Sequential 1',
-          ),
-        ];
+          CoreMessage.user(messageId: const Uuid().v4(), content: 'Sequential 1'),
+        ].lock;
       });
 
-      when(() => mockBuilder2.build(any(), any())).thenAnswer((
-        invocation,
-      ) async {
+      when(() => mockBuilder2.build(any(), any())).thenAnswer((invocation) async {
         callOrder.add('builder2');
         final previous = invocation.positionalArguments[1] as List<CoreMessage>;
         return [
           ...previous,
-          CoreMessage.user(
-            messageId: const Uuid().v4(),
-            content: 'Sequential 2',
-          ),
-        ];
+          CoreMessage.user(messageId: const Uuid().v4(), content: 'Sequential 2'),
+        ].lock;
       });
 
       final engine = TestContextEngine([
@@ -229,21 +197,13 @@ void main() {
       final mockSequentialBuilder = MockSequentialContextBuilder();
 
       when(() => mockParallelBuilder.build(any(), any())).thenAnswer(
-        (_) async => [
-          CoreMessage.user(
-            messageId: const Uuid().v4(),
-            content: 'Parallel context',
-          ),
-        ],
+        (_) async =>
+            [CoreMessage.user(messageId: const Uuid().v4(), content: 'Parallel context')].lock,
       );
 
       when(() => mockSequentialBuilder.build(any(), any())).thenAnswer(
-        (_) async => [
-          CoreMessage.user(
-            messageId: const Uuid().v4(),
-            content: 'Sequential context',
-          ),
-        ],
+        (_) async =>
+            [CoreMessage.user(messageId: const Uuid().v4(), content: 'Sequential context')].lock,
       );
 
       final engine = TestContextEngine([
@@ -253,20 +213,14 @@ void main() {
         const PromptTemplate.input(),
       ]);
 
-      final result = await engine.generate(
-        source: sourceMessages,
-        inputQuery: queryContext,
-      );
+      final result = await engine.generate(source: sourceMessages, inputQuery: queryContext);
 
       // Verify both builders were called
       verify(() => mockParallelBuilder.build(any(), any())).called(1);
       verify(() => mockSequentialBuilder.build(any(), any())).called(1);
 
       // Verify the result structure includes all prompts
-      expect(
-        result.prompts,
-        hasLength(4),
-      ); // system + parallel + sequential + user input
+      expect(result.prompts, hasLength(4)); // system + parallel + sequential + user input
       expect(result.prompts[0].content, 'You are a helpful assistant');
       expect(result.prompts[1].content, 'Parallel context');
       expect(result.prompts[2].content, 'Sequential context');
@@ -283,22 +237,18 @@ void main() {
       );
     });
 
-    test(
-      'throws assertion error when multiple input templates are provided',
-      () async {
-        final engine = TestContextEngine([
-          const PromptTemplate.system('You are a helpful assistant'),
-          const PromptTemplate.input(),
-          const PromptTemplate.input(),
-        ]);
+    test('throws assertion error when multiple input templates are provided', () async {
+      final engine = TestContextEngine([
+        const PromptTemplate.system('You are a helpful assistant'),
+        const PromptTemplate.input(),
+        const PromptTemplate.input(),
+      ]);
 
-        expect(
-          () =>
-              engine.generate(source: sourceMessages, inputQuery: queryContext),
-          throwsA(isA<AssertionError>()),
-        );
-      },
-    );
+      expect(
+        () => engine.generate(source: sourceMessages, inputQuery: queryContext),
+        throwsA(isA<AssertionError>()),
+      );
+    });
 
     // This test is no longer relevant as PromptTemplate.input no longer accepts a transformer function
     // The functionality was removed in commit 0096dba
@@ -313,38 +263,24 @@ void main() {
       final mockSequentialBuilder2 = MockSequentialContextBuilder();
 
       when(() => mockParallelBuilder.build(any(), any())).thenAnswer(
-        (_) async => [
-          CoreMessage.user(
-            messageId: const Uuid().v4(),
-            content: 'Parallel context',
-          ),
-        ],
+        (_) async =>
+            [CoreMessage.user(messageId: const Uuid().v4(), content: 'Parallel context')].lock,
       );
 
-      when(() => mockSequentialBuilder1.build(any(), any())).thenAnswer((
-        invocation,
-      ) async {
+      when(() => mockSequentialBuilder1.build(any(), any())).thenAnswer((invocation) async {
         final previous = invocation.positionalArguments[1] as List<CoreMessage>;
         return [
           ...previous,
-          CoreMessage.user(
-            messageId: const Uuid().v4(),
-            content: 'Sequential context 1',
-          ),
-        ];
+          CoreMessage.user(messageId: const Uuid().v4(), content: 'Sequential context 1'),
+        ].lock;
       });
 
-      when(() => mockSequentialBuilder2.build(any(), any())).thenAnswer((
-        invocation,
-      ) async {
+      when(() => mockSequentialBuilder2.build(any(), any())).thenAnswer((invocation) async {
         final previous = invocation.positionalArguments[1] as List<CoreMessage>;
         return [
           ...previous,
-          CoreMessage.user(
-            messageId: const Uuid().v4(),
-            content: 'Sequential context 2',
-          ),
-        ];
+          CoreMessage.user(messageId: const Uuid().v4(), content: 'Sequential context 2'),
+        ].lock;
       });
 
       final engine = TestContextEngine([
@@ -355,10 +291,7 @@ void main() {
         const PromptTemplate.input(),
       ]);
 
-      final result = await engine.generate(
-        source: sourceMessages,
-        inputQuery: queryContext,
-      );
+      final result = await engine.generate(source: sourceMessages, inputQuery: queryContext);
 
       // Verify that the mocks were called
       verify(() => mockParallelBuilder.build(any(), any())).called(1);
@@ -376,10 +309,7 @@ void main() {
 
     test('SimpleContextEngine generates expected prompt structure', () async {
       final engine = SimpleContextEngine();
-      final result = await engine.generate(
-        source: sourceMessages,
-        inputQuery: queryContext,
-      );
+      final result = await engine.generate(source: sourceMessages, inputQuery: queryContext);
 
       expect(result, isNotNull);
       expect(result.prompts, isA<IList<CoreMessage>>());
@@ -387,10 +317,7 @@ void main() {
       expect(result.prompts.length, 2 + sourceMessages.length);
 
       // First message should be the system message
-      expect(
-        result.prompts.first.content,
-        "You're kai, a useful friendly personal assistant.",
-      );
+      expect(result.prompts.first.content, "You're kai, a useful friendly personal assistant.");
 
       // User message should match
       expect(result.userMessage.content, 'Tell me a joke');

@@ -1,14 +1,10 @@
 import 'dart:async';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:kai_engine/src/models/generation_execute_config.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../kai_engine.dart';
-
-typedef GenerationExecuteConfig = ({
-  List<ToolSchema> tools,
-  Map<String, dynamic>? config,
-});
 
 /// Base orchestrator for chat interactions
 /// override to add more configuration
@@ -35,17 +31,15 @@ abstract base class ChatControllerBase<TEntity> {
        _inspector = inspector ?? NoOpKaiInspector();
 
   /// Handle generation state updates
-  final _generationStateController =
-      BehaviorSubject<GenerationState<GenerationResult>>.seeded(
-        GenerationState.initial(),
-      );
+  final _generationStateController = BehaviorSubject<GenerationState<GenerationResult>>.seeded(
+    GenerationState.initial(),
+  );
 
   ContextEngine build();
 
   /// Provide custom generative config in addition to default configuration of generative service base on the prompt which will send to server
-  GenerationExecuteConfig generativeConfigs(IList<CoreMessage> prompts) {
-    return (tools: [], config: null);
-  }
+  GenerationExecuteConfig generativeConfigs(IList<CoreMessage> prompts) =>
+      GenerationExecuteConfig.none();
 
   /// Submit user input for processing and generation
   /// [revertInputOnError] indicates whether to revert user input if error occurs, by default it is false
@@ -58,8 +52,7 @@ abstract base class ChatControllerBase<TEntity> {
 
     // Use ConversationSession ID for inspector session and user message ID as timeline ID
     final sessionId = _conversationManager.session.id;
-    final timelineId = userMessage
-        .messageId; // Use user message ID to track this specific input
+    final timelineId = userMessage.messageId; // Use user message ID to track this specific input
 
     await _inspector.startSession(sessionId);
     await _inspector.startTimeline(sessionId, timelineId, input);
@@ -84,12 +77,10 @@ abstract base class ChatControllerBase<TEntity> {
       _setState(GenerationState.loading());
 
       // Variable to store the final generation result
-      late final GenerationResult generationResult;
+      late GenerationResult generationResult;
 
       unawaited(
-        _conversationManager.addMessages([userMessage].lock).then((
-          inserted,
-        ) async {
+        _conversationManager.addMessages([userMessage].lock).then((inserted) async {
           userMessage = inserted.first;
         }),
       );
@@ -102,19 +93,16 @@ abstract base class ChatControllerBase<TEntity> {
         // Exclude the current user message from history, by natural flow user message is happening after query input
         // but to trickly show message in UI faster, we trickly hide this
         histories: await _conversationManager.getMessages().then(
-          (messages) => messages
-              .whereNot((m) => m.messageId == userMessage.messageId)
-              .toIList(),
+          (messages) => messages.whereNot((m) => m.messageId == userMessage.messageId).toIList(),
         ),
       );
-      final queryContext = await _inspector
-          .inspectPhase<QueryEngineInput, QueryContext>(
-            sessionId,
-            timelineId,
-            'Query Processing',
-            _queryEngine,
-            queryInput,
-          );
+      final queryContext = await _inspector.inspectPhase<QueryEngineInput, QueryContext>(
+        sessionId,
+        timelineId,
+        'Query Processing',
+        _queryEngine,
+        queryInput,
+      );
 
       // Phase 2: Context Building
       _setLoadingPhase(LoadingPhase.buildContext());
@@ -187,9 +175,13 @@ abstract base class ChatControllerBase<TEntity> {
 
       // Save the AI-generated messages to the conversation
       if (generationResult.generatedMessages.isNotEmpty) {
-        await _conversationManager.addMessages(
+        final addedMessages = await _conversationManager.addMessages(
           generationResult.generatedMessages,
         );
+
+        // Make sure generated message is updated to date with required metadata
+        // before pass to other below service
+        generationResult = generationResult.copyWith(generatedMessages: addedMessages);
       }
 
       // Phase 4: Post-Response Processing
@@ -211,22 +203,12 @@ abstract base class ChatControllerBase<TEntity> {
       // Extract AI response text from the generation result
       final aiResponse = generationResult.displayMessage.content;
 
-      await _inspector.endTimeline(
-        sessionId,
-        timelineId,
-        aiResponse: aiResponse,
-      );
-      final generationState = GenerationState<GenerationResult>.complete(
-        generationResult,
-      );
+      await _inspector.endTimeline(sessionId, timelineId, aiResponse: aiResponse);
+      final generationState = GenerationState<GenerationResult>.complete(generationResult);
       _generationStateController.add(generationState);
       return _mapGenerationState(generationState);
     } catch (error, stackTrace) {
-      await _inspector.endTimeline(
-        sessionId,
-        timelineId,
-        status: TimelineStatus.failed,
-      );
+      await _inspector.endTimeline(sessionId, timelineId, status: TimelineStatus.failed);
 
       if (revertInputOnError) {
         await _conversationManager.removeMessages([userMessage].lock);
@@ -245,10 +227,8 @@ abstract base class ChatControllerBase<TEntity> {
     _setState(GenerationState.error(KaiException.cancelled()));
   }
 
-  Stream<IList<CoreMessage>> get messagesStream =>
-      _conversationManager.messagesStream;
-  Future<IList<CoreMessage>> getAllMessages() =>
-      _conversationManager.getMessages();
+  Stream<IList<CoreMessage>> get messagesStream => _conversationManager.messagesStream;
+  Future<IList<CoreMessage>> getAllMessages() => _conversationManager.getMessages();
 
   Stream<GenerationState<CoreMessage>> get generationStateStream =>
       _generationStateController.stream.map(_mapGenerationState);
@@ -259,9 +239,7 @@ abstract base class ChatControllerBase<TEntity> {
     _cancelToken.cancel();
   }
 
-  GenerationState<CoreMessage> _mapGenerationState(
-    GenerationState<GenerationResult> state,
-  ) {
+  GenerationState<CoreMessage> _mapGenerationState(GenerationState<GenerationResult> state) {
     return state.map(
       loading: (l) => GenerationState.loading(l.phase),
       initial: (value) => GenerationState.initial(),
@@ -279,8 +257,7 @@ abstract base class ChatControllerBase<TEntity> {
     onStateChange(state);
   }
 
-  void _setLoadingPhase(LoadingPhase phase) =>
-      _setState(GenerationState.loading(phase));
+  void _setLoadingPhase(LoadingPhase phase) => _setState(GenerationState.loading(phase));
 
   /// Callback to listen for state changes, this helpful for implementing custom logic or log the
   /// state provide more flexible. default to do nothing

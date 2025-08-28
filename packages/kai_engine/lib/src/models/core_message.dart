@@ -58,12 +58,14 @@ sealed class CoreMessage with _$CoreMessage {
     required String content,
     required CoreMessageType type,
     required Map<String, dynamic> extensions,
+    bool isBackgroundContext = false,
   }) {
     return CoreMessage(
       messageId: _uuid.v4(),
       type: type,
       content: content,
       extensions: extensions,
+      isBackgroundContext: isBackgroundContext,
       timestamp: DateTime.now(),
     );
   }
@@ -82,14 +84,11 @@ sealed class CoreMessage with _$CoreMessage {
     @Default(<String, dynamic>{}) Map<String, dynamic> extensions,
   }) = _CoreMessage;
 
-  bool get isDisplayable =>
-      type == CoreMessageType.user || type == CoreMessageType.ai;
-  bool get isMessageSavable =>
-      !isBackgroundContext && type != CoreMessageType.system;
+  bool get isDisplayable => type == CoreMessageType.user || type == CoreMessageType.ai;
+  bool get isMessageSavable => !isBackgroundContext && type != CoreMessageType.system;
 
   // This allow for simple use case where adapter is not require, user can directly use [CoreMessage] as main model
-  factory CoreMessage.fromJson(Map<String, dynamic> json) =>
-      _$CoreMessageFromJson(json);
+  factory CoreMessage.fromJson(Map<String, dynamic> json) => _$CoreMessageFromJson(json);
 
   CoreMessage copyWithExtensions(Map<String, dynamic> updated) {
     final newExtensions = Map<String, dynamic>.from(extensions);
