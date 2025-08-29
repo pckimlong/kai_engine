@@ -139,7 +139,7 @@ class _EditGenerateScreenState extends State<EditGenerateScreen> {
       final response = await widget.generationService.invoke(IList(messages));
 
       if (mounted) {
-        final newResponse = CoreMessage.ai(content: response);
+        final newResponse = response.displayMessage;
         _lastGeneratedResponse = newResponse;
         setState(() {
           _items.add(newResponse);

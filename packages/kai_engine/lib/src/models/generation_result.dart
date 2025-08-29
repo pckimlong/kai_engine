@@ -10,7 +10,7 @@ sealed class GenerationResult with _$GenerationResult {
 
   const factory GenerationResult({
     /// The original request message
-    required CoreMessage requestMessage,
+    required IList<CoreMessage> requestMessages,
 
     /// Generate messages result per request, not including previous context and user messages
     required IList<CoreMessage> generatedMessages,
@@ -19,7 +19,11 @@ sealed class GenerationResult with _$GenerationResult {
     required GenerationUsage? usage,
 
     Map<String, dynamic>? extensions,
+
+    String? responseText,
   }) = _GenerationResult;
+
+  String get text => responseText ?? displayMessage.content;
 
   /// The message which suppose to display
   CoreMessage get displayMessage {

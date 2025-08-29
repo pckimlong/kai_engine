@@ -86,17 +86,12 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
   }
 
   @override
-  Future<String> invoke(IList<CoreMessage> prompts) async {
+  Future<GenerationResult> invoke(IList<CoreMessage> prompts) async {
     try {
       final filteredPrompts = _filterSystemMessages(prompts);
       final content = filteredPrompts.map(_messageAdapter.fromCoreMessage).toList();
       final response = await _effectiveGenerativeModel(prompts).generateContent(content);
-
-      if (response.text case final text?) {
-        return text;
-      }
-
-      throw Exception('No text response generated');
+      return _resultFromResponse(response, requestMessages: prompts);
     } catch (e) {
       throw Exception('Invocation failed: $e');
     }
@@ -236,10 +231,20 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
       if (functionCalls.isEmpty) {
         // Extract only the newly generated content (everything after initial history)
         final newlyGeneratedContent = conversationHistory.skip(initialHistoryLength).toList();
+        _resultFromResponse(
+          lastResponse,
+          requestMessages: prompts,
+          generatedMessages: newlyGeneratedContent
+              .map((content) => _messageAdapter.toCoreMessage(content))
+              .toList(),
+          inputToken: totalInputTokens,
+          outputToken: totalOutputTokens,
+          apiCallCount: apiCallCount,
+        );
 
         yield GenerationState.complete(
           GenerationResult(
-            requestMessage: prompts.last,
+            requestMessages: prompts,
             generatedMessages: newlyGeneratedContent
                 .map((content) => _messageAdapter.toCoreMessage(content))
                 .toIList(),
@@ -272,6 +277,41 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
     }
   }
 
+  GenerationResult _resultFromResponse(
+    GenerateContentResponse response, {
+    required IList<CoreMessage> requestMessages,
+    List<CoreMessage>? generatedMessages,
+    int? inputToken,
+    int? outputToken,
+    int? apiCallCount,
+  }) {
+    return GenerationResult(
+      requestMessages: requestMessages,
+      responseText: response.text,
+      generatedMessages:
+          generatedMessages?.toIList() ??
+          (response.candidates.isNotEmpty
+              ? response.candidates
+                    .map((candidate) => _messageAdapter.toCoreMessage(candidate.content))
+                    .toIList()
+              : IList<CoreMessage>()),
+      usage: GenerationUsage(
+        inputToken: inputToken ?? response.usageMetadata?.promptTokenCount,
+        outputToken: outputToken ?? response.usageMetadata?.candidatesTokenCount,
+        apiCallCount: apiCallCount,
+      ),
+      extensions: {
+        'prompt_feedback': {
+          'block_reason': response.promptFeedback?.blockReason?.toJson(),
+          'block_reason_message': response.promptFeedback?.blockReasonMessage,
+          'other_feedback': response.promptFeedback?.safetyRatings.map((e) {
+            return e.toString();
+          }).toList(),
+        },
+      },
+    );
+  }
+
   /// Returns a map of tool name to schema, merging provided and config tools, removing duplicates by name.
   List<FirebaseAiToolSchema> _effectiveTools(List<ToolSchema> tools) {
     final firebaseTools = tools.whereType<FirebaseAiToolSchema>().toList();
@@ -283,7 +323,7 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
   }
 
   @override
-  Future<String> tooling({
+  Future<GenerationResult> tooling({
     required IList<CoreMessage> prompts,
     required List<ToolSchema> tools,
     required ToolingConfig toolingConfig,
@@ -299,7 +339,7 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
     }
   }
 
-  Future<String> _generateTooling(
+  Future<GenerationResult> _generateTooling(
     IList<CoreMessage> prompts,
     List<ToolSchema> tools,
     ToolingConfig toolingConfig,
@@ -322,10 +362,16 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
         final functionCalls = modelContent.parts.whereType<FunctionCall>().toList();
 
         if (functionCalls.isEmpty) {
-          if (response.text case final text?) {
-            return text;
-          }
-          throw Exception('No text response generated');
+          final newlyGeneratedContent = conversationHistory
+              .skip(conversationHistory.length)
+              .toList();
+          return _resultFromResponse(
+            response,
+            requestMessages: prompts,
+            generatedMessages: newlyGeneratedContent
+                .map((content) => _messageAdapter.toCoreMessage(content))
+                .toList(),
+          );
         } else {
           final functionResponses = await _effectiveTools(tools.toList()).executes(functionCalls);
 
@@ -335,7 +381,16 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
           });
 
           if (!hasToolFeedback) {
-            return 'Success execute ${functionResponses.map((e) => e.name).join(', ')} without response';
+            return _resultFromResponse(
+              response,
+              requestMessages: prompts,
+              generatedMessages: [
+                CoreMessage.ai(
+                  content:
+                      'Success execute ${functionResponses.map((e) => e.name).join(', ')} without response',
+                ),
+              ],
+            );
           }
           conversationHistory.add(Content.functionResponses(functionResponses));
           continue;

@@ -14,8 +14,7 @@ sealed class ToolingConfig with _$ToolingConfig {
   const ToolingConfig._();
 
   const factory ToolingConfig.auto() = _ToolingConfigAuto;
-  const factory ToolingConfig.any(Set<String> allowedFunctionNames) =
-      _ToolingConfigAny;
+  const factory ToolingConfig.any(Set<String> allowedFunctionNames) = _ToolingConfigAny;
   const factory ToolingConfig.none() = _ToolingConfigNone;
 }
 
@@ -37,10 +36,10 @@ abstract interface class GenerationServiceBase {
   Future<int> countToken(IList<CoreMessage> prompts);
 
   /// Generate a simple response for the given prompts
-  Future<String> invoke(IList<CoreMessage> prompts);
+  Future<GenerationResult> invoke(IList<CoreMessage> prompts);
 
   /// Invoke the service with tools, must provide tools it will handle tool execution
-  Future<String> tooling({
+  Future<GenerationResult> tooling({
     required IList<CoreMessage> prompts,
     required List<ToolSchema> tools,
     required ToolingConfig toolingConfig,

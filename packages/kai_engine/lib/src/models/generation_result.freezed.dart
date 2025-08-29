@@ -15,9 +15,9 @@ T _$identity<T>(T value) => value;
 mixin _$GenerationResult {
 
 /// The original request message
- CoreMessage get requestMessage;/// Generate messages result per request, not including previous context and user messages
+ IList<CoreMessage> get requestMessages;/// Generate messages result per request, not including previous context and user messages
  IList<CoreMessage> get generatedMessages;/// The usage information for the generation, this is optional
- GenerationUsage? get usage; Map<String, dynamic>? get extensions;
+ GenerationUsage? get usage; Map<String, dynamic>? get extensions; String? get responseText;
 /// Create a copy of GenerationResult
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $GenerationResultCopyWith<GenerationResult> get copyWith => _$GenerationResultCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GenerationResult&&(identical(other.requestMessage, requestMessage) || other.requestMessage == requestMessage)&&const DeepCollectionEquality().equals(other.generatedMessages, generatedMessages)&&(identical(other.usage, usage) || other.usage == usage)&&const DeepCollectionEquality().equals(other.extensions, extensions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GenerationResult&&const DeepCollectionEquality().equals(other.requestMessages, requestMessages)&&const DeepCollectionEquality().equals(other.generatedMessages, generatedMessages)&&(identical(other.usage, usage) || other.usage == usage)&&const DeepCollectionEquality().equals(other.extensions, extensions)&&(identical(other.responseText, responseText) || other.responseText == responseText));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,requestMessage,const DeepCollectionEquality().hash(generatedMessages),usage,const DeepCollectionEquality().hash(extensions));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(requestMessages),const DeepCollectionEquality().hash(generatedMessages),usage,const DeepCollectionEquality().hash(extensions),responseText);
 
 @override
 String toString() {
-  return 'GenerationResult(requestMessage: $requestMessage, generatedMessages: $generatedMessages, usage: $usage, extensions: $extensions)';
+  return 'GenerationResult(requestMessages: $requestMessages, generatedMessages: $generatedMessages, usage: $usage, extensions: $extensions, responseText: $responseText)';
 }
 
 
@@ -48,11 +48,11 @@ abstract mixin class $GenerationResultCopyWith<$Res>  {
   factory $GenerationResultCopyWith(GenerationResult value, $Res Function(GenerationResult) _then) = _$GenerationResultCopyWithImpl;
 @useResult
 $Res call({
- CoreMessage requestMessage, IList<CoreMessage> generatedMessages, GenerationUsage? usage, Map<String, dynamic>? extensions
+ IList<CoreMessage> requestMessages, IList<CoreMessage> generatedMessages, GenerationUsage? usage, Map<String, dynamic>? extensions, String? responseText
 });
 
 
-$CoreMessageCopyWith<$Res> get requestMessage;$GenerationUsageCopyWith<$Res>? get usage;
+$GenerationUsageCopyWith<$Res>? get usage;
 
 }
 /// @nodoc
@@ -65,25 +65,17 @@ class _$GenerationResultCopyWithImpl<$Res>
 
 /// Create a copy of GenerationResult
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? requestMessage = null,Object? generatedMessages = null,Object? usage = freezed,Object? extensions = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? requestMessages = null,Object? generatedMessages = null,Object? usage = freezed,Object? extensions = freezed,Object? responseText = freezed,}) {
   return _then(_self.copyWith(
-requestMessage: null == requestMessage ? _self.requestMessage : requestMessage // ignore: cast_nullable_to_non_nullable
-as CoreMessage,generatedMessages: null == generatedMessages ? _self.generatedMessages : generatedMessages // ignore: cast_nullable_to_non_nullable
+requestMessages: null == requestMessages ? _self.requestMessages : requestMessages // ignore: cast_nullable_to_non_nullable
+as IList<CoreMessage>,generatedMessages: null == generatedMessages ? _self.generatedMessages : generatedMessages // ignore: cast_nullable_to_non_nullable
 as IList<CoreMessage>,usage: freezed == usage ? _self.usage : usage // ignore: cast_nullable_to_non_nullable
 as GenerationUsage?,extensions: freezed == extensions ? _self.extensions : extensions // ignore: cast_nullable_to_non_nullable
-as Map<String, dynamic>?,
+as Map<String, dynamic>?,responseText: freezed == responseText ? _self.responseText : responseText // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of GenerationResult
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$CoreMessageCopyWith<$Res> get requestMessage {
-  
-  return $CoreMessageCopyWith<$Res>(_self.requestMessage, (value) {
-    return _then(_self.copyWith(requestMessage: value));
-  });
-}/// Create a copy of GenerationResult
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -174,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CoreMessage requestMessage,  IList<CoreMessage> generatedMessages,  GenerationUsage? usage,  Map<String, dynamic>? extensions)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( IList<CoreMessage> requestMessages,  IList<CoreMessage> generatedMessages,  GenerationUsage? usage,  Map<String, dynamic>? extensions,  String? responseText)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GenerationResult() when $default != null:
-return $default(_that.requestMessage,_that.generatedMessages,_that.usage,_that.extensions);case _:
+return $default(_that.requestMessages,_that.generatedMessages,_that.usage,_that.extensions,_that.responseText);case _:
   return orElse();
 
 }
@@ -195,10 +187,10 @@ return $default(_that.requestMessage,_that.generatedMessages,_that.usage,_that.e
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CoreMessage requestMessage,  IList<CoreMessage> generatedMessages,  GenerationUsage? usage,  Map<String, dynamic>? extensions)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( IList<CoreMessage> requestMessages,  IList<CoreMessage> generatedMessages,  GenerationUsage? usage,  Map<String, dynamic>? extensions,  String? responseText)  $default,) {final _that = this;
 switch (_that) {
 case _GenerationResult():
-return $default(_that.requestMessage,_that.generatedMessages,_that.usage,_that.extensions);}
+return $default(_that.requestMessages,_that.generatedMessages,_that.usage,_that.extensions,_that.responseText);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -212,10 +204,10 @@ return $default(_that.requestMessage,_that.generatedMessages,_that.usage,_that.e
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CoreMessage requestMessage,  IList<CoreMessage> generatedMessages,  GenerationUsage? usage,  Map<String, dynamic>? extensions)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( IList<CoreMessage> requestMessages,  IList<CoreMessage> generatedMessages,  GenerationUsage? usage,  Map<String, dynamic>? extensions,  String? responseText)?  $default,) {final _that = this;
 switch (_that) {
 case _GenerationResult() when $default != null:
-return $default(_that.requestMessage,_that.generatedMessages,_that.usage,_that.extensions);case _:
+return $default(_that.requestMessages,_that.generatedMessages,_that.usage,_that.extensions,_that.responseText);case _:
   return null;
 
 }
@@ -227,11 +219,11 @@ return $default(_that.requestMessage,_that.generatedMessages,_that.usage,_that.e
 
 
 class _GenerationResult extends GenerationResult {
-  const _GenerationResult({required this.requestMessage, required this.generatedMessages, required this.usage, final  Map<String, dynamic>? extensions}): _extensions = extensions,super._();
+  const _GenerationResult({required this.requestMessages, required this.generatedMessages, required this.usage, final  Map<String, dynamic>? extensions, this.responseText}): _extensions = extensions,super._();
   
 
 /// The original request message
-@override final  CoreMessage requestMessage;
+@override final  IList<CoreMessage> requestMessages;
 /// Generate messages result per request, not including previous context and user messages
 @override final  IList<CoreMessage> generatedMessages;
 /// The usage information for the generation, this is optional
@@ -245,6 +237,7 @@ class _GenerationResult extends GenerationResult {
   return EqualUnmodifiableMapView(value);
 }
 
+@override final  String? responseText;
 
 /// Create a copy of GenerationResult
 /// with the given fields replaced by the non-null parameter values.
@@ -256,16 +249,16 @@ _$GenerationResultCopyWith<_GenerationResult> get copyWith => __$GenerationResul
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GenerationResult&&(identical(other.requestMessage, requestMessage) || other.requestMessage == requestMessage)&&const DeepCollectionEquality().equals(other.generatedMessages, generatedMessages)&&(identical(other.usage, usage) || other.usage == usage)&&const DeepCollectionEquality().equals(other._extensions, _extensions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GenerationResult&&const DeepCollectionEquality().equals(other.requestMessages, requestMessages)&&const DeepCollectionEquality().equals(other.generatedMessages, generatedMessages)&&(identical(other.usage, usage) || other.usage == usage)&&const DeepCollectionEquality().equals(other._extensions, _extensions)&&(identical(other.responseText, responseText) || other.responseText == responseText));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,requestMessage,const DeepCollectionEquality().hash(generatedMessages),usage,const DeepCollectionEquality().hash(_extensions));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(requestMessages),const DeepCollectionEquality().hash(generatedMessages),usage,const DeepCollectionEquality().hash(_extensions),responseText);
 
 @override
 String toString() {
-  return 'GenerationResult(requestMessage: $requestMessage, generatedMessages: $generatedMessages, usage: $usage, extensions: $extensions)';
+  return 'GenerationResult(requestMessages: $requestMessages, generatedMessages: $generatedMessages, usage: $usage, extensions: $extensions, responseText: $responseText)';
 }
 
 
@@ -276,11 +269,11 @@ abstract mixin class _$GenerationResultCopyWith<$Res> implements $GenerationResu
   factory _$GenerationResultCopyWith(_GenerationResult value, $Res Function(_GenerationResult) _then) = __$GenerationResultCopyWithImpl;
 @override @useResult
 $Res call({
- CoreMessage requestMessage, IList<CoreMessage> generatedMessages, GenerationUsage? usage, Map<String, dynamic>? extensions
+ IList<CoreMessage> requestMessages, IList<CoreMessage> generatedMessages, GenerationUsage? usage, Map<String, dynamic>? extensions, String? responseText
 });
 
 
-@override $CoreMessageCopyWith<$Res> get requestMessage;@override $GenerationUsageCopyWith<$Res>? get usage;
+@override $GenerationUsageCopyWith<$Res>? get usage;
 
 }
 /// @nodoc
@@ -293,26 +286,18 @@ class __$GenerationResultCopyWithImpl<$Res>
 
 /// Create a copy of GenerationResult
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? requestMessage = null,Object? generatedMessages = null,Object? usage = freezed,Object? extensions = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? requestMessages = null,Object? generatedMessages = null,Object? usage = freezed,Object? extensions = freezed,Object? responseText = freezed,}) {
   return _then(_GenerationResult(
-requestMessage: null == requestMessage ? _self.requestMessage : requestMessage // ignore: cast_nullable_to_non_nullable
-as CoreMessage,generatedMessages: null == generatedMessages ? _self.generatedMessages : generatedMessages // ignore: cast_nullable_to_non_nullable
+requestMessages: null == requestMessages ? _self.requestMessages : requestMessages // ignore: cast_nullable_to_non_nullable
+as IList<CoreMessage>,generatedMessages: null == generatedMessages ? _self.generatedMessages : generatedMessages // ignore: cast_nullable_to_non_nullable
 as IList<CoreMessage>,usage: freezed == usage ? _self.usage : usage // ignore: cast_nullable_to_non_nullable
 as GenerationUsage?,extensions: freezed == extensions ? _self._extensions : extensions // ignore: cast_nullable_to_non_nullable
-as Map<String, dynamic>?,
+as Map<String, dynamic>?,responseText: freezed == responseText ? _self.responseText : responseText // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
 /// Create a copy of GenerationResult
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$CoreMessageCopyWith<$Res> get requestMessage {
-  
-  return $CoreMessageCopyWith<$Res>(_self.requestMessage, (value) {
-    return _then(_self.copyWith(requestMessage: value));
-  });
-}/// Create a copy of GenerationResult
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
