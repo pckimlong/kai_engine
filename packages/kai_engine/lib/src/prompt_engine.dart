@@ -11,6 +11,12 @@ import 'models/query_context.dart';
 
 part 'prompt_engine.freezed.dart';
 
+base class ContextEngineBuilder extends ContextEngine {
+  ContextEngineBuilder(this.promptBuilder);
+  @override
+  final List<PromptTemplate> promptBuilder;
+}
+
 /// Abstract base class that defines how to generate contextual prompts for AI interactions.
 ///
 /// This engine orchestrates the creation of a complete conversation context by combining
@@ -18,6 +24,10 @@ part 'prompt_engine.freezed.dart';
 /// It supports both parallel and sequential context building strategies to optimize performance
 /// while maintaining logical ordering where required.
 abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEngineOutput> {
+  static ContextEngineBuilder builder(List<PromptTemplate> promptBuilder) {
+    return ContextEngineBuilder(promptBuilder);
+  }
+
   /// Defines the template structure for building prompts.
   ///
   /// This list specifies what components should be included in the final prompt and in what order.
@@ -206,7 +216,7 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
           builderName,
           operation: (step) async {
             try {
-              final result = await builder.build(inputQuery, source);
+              final result = await builder.build(inputQuery, messageId, source);
 
               await step.addLogMessage('Built ${result.length} messages');
               return (index: item.index, result: result);
@@ -252,7 +262,7 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
         builderName,
         operation: (step) async {
           try {
-            final context = await builder.build(inputQuery, currentContext);
+            final context = await builder.build(inputQuery, messageId, currentContext);
 
             await step.addLogMessage(
               'Built ${context.length} messages from context size ${currentContext.length}',

@@ -1382,7 +1382,9 @@ $GenerationResultCopyWith<$Res> get result {
 /// @nodoc
 mixin _$PostResponseEngineInput {
 
- QueryContext get input; IList<CoreMessage> get requestMessages; GenerationResult get result; ConversationManager get conversationManager;
+ QueryContext get input;/// The last user message which trigger this generation
+/// it differs from requestMessages which include all the message
+ String get initialRequestMessageId; IList<CoreMessage> get requestMessages; GenerationResult get result; ConversationManager get conversationManager;
 /// Create a copy of PostResponseEngineInput
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1393,16 +1395,16 @@ $PostResponseEngineInputCopyWith<PostResponseEngineInput> get copyWith => _$Post
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PostResponseEngineInput&&(identical(other.input, input) || other.input == input)&&const DeepCollectionEquality().equals(other.requestMessages, requestMessages)&&(identical(other.result, result) || other.result == result)&&(identical(other.conversationManager, conversationManager) || other.conversationManager == conversationManager));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PostResponseEngineInput&&(identical(other.input, input) || other.input == input)&&(identical(other.initialRequestMessageId, initialRequestMessageId) || other.initialRequestMessageId == initialRequestMessageId)&&const DeepCollectionEquality().equals(other.requestMessages, requestMessages)&&(identical(other.result, result) || other.result == result)&&(identical(other.conversationManager, conversationManager) || other.conversationManager == conversationManager));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,input,const DeepCollectionEquality().hash(requestMessages),result,conversationManager);
+int get hashCode => Object.hash(runtimeType,input,initialRequestMessageId,const DeepCollectionEquality().hash(requestMessages),result,conversationManager);
 
 @override
 String toString() {
-  return 'PostResponseEngineInput(input: $input, requestMessages: $requestMessages, result: $result, conversationManager: $conversationManager)';
+  return 'PostResponseEngineInput(input: $input, initialRequestMessageId: $initialRequestMessageId, requestMessages: $requestMessages, result: $result, conversationManager: $conversationManager)';
 }
 
 
@@ -1413,7 +1415,7 @@ abstract mixin class $PostResponseEngineInputCopyWith<$Res>  {
   factory $PostResponseEngineInputCopyWith(PostResponseEngineInput value, $Res Function(PostResponseEngineInput) _then) = _$PostResponseEngineInputCopyWithImpl;
 @useResult
 $Res call({
- QueryContext input, IList<CoreMessage> requestMessages, GenerationResult result, ConversationManager conversationManager
+ QueryContext input, String initialRequestMessageId, IList<CoreMessage> requestMessages, GenerationResult result, ConversationManager conversationManager
 });
 
 
@@ -1430,10 +1432,11 @@ class _$PostResponseEngineInputCopyWithImpl<$Res>
 
 /// Create a copy of PostResponseEngineInput
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? input = null,Object? requestMessages = null,Object? result = null,Object? conversationManager = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? input = null,Object? initialRequestMessageId = null,Object? requestMessages = null,Object? result = null,Object? conversationManager = null,}) {
   return _then(_self.copyWith(
 input: null == input ? _self.input : input // ignore: cast_nullable_to_non_nullable
-as QueryContext,requestMessages: null == requestMessages ? _self.requestMessages : requestMessages // ignore: cast_nullable_to_non_nullable
+as QueryContext,initialRequestMessageId: null == initialRequestMessageId ? _self.initialRequestMessageId : initialRequestMessageId // ignore: cast_nullable_to_non_nullable
+as String,requestMessages: null == requestMessages ? _self.requestMessages : requestMessages // ignore: cast_nullable_to_non_nullable
 as IList<CoreMessage>,result: null == result ? _self.result : result // ignore: cast_nullable_to_non_nullable
 as GenerationResult,conversationManager: null == conversationManager ? _self.conversationManager : conversationManager // ignore: cast_nullable_to_non_nullable
 as ConversationManager,
@@ -1536,10 +1539,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( QueryContext input,  IList<CoreMessage> requestMessages,  GenerationResult result,  ConversationManager conversationManager)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( QueryContext input,  String initialRequestMessageId,  IList<CoreMessage> requestMessages,  GenerationResult result,  ConversationManager conversationManager)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PostResponseEngineInput() when $default != null:
-return $default(_that.input,_that.requestMessages,_that.result,_that.conversationManager);case _:
+return $default(_that.input,_that.initialRequestMessageId,_that.requestMessages,_that.result,_that.conversationManager);case _:
   return orElse();
 
 }
@@ -1557,10 +1560,10 @@ return $default(_that.input,_that.requestMessages,_that.result,_that.conversatio
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( QueryContext input,  IList<CoreMessage> requestMessages,  GenerationResult result,  ConversationManager conversationManager)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( QueryContext input,  String initialRequestMessageId,  IList<CoreMessage> requestMessages,  GenerationResult result,  ConversationManager conversationManager)  $default,) {final _that = this;
 switch (_that) {
 case _PostResponseEngineInput():
-return $default(_that.input,_that.requestMessages,_that.result,_that.conversationManager);}
+return $default(_that.input,_that.initialRequestMessageId,_that.requestMessages,_that.result,_that.conversationManager);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -1574,10 +1577,10 @@ return $default(_that.input,_that.requestMessages,_that.result,_that.conversatio
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( QueryContext input,  IList<CoreMessage> requestMessages,  GenerationResult result,  ConversationManager conversationManager)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( QueryContext input,  String initialRequestMessageId,  IList<CoreMessage> requestMessages,  GenerationResult result,  ConversationManager conversationManager)?  $default,) {final _that = this;
 switch (_that) {
 case _PostResponseEngineInput() when $default != null:
-return $default(_that.input,_that.requestMessages,_that.result,_that.conversationManager);case _:
+return $default(_that.input,_that.initialRequestMessageId,_that.requestMessages,_that.result,_that.conversationManager);case _:
   return null;
 
 }
@@ -1588,11 +1591,14 @@ return $default(_that.input,_that.requestMessages,_that.result,_that.conversatio
 /// @nodoc
 
 
-class _PostResponseEngineInput implements PostResponseEngineInput {
-  const _PostResponseEngineInput({required this.input, required this.requestMessages, required this.result, required this.conversationManager});
+class _PostResponseEngineInput extends PostResponseEngineInput {
+  const _PostResponseEngineInput({required this.input, required this.initialRequestMessageId, required this.requestMessages, required this.result, required this.conversationManager}): super._();
   
 
 @override final  QueryContext input;
+/// The last user message which trigger this generation
+/// it differs from requestMessages which include all the message
+@override final  String initialRequestMessageId;
 @override final  IList<CoreMessage> requestMessages;
 @override final  GenerationResult result;
 @override final  ConversationManager conversationManager;
@@ -1607,16 +1613,16 @@ _$PostResponseEngineInputCopyWith<_PostResponseEngineInput> get copyWith => __$P
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PostResponseEngineInput&&(identical(other.input, input) || other.input == input)&&const DeepCollectionEquality().equals(other.requestMessages, requestMessages)&&(identical(other.result, result) || other.result == result)&&(identical(other.conversationManager, conversationManager) || other.conversationManager == conversationManager));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PostResponseEngineInput&&(identical(other.input, input) || other.input == input)&&(identical(other.initialRequestMessageId, initialRequestMessageId) || other.initialRequestMessageId == initialRequestMessageId)&&const DeepCollectionEquality().equals(other.requestMessages, requestMessages)&&(identical(other.result, result) || other.result == result)&&(identical(other.conversationManager, conversationManager) || other.conversationManager == conversationManager));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,input,const DeepCollectionEquality().hash(requestMessages),result,conversationManager);
+int get hashCode => Object.hash(runtimeType,input,initialRequestMessageId,const DeepCollectionEquality().hash(requestMessages),result,conversationManager);
 
 @override
 String toString() {
-  return 'PostResponseEngineInput(input: $input, requestMessages: $requestMessages, result: $result, conversationManager: $conversationManager)';
+  return 'PostResponseEngineInput(input: $input, initialRequestMessageId: $initialRequestMessageId, requestMessages: $requestMessages, result: $result, conversationManager: $conversationManager)';
 }
 
 
@@ -1627,7 +1633,7 @@ abstract mixin class _$PostResponseEngineInputCopyWith<$Res> implements $PostRes
   factory _$PostResponseEngineInputCopyWith(_PostResponseEngineInput value, $Res Function(_PostResponseEngineInput) _then) = __$PostResponseEngineInputCopyWithImpl;
 @override @useResult
 $Res call({
- QueryContext input, IList<CoreMessage> requestMessages, GenerationResult result, ConversationManager conversationManager
+ QueryContext input, String initialRequestMessageId, IList<CoreMessage> requestMessages, GenerationResult result, ConversationManager conversationManager
 });
 
 
@@ -1644,10 +1650,11 @@ class __$PostResponseEngineInputCopyWithImpl<$Res>
 
 /// Create a copy of PostResponseEngineInput
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? input = null,Object? requestMessages = null,Object? result = null,Object? conversationManager = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? input = null,Object? initialRequestMessageId = null,Object? requestMessages = null,Object? result = null,Object? conversationManager = null,}) {
   return _then(_PostResponseEngineInput(
 input: null == input ? _self.input : input // ignore: cast_nullable_to_non_nullable
-as QueryContext,requestMessages: null == requestMessages ? _self.requestMessages : requestMessages // ignore: cast_nullable_to_non_nullable
+as QueryContext,initialRequestMessageId: null == initialRequestMessageId ? _self.initialRequestMessageId : initialRequestMessageId // ignore: cast_nullable_to_non_nullable
+as String,requestMessages: null == requestMessages ? _self.requestMessages : requestMessages // ignore: cast_nullable_to_non_nullable
 as IList<CoreMessage>,result: null == result ? _self.result : result // ignore: cast_nullable_to_non_nullable
 as GenerationResult,conversationManager: null == conversationManager ? _self.conversationManager : conversationManager // ignore: cast_nullable_to_non_nullable
 as ConversationManager,

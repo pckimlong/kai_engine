@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:kai_engine/src/models/generation_execute_config.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../kai_engine.dart';
@@ -187,6 +186,7 @@ abstract base class ChatControllerBase<TEntity> {
       // Phase 4: Post-Response Processing
       final postResponseInput = PostResponseEngineInput(
         input: queryContext,
+        initialRequestMessageId: userMessage.messageId,
         requestMessages: contextResult.prompts,
         result: generationResult,
         conversationManager: _conversationManager,

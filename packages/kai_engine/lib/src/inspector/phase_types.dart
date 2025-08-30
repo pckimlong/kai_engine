@@ -34,8 +34,7 @@ sealed class ContextEngineInput with _$ContextEngineInput {
 /// Output type for ContextEngine phase
 @freezed
 sealed class ContextEngineOutput with _$ContextEngineOutput {
-  const factory ContextEngineOutput({required IList<CoreMessage> prompts}) =
-      _ContextEngineOutput;
+  const factory ContextEngineOutput({required IList<CoreMessage> prompts}) = _ContextEngineOutput;
 }
 
 /// Input type for GenerationService phase
@@ -59,10 +58,25 @@ sealed class GenerationServiceOutput with _$GenerationServiceOutput {
 /// Input type for PostResponseEngine phase
 @freezed
 sealed class PostResponseEngineInput with _$PostResponseEngineInput {
+  const PostResponseEngineInput._();
+
   const factory PostResponseEngineInput({
     required QueryContext input,
+
+    /// The last user message which trigger this generation
+    /// it differs from requestMessages which include all the message
+    required String initialRequestMessageId,
     required IList<CoreMessage> requestMessages,
     required GenerationResult result,
     required ConversationManager conversationManager,
   }) = _PostResponseEngineInput;
+
+  /// Return the new requested message from the user input to the end
+  IList<CoreMessage> get newRequestMessages {
+    // identity user input message position
+    final inputIndex = requestMessages.lastIndexWhere(
+      (m) => m.type == CoreMessageType.user && m.messageId == initialRequestMessageId.trim(),
+    );
+    return requestMessages.sublist(inputIndex);
+  }
 }

@@ -13,7 +13,14 @@ abstract interface class SequentialContextBuilder implements ContextBuilder {
   /// you can override that list to pass to next, eg build summarization etc
   /// return of [build] will be used as context for next step, return empty will
   /// effect overall next sequence and final prompt
-  Future<NextSequentialContext> build(QueryContext input, IList<CoreMessage> previous);
+  /// [inputMessageId] is the message ID of the user input being processed, the reason we only pass
+  /// id because it stable, the content of input message itself might be changed by prompt engine itself
+  /// this value can be use to perform specific actions which rely on it
+  Future<NextSequentialContext> build(
+    QueryContext input,
+    String inputMessageId,
+    IList<CoreMessage> previous,
+  );
 }
 
 abstract interface class ParallelContextBuilder implements ContextBuilder {
@@ -22,12 +29,22 @@ abstract interface class ParallelContextBuilder implements ContextBuilder {
   /// return empty will only ignore it from final template
   /// unlike SequentialContextBuilder, return value will not be used for next step
   /// previous context will be use just for reference
-  Future<IList<CoreMessage>> build(QueryContext input, IList<CoreMessage> context);
+  /// [inputMessageId] is the message ID of the user input being processed, the reason we only pass
+  /// id because it stable, the content of input message itself might be changed by prompt engine itself
+  /// this value can be use to perform specific actions which rely on it
+  Future<IList<CoreMessage>> build(
+    QueryContext input,
+    String inputMessageId,
+    IList<CoreMessage> context,
+  );
 }
 
 /// Prebuilt history context
 class HistoryContext implements SequentialContextBuilder {
   @override
-  Future<IList<CoreMessage>> build(QueryContext input, IList<CoreMessage> previous) async =>
-      previous;
+  Future<IList<CoreMessage>> build(
+    QueryContext input,
+    String inputMessageId,
+    IList<CoreMessage> previous,
+  ) async => previous;
 }

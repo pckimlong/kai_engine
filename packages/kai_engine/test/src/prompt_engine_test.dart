@@ -64,7 +64,7 @@ void main() {
 
     test('generates prompt with parallel builders', () async {
       final mockBuilder = MockParallelContextBuilder();
-      when(() => mockBuilder.build(any(), any())).thenAnswer(
+      when(() => mockBuilder.build(any(), any(), any())).thenAnswer(
         (_) async => [
           CoreMessage.user(messageId: const Uuid().v4(), content: 'Current date: 2023-01-01'),
         ].lock,
@@ -85,12 +85,12 @@ void main() {
       expect(result.prompts[1].content, 'Current date: 2023-01-01');
       expect(result.userMessage.content, 'Tell me a joke');
 
-      verify(() => mockBuilder.build(any(), any())).called(1);
+      verify(() => mockBuilder.build(any(), any(), any())).called(1);
     });
 
     test('generates prompt with sequential builders', () async {
       final mockBuilder = MockSequentialContextBuilder();
-      when(() => mockBuilder.build(any(), any())).thenAnswer(
+      when(() => mockBuilder.build(any(), any(), any())).thenAnswer(
         (_) async =>
             [CoreMessage.user(messageId: const Uuid().v4(), content: 'Processed history')].lock,
       );
@@ -110,7 +110,7 @@ void main() {
       expect(result.prompts[1].content, 'Processed history');
       expect(result.userMessage.content, 'Tell me a joke');
 
-      verify(() => mockBuilder.build(any(), any())).called(1);
+      verify(() => mockBuilder.build(any(), any(), any())).called(1);
     });
 
     test('executes parallel builders concurrently', () async {
@@ -118,12 +118,12 @@ void main() {
       final mockBuilder2 = MockParallelContextBuilder();
 
       // Simulate different execution times
-      when(() => mockBuilder1.build(any(), any())).thenAnswer((_) async {
+      when(() => mockBuilder1.build(any(), any(), any())).thenAnswer((_) async {
         await Future.delayed(const Duration(milliseconds: 100));
         return [CoreMessage.user(messageId: const Uuid().v4(), content: 'Parallel 1')].lock;
       });
 
-      when(() => mockBuilder2.build(any(), any())).thenAnswer((_) async {
+      when(() => mockBuilder2.build(any(), any(), any())).thenAnswer((_) async {
         await Future.delayed(const Duration(milliseconds: 100));
         return [CoreMessage.user(messageId: const Uuid().v4(), content: 'Parallel 2')].lock;
       });
@@ -147,8 +147,8 @@ void main() {
       // If executed concurrently, it should take ~100ms
       expect(duration.inMilliseconds, lessThan(150));
 
-      verify(() => mockBuilder1.build(any(), any())).called(1);
-      verify(() => mockBuilder2.build(any(), any())).called(1);
+      verify(() => mockBuilder1.build(any(), any(), any())).called(1);
+      verify(() => mockBuilder2.build(any(), any(), any())).called(1);
     });
 
     test('executes sequential builders in order', () async {
@@ -157,7 +157,7 @@ void main() {
 
       final callOrder = <String>[];
 
-      when(() => mockBuilder1.build(any(), any())).thenAnswer((invocation) async {
+      when(() => mockBuilder1.build(any(), any(), any())).thenAnswer((invocation) async {
         callOrder.add('builder1');
         final previous = invocation.positionalArguments[1] as List<CoreMessage>;
         return [
@@ -166,7 +166,7 @@ void main() {
         ].lock;
       });
 
-      when(() => mockBuilder2.build(any(), any())).thenAnswer((invocation) async {
+      when(() => mockBuilder2.build(any(), any(), any())).thenAnswer((invocation) async {
         callOrder.add('builder2');
         final previous = invocation.positionalArguments[1] as List<CoreMessage>;
         return [
@@ -188,20 +188,20 @@ void main() {
       expect(callOrder, ['builder1', 'builder2']);
 
       // Verify that each builder was called with the previous context
-      verify(() => mockBuilder1.build(any(), any())).called(1);
-      verify(() => mockBuilder2.build(any(), any())).called(1);
+      verify(() => mockBuilder1.build(any(), any(), any())).called(1);
+      verify(() => mockBuilder2.build(any(), any(), any())).called(1);
     });
 
     test('processes parallel and sequential builders correctly', () async {
       final mockParallelBuilder = MockParallelContextBuilder();
       final mockSequentialBuilder = MockSequentialContextBuilder();
 
-      when(() => mockParallelBuilder.build(any(), any())).thenAnswer(
+      when(() => mockParallelBuilder.build(any(), any(), any())).thenAnswer(
         (_) async =>
             [CoreMessage.user(messageId: const Uuid().v4(), content: 'Parallel context')].lock,
       );
 
-      when(() => mockSequentialBuilder.build(any(), any())).thenAnswer(
+      when(() => mockSequentialBuilder.build(any(), any(), any())).thenAnswer(
         (_) async =>
             [CoreMessage.user(messageId: const Uuid().v4(), content: 'Sequential context')].lock,
       );
@@ -216,8 +216,8 @@ void main() {
       final result = await engine.generate(source: sourceMessages, inputQuery: queryContext);
 
       // Verify both builders were called
-      verify(() => mockParallelBuilder.build(any(), any())).called(1);
-      verify(() => mockSequentialBuilder.build(any(), any())).called(1);
+      verify(() => mockParallelBuilder.build(any(), any(), any())).called(1);
+      verify(() => mockSequentialBuilder.build(any(), any(), any())).called(1);
 
       // Verify the result structure includes all prompts
       expect(result.prompts, hasLength(4)); // system + parallel + sequential + user input
@@ -262,12 +262,12 @@ void main() {
       final mockSequentialBuilder1 = MockSequentialContextBuilder();
       final mockSequentialBuilder2 = MockSequentialContextBuilder();
 
-      when(() => mockParallelBuilder.build(any(), any())).thenAnswer(
+      when(() => mockParallelBuilder.build(any(), any(), any())).thenAnswer(
         (_) async =>
             [CoreMessage.user(messageId: const Uuid().v4(), content: 'Parallel context')].lock,
       );
 
-      when(() => mockSequentialBuilder1.build(any(), any())).thenAnswer((invocation) async {
+      when(() => mockSequentialBuilder1.build(any(), any(), any())).thenAnswer((invocation) async {
         final previous = invocation.positionalArguments[1] as List<CoreMessage>;
         return [
           ...previous,
@@ -275,7 +275,7 @@ void main() {
         ].lock;
       });
 
-      when(() => mockSequentialBuilder2.build(any(), any())).thenAnswer((invocation) async {
+      when(() => mockSequentialBuilder2.build(any(), any(), any())).thenAnswer((invocation) async {
         final previous = invocation.positionalArguments[1] as List<CoreMessage>;
         return [
           ...previous,
@@ -294,9 +294,9 @@ void main() {
       final result = await engine.generate(source: sourceMessages, inputQuery: queryContext);
 
       // Verify that the mocks were called
-      verify(() => mockParallelBuilder.build(any(), any())).called(1);
-      verify(() => mockSequentialBuilder1.build(any(), any())).called(1);
-      verify(() => mockSequentialBuilder2.build(any(), any())).called(1);
+      verify(() => mockParallelBuilder.build(any(), any(), any())).called(1);
+      verify(() => mockSequentialBuilder1.build(any(), any(), any())).called(1);
+      verify(() => mockSequentialBuilder2.build(any(), any(), any())).called(1);
 
       // Check that we have the expected messages
       expect(

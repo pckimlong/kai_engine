@@ -26,6 +26,8 @@ class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> 
           // Parse the entire Content object back from JSON
           final parsedContent = parseContent(originalContentJson);
 
+          //TODO: function response type currently unsupported, it will parse to unknown, firebase AI will throw error log of it, due it not being support yet as
+
           // Check if any parts were parsed as UnknownPart that shouldn't be
           final reconstructedParts = <Part>[];
           final originalJson = originalContentJson as Map<String, dynamic>;
