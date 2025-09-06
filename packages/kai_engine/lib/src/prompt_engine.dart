@@ -57,7 +57,6 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
   /// Parameters:
   /// - [source]: The source messages to build context from, typically the existing chat history
   /// - [inputQuery]: The current user query with additional context
-  /// - [onStageStart]: Optional callback to notify when each processing stage begins
   /// - [providedUserMessage]: The user input message, if provided it will use that, otherwise it generate new one with new id
   ///
   /// Returns:
@@ -87,6 +86,7 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
       promptBuilder.whereType<InputPromptTemplate>().length == 1,
       "Must define exactly one input prompt.",
     );
+
 
     // Create indexed pairs to preserve original order
     final indexedBuilders = promptBuilder
@@ -144,32 +144,56 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
       allResults[item.index] = item.result;
     }
 
-    // Rebuild in original order, including system templates
-    final finalContexts = <CoreMessage>[];
+    // First pass: build context without input template to get clean context for revision
+    final contextForRevision = <CoreMessage>[];
     for (int i = 0; i < promptBuilder.length; i++) {
       if (allResults.containsKey(i)) {
         // Add results from parallel/sequential builders
-        finalContexts.addAll(allResults[i]!);
+        contextForRevision.addAll(allResults[i]!);
       } else {
-        // Handle system templates and other non-builder templates
+        // Handle system templates (skip input templates in this pass)
         final template = promptBuilder[i];
         if (template is _SystemPromptTemplate) {
           // Convert system template to a CoreMessage
-          finalContexts.add(CoreMessage.system(template.text));
+          contextForRevision.add(CoreMessage.system(template.text));
         }
-        // Other template types (like input) are not added to the context
       }
     }
 
-    /// Clean up context by removing duplicates and adding the user message
-    finalContexts
+    // Clean up context by removing duplicates
+    contextForRevision
       ..removeWhere((e) => e.messageId == userMessage.messageId)
       ..removeDuplicates(by: (e) => e.messageId);
 
+    // Get the input template and apply revision if needed
     final input = promptBuilder.whereType<InputPromptTemplate>().first;
     final overriddenMessage =
-        await input.revision?.call(inputQuery, finalContexts.toIList()) ?? inputQuery.originalQuery;
+        await input.revision?.call(inputQuery, contextForRevision.toIList()) ??
+        inputQuery.originalQuery;
     final finalUserMessage = userMessage.copyWith(content: overriddenMessage);
+
+    // Second pass: rebuild in original order, now including the input template
+    final finalContexts = <CoreMessage>[];
+    for (int i = 0; i < promptBuilder.length; i++) {
+      final template = promptBuilder[i];
+
+      if (template is _SystemPromptTemplate) {
+        // Convert system template to a CoreMessage
+        finalContexts.add(CoreMessage.system(template.text));
+      } else if (template is InputPromptTemplate) {
+        // Add the user message at this position
+        finalContexts.add(finalUserMessage);
+      } else if (allResults.containsKey(i)) {
+        // Add results from parallel/sequential builders
+        finalContexts.addAll(allResults[i]!);
+      } else {
+        // This should not happen - all template types should be handled above
+        throw StateError('Unhandled template type at index $i: ${template.runtimeType}');
+      }
+    }
+
+    // Final cleanup to remove any duplicates (but preserve the user message position)
+    finalContexts.removeDuplicates(by: (e) => e.messageId);
 
     // Use inspector logging for final results
     await withStep(
@@ -179,13 +203,13 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
           'Final context results',
           metadata: {
             'final-context-messages': finalContexts.length,
-            'total-prompt-messages': finalContexts.length + 1,
+            'total-prompt-messages': finalContexts.length,
           },
         );
       },
     );
 
-    return (userMessage: finalUserMessage, prompts: IList([...finalContexts, finalUserMessage]));
+    return (userMessage: finalUserMessage, prompts: finalContexts.toIList());
   }
 
   /// Builds parallel context items while preserving their original indices.
@@ -196,7 +220,6 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
   /// Parameters:
   /// - [items]: The parallel prompt template items with their original indices
   /// - [inputQuery]: The current user query with additional context
-  /// - [onStageStart]: Optional callback to notify when each processing stage begins
   ///
   /// Returns:
   /// - A list of results with their original indices for proper reordering
@@ -281,6 +304,7 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
 
     return results;
   }
+
 }
 
 /// A simple context engine implementation for basic chat interactions.

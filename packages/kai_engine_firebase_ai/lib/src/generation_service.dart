@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:collection/collection.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:firebase_ai/firebase_ai.dart';
@@ -89,9 +91,129 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
   Future<GenerationResult> invoke(IList<CoreMessage> prompts) async {
     try {
       final filteredPrompts = _filterSystemMessages(prompts);
-      final content = filteredPrompts.map(_messageAdapter.fromCoreMessage).toList();
-      final response = await _effectiveGenerativeModel(prompts).generateContent(content);
-      return _resultFromResponse(response, requestMessages: prompts);
+      var conversationHistory = filteredPrompts.map(_messageAdapter.fromCoreMessage).toList();
+      final initialHistoryLength = conversationHistory.length;
+
+      var maxTotalIterations = 50;
+      var maxConsecutiveSameFunction = 3;
+      var iteration = 0;
+      String? lastFunctionName;
+      var consecutiveSameFunctionCount = 0;
+
+      while (iteration < maxTotalIterations) {
+        iteration++;
+        final model = _effectiveGenerativeModel(prompts);
+        final response = await model.generateContent(
+          conversationHistory,
+          // Align with streaming/tooling: explicitly pass tools + toolConfig
+          tools: (_config.toolSchemas ?? const <FirebaseAiToolSchema>[]).toFirebaseAiTools(),
+          toolConfig: _config.toolConfig?.toFirebaseToolConfig(),
+        );
+
+        if (response.candidates case [final candidate, ...]) {
+          log('Candidate: ${candidate.content}');
+          final modelContent = candidate.content;
+          conversationHistory.add(modelContent);
+          log('Conversation history: ${conversationHistory.map((e) => e.toJson())}');
+
+          final functionCalls = modelContent.parts.whereType<FunctionCall>().toList();
+
+          if (functionCalls.isEmpty) {
+            final newlyGeneratedContent = conversationHistory.skip(initialHistoryLength).toList();
+            return _resultFromResponse(
+              response,
+              requestMessages: prompts,
+              generatedMessages: newlyGeneratedContent
+                  .map((content) => _messageAdapter.toCoreMessage(content))
+                  .toList(),
+            );
+          } else {
+            // Validate function calls and parameters
+            final validFunctionCalls = functionCalls.where((call) {
+              return call.name.isNotEmpty;
+            }).toList();
+
+            if (validFunctionCalls.isEmpty) {
+              return _resultFromResponse(
+                response,
+                requestMessages: prompts,
+                generatedMessages: [CoreMessage.ai(content: 'Invalid function calls detected')],
+              );
+            }
+
+            // Check for consecutive same function calls to prevent loops
+            final currentFunctionNames = validFunctionCalls.map((call) => call.name).join(',');
+            if (currentFunctionNames == lastFunctionName) {
+              consecutiveSameFunctionCount++;
+              if (consecutiveSameFunctionCount >= maxConsecutiveSameFunction) {
+                return _resultFromResponse(
+                  response,
+                  requestMessages: prompts,
+                  generatedMessages: [
+                    CoreMessage.ai(
+                      content:
+                          'Detected potential infinite loop with function: $currentFunctionNames',
+                    ),
+                  ],
+                );
+              }
+            } else {
+              consecutiveSameFunctionCount = 1;
+              lastFunctionName = currentFunctionNames;
+            }
+
+            // Execute function calls using tools from model config
+            final tools = _config.toolSchemas ?? [];
+            if (tools.isNotEmpty) {
+              final functionResponses = await tools.executes(functionCalls);
+
+              // Check if function responses are empty - if so, exit the loop
+              final hasToolFeedback = functionResponses.any((response) {
+                return response.response.isNotEmpty && response.response != '{}';
+              });
+
+              if (!hasToolFeedback) {
+                return _resultFromResponse(
+                  response,
+                  requestMessages: prompts,
+                  generatedMessages: [
+                    CoreMessage.ai(
+                      content:
+                          'Success execute ${functionResponses.map((e) => e.name).join(', ')} without response',
+                    ),
+                  ],
+                );
+              }
+
+              conversationHistory.add(Content.functionResponses(functionResponses));
+              continue;
+            } else {
+              // No tools available, return with function call message
+              return _resultFromResponse(
+                response,
+                requestMessages: prompts,
+                generatedMessages: [
+                  CoreMessage.ai(content: 'Function calls detected but no tools available'),
+                ],
+              );
+            }
+          }
+        } else {
+          throw Exception('No candidates in response');
+        }
+      }
+
+      // If we've reached max total iterations, return with current content
+      final newlyGeneratedContent = conversationHistory.skip(initialHistoryLength).toList();
+      return GenerationResult(
+        requestMessages: prompts,
+        responseText: null,
+        generatedMessages: newlyGeneratedContent
+            .map((content) => _messageAdapter.toCoreMessage(content))
+            .toIList(),
+        usage: const GenerationUsage(inputToken: 0, outputToken: 0, apiCallCount: 0),
+        extensions: const {},
+      );
     } catch (e) {
       throw Exception('Invocation failed: $e');
     }
@@ -170,8 +292,14 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
     var totalInputTokens = 0;
     var totalOutputTokens = 0;
     var apiCallCount = 0;
+    var maxTotalIterations = 50; // Allow more total iterations for different functions
+    var maxConsecutiveSameFunction = 3; // Limit consecutive calls to same function
+    var iteration = 0;
+    String? lastFunctionName;
+    var consecutiveSameFunctionCount = 0;
 
-    while (true) {
+    while (iteration < maxTotalIterations) {
+      iteration++;
       if (cancelToken?.isCancelled == true) {
         yield GenerationState.error(KaiException.cancelled());
         return;
@@ -268,6 +396,39 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
       } else {
         // Function calls detected - yield intermediate state
         yield GenerationState.functionCalling(functionCalls.toString());
+
+        // Validate function calls and parameters
+        final validFunctionCalls = functionCalls.where((call) {
+          return call.name.isNotEmpty;
+        }).toList();
+
+        if (validFunctionCalls.isEmpty) {
+          yield GenerationState.error(
+            KaiException.exception('Invalid function calls detected', null),
+          );
+          return;
+        }
+
+        // Check for consecutive same function calls to prevent loops (only when using 'any' mode)
+        if (toolingConfig?.maybeWhen(any: (_) => true, orElse: () => false) == true) {
+          final currentFunctionNames = validFunctionCalls.map((call) => call.name).join(',');
+          if (currentFunctionNames == lastFunctionName) {
+            consecutiveSameFunctionCount++;
+            if (consecutiveSameFunctionCount >= maxConsecutiveSameFunction) {
+              yield GenerationState.error(
+                KaiException.exception(
+                  'Detected potential infinite loop with function: $currentFunctionNames',
+                  null,
+                ),
+              );
+              return;
+            }
+          } else {
+            consecutiveSameFunctionCount = 1;
+            lastFunctionName = currentFunctionNames;
+          }
+        }
+
         final functionResponses = await _effectiveTools(tools).executes(functionCalls);
         conversationHistory.add(Content.functionResponses(functionResponses));
 
@@ -275,6 +436,23 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
         continue;
       }
     }
+
+    // If we've reached max total iterations, yield final result with current content
+    final newlyGeneratedContent = conversationHistory.skip(initialHistoryLength).toList();
+    yield GenerationState.complete(
+      GenerationResult(
+        requestMessages: prompts,
+        generatedMessages: newlyGeneratedContent
+            .map((content) => _messageAdapter.toCoreMessage(content))
+            .toIList(),
+        extensions: const {},
+        usage: GenerationUsage(
+          inputToken: totalInputTokens,
+          outputToken: totalOutputTokens,
+          apiCallCount: apiCallCount,
+        ),
+      ),
+    );
   }
 
   GenerationResult _resultFromResponse(
@@ -285,9 +463,17 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
     int? outputToken,
     int? apiCallCount,
   }) {
+    String? responseText;
+    try {
+      responseText = response.text;
+    } catch (e) {
+      // Handle cases where response.text is not available (e.g., UNEXPECTED_TOOL_CALL)
+      responseText = null;
+    }
+
     return GenerationResult(
       requestMessages: requestMessages,
-      responseText: response.text,
+      responseText: responseText,
       generatedMessages:
           generatedMessages?.toIList() ??
           (response.candidates.isNotEmpty
@@ -346,8 +532,15 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
   ) async {
     final filteredPrompts = _filterSystemMessages(prompts);
     var conversationHistory = filteredPrompts.map(_messageAdapter.fromCoreMessage).toList();
+    final initialHistoryLength = conversationHistory.length;
+    var maxTotalIterations = 50; // Allow more total iterations for different functions
+    var maxConsecutiveSameFunction = 3; // Limit consecutive calls to same function
+    var iteration = 0;
+    String? lastFunctionName;
+    var consecutiveSameFunctionCount = 0;
 
-    while (true) {
+    while (iteration < maxTotalIterations) {
+      iteration++;
       final model = _effectiveGenerativeModel(prompts);
       final response = await model.generateContent(
         conversationHistory,
@@ -362,9 +555,7 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
         final functionCalls = modelContent.parts.whereType<FunctionCall>().toList();
 
         if (functionCalls.isEmpty) {
-          final newlyGeneratedContent = conversationHistory
-              .skip(conversationHistory.length)
-              .toList();
+          final newlyGeneratedContent = conversationHistory.skip(initialHistoryLength).toList();
           return _resultFromResponse(
             response,
             requestMessages: prompts,
@@ -373,6 +564,43 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
                 .toList(),
           );
         } else {
+          // Validate function calls and parameters
+          final validFunctionCalls = functionCalls.where((call) {
+            return call.name.isNotEmpty;
+          }).toList();
+
+          if (validFunctionCalls.isEmpty) {
+            return _resultFromResponse(
+              response,
+              requestMessages: prompts,
+              generatedMessages: [CoreMessage.ai(content: 'Invalid function calls detected')],
+            );
+          }
+
+          // Check for consecutive same function calls to prevent loops (only when using 'any' mode)
+          if (toolingConfig.maybeWhen(any: (_) => true, orElse: () => false)) {
+            final currentFunctionNames = validFunctionCalls.map((call) => call.name).join(',');
+            if (currentFunctionNames == lastFunctionName) {
+              consecutiveSameFunctionCount++;
+              if (consecutiveSameFunctionCount >= maxConsecutiveSameFunction) {
+                return _resultFromResponse(
+                  response,
+                  requestMessages: prompts,
+                  generatedMessages: [
+                    CoreMessage.ai(
+                      content:
+                          'Detected potential infinite loop with function: $currentFunctionNames',
+                    ),
+                  ],
+                );
+              }
+            } else {
+              consecutiveSameFunctionCount = 1;
+              lastFunctionName = currentFunctionNames;
+            }
+          }
+
+          // Execute function calls
           final functionResponses = await _effectiveTools(tools.toList()).executes(functionCalls);
 
           // Check if function responses are empty - if so, exit the loop
@@ -399,6 +627,18 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
 
       throw Exception('No candidates in response');
     }
+
+    // If we've reached max total iterations, return with current content
+    final newlyGeneratedContent = conversationHistory.skip(initialHistoryLength).toList();
+    return GenerationResult(
+      requestMessages: prompts,
+      responseText: null,
+      generatedMessages: newlyGeneratedContent
+          .map((content) => _messageAdapter.toCoreMessage(content))
+          .toIList(),
+      usage: const GenerationUsage(inputToken: 0, outputToken: 0, apiCallCount: 0),
+      extensions: const {},
+    );
   }
 }
 

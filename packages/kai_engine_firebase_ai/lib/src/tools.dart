@@ -39,17 +39,11 @@ import 'package:kai_engine/kai_engine.dart';
 
 abstract base class FirebaseAiToolSchema<TCall, TResponse>
     extends ToolSchema<FunctionDeclaration, TCall, TResponse> {
-  FirebaseAiToolSchema({
-    required super.parser,
-    required super.declaration,
-    super.onSuccess,
-  }) : super(name: declaration.name);
+  FirebaseAiToolSchema({required super.parser, required super.declaration, super.onSuccess})
+    : super(name: declaration.name);
 
   Future<FunctionResponse> toFunctionResponse(FunctionCall functionCall) async {
-    final toolCall = ToolCall(
-      toolName: functionCall.name,
-      arguments: functionCall.args,
-    );
+    final toolCall = ToolCall(toolName: functionCall.name, arguments: functionCall.args);
     final result = await call(toolCall);
     return FunctionResponse(functionCall.name, result.response);
   }
@@ -69,17 +63,35 @@ extension FirebaseAiToolSchemaListHelper on List<FirebaseAiToolSchema> {
       if (tool != null) {
         try {
           return await tool.toFunctionResponse(call);
-        } catch (e) {
+        } catch (e, stackTrace) {
           // This error is unexpected, we need to catch and force error
           // unlike Tool response which return error, it handle by executor
-          throw KaiException.toolFailure(e.toString());
+          throw KaiException.toolFailure(e.toString(), stackTrace);
         }
       } else {
         // This issue might be cause by incorrect configuration
-        throw KaiException.toolFailure('Tool not found: ${call.name}');
+        throw KaiException.toolFailure('Tool not found: ${call.name}', StackTrace.current);
       }
     });
 
     return Future.wait(futures);
+  }
+}
+
+/// Build in tools for simple JSON input/output
+final class FirebaseAiJsonTool
+    extends FirebaseAiToolSchema<Map<String, dynamic>, Map<String, dynamic>> {
+  final Future<Map<String, dynamic>> Function(Map<String, dynamic> call) onCall;
+  FirebaseAiJsonTool({required this.onCall, required super.declaration})
+    : super(parser: (json) => json);
+
+  @override
+  Future<ToolResult<Map<String, dynamic>>> execute(Map<String, dynamic> call) async {
+    try {
+      final result = await onCall(call);
+      return ToolResult.success(result, result);
+    } catch (e, s) {
+      return ToolResult.failure('Failed to execute JSON tool: $e', s);
+    }
   }
 }

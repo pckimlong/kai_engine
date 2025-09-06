@@ -3,6 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:kai_engine/src/models/core_message.dart';
 
 part 'generation_result.freezed.dart';
+part 'generation_result.g.dart';
 
 @freezed
 sealed class GenerationResult with _$GenerationResult {
@@ -35,6 +36,8 @@ sealed class GenerationResult with _$GenerationResult {
     /// We expect AI message back, not function call etc
     return generatedMessages.lastWhere((e) => e.type == CoreMessageType.ai);
   }
+
+  factory GenerationResult.fromJson(Map<String, Object?> json) => _$GenerationResultFromJson(json);
 }
 
 @freezed
@@ -54,4 +57,6 @@ sealed class GenerationUsage with _$GenerationUsage {
     }
     return null;
   }
+
+  factory GenerationUsage.fromJson(Map<String, Object?> json) => _$GenerationUsageFromJson(json);
 }

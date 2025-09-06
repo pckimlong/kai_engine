@@ -125,13 +125,13 @@ return toolFailure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String? message,  StackTrace? stackTrace)?  exception,TResult Function()?  cancelled,TResult Function()?  noResponse,TResult Function( String? reason)?  toolFailure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String? message,  StackTrace? stackTrace)?  exception,TResult Function()?  cancelled,TResult Function()?  noResponse,TResult Function( String? reason,  StackTrace? stackTrace)?  toolFailure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _KaiException() when exception != null:
 return exception(_that.message,_that.stackTrace);case _KaiExceptionCancelled() when cancelled != null:
 return cancelled();case _KaiExceptionNoResponse() when noResponse != null:
 return noResponse();case _KaiExceptionToolFailure() when toolFailure != null:
-return toolFailure(_that.reason);case _:
+return toolFailure(_that.reason,_that.stackTrace);case _:
   return orElse();
 
 }
@@ -149,13 +149,13 @@ return toolFailure(_that.reason);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String? message,  StackTrace? stackTrace)  exception,required TResult Function()  cancelled,required TResult Function()  noResponse,required TResult Function( String? reason)  toolFailure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String? message,  StackTrace? stackTrace)  exception,required TResult Function()  cancelled,required TResult Function()  noResponse,required TResult Function( String? reason,  StackTrace? stackTrace)  toolFailure,}) {final _that = this;
 switch (_that) {
 case _KaiException():
 return exception(_that.message,_that.stackTrace);case _KaiExceptionCancelled():
 return cancelled();case _KaiExceptionNoResponse():
 return noResponse();case _KaiExceptionToolFailure():
-return toolFailure(_that.reason);}
+return toolFailure(_that.reason,_that.stackTrace);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -169,13 +169,13 @@ return toolFailure(_that.reason);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String? message,  StackTrace? stackTrace)?  exception,TResult? Function()?  cancelled,TResult? Function()?  noResponse,TResult? Function( String? reason)?  toolFailure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String? message,  StackTrace? stackTrace)?  exception,TResult? Function()?  cancelled,TResult? Function()?  noResponse,TResult? Function( String? reason,  StackTrace? stackTrace)?  toolFailure,}) {final _that = this;
 switch (_that) {
 case _KaiException() when exception != null:
 return exception(_that.message,_that.stackTrace);case _KaiExceptionCancelled() when cancelled != null:
 return cancelled();case _KaiExceptionNoResponse() when noResponse != null:
 return noResponse();case _KaiExceptionToolFailure() when toolFailure != null:
-return toolFailure(_that.reason);case _:
+return toolFailure(_that.reason,_that.stackTrace);case _:
   return null;
 
 }
@@ -319,10 +319,11 @@ String toString() {
 
 
 class _KaiExceptionToolFailure extends KaiException {
-  const _KaiExceptionToolFailure([this.reason]): super._();
+  const _KaiExceptionToolFailure([this.reason, this.stackTrace]): super._();
   
 
  final  String? reason;
+ final  StackTrace? stackTrace;
 
 /// Create a copy of KaiException
 /// with the given fields replaced by the non-null parameter values.
@@ -334,16 +335,16 @@ _$KaiExceptionToolFailureCopyWith<_KaiExceptionToolFailure> get copyWith => __$K
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _KaiExceptionToolFailure&&(identical(other.reason, reason) || other.reason == reason));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _KaiExceptionToolFailure&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,reason);
+int get hashCode => Object.hash(runtimeType,reason,stackTrace);
 
 @override
 String toString() {
-  return 'KaiException.toolFailure(reason: $reason)';
+  return 'KaiException.toolFailure(reason: $reason, stackTrace: $stackTrace)';
 }
 
 
@@ -354,7 +355,7 @@ abstract mixin class _$KaiExceptionToolFailureCopyWith<$Res> implements $KaiExce
   factory _$KaiExceptionToolFailureCopyWith(_KaiExceptionToolFailure value, $Res Function(_KaiExceptionToolFailure) _then) = __$KaiExceptionToolFailureCopyWithImpl;
 @useResult
 $Res call({
- String? reason
+ String? reason, StackTrace? stackTrace
 });
 
 
@@ -371,10 +372,11 @@ class __$KaiExceptionToolFailureCopyWithImpl<$Res>
 
 /// Create a copy of KaiException
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? reason = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? reason = freezed,Object? stackTrace = freezed,}) {
   return _then(_KaiExceptionToolFailure(
 freezed == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,freezed == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
+as StackTrace?,
   ));
 }
 

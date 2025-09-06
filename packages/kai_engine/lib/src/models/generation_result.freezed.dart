@@ -11,6 +11,7 @@ part of 'generation_result.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
+
 /// @nodoc
 mixin _$GenerationResult {
 
@@ -24,6 +25,8 @@ mixin _$GenerationResult {
 @pragma('vm:prefer-inline')
 $GenerationResultCopyWith<GenerationResult> get copyWith => _$GenerationResultCopyWithImpl<GenerationResult>(this as GenerationResult, _$identity);
 
+  /// Serializes this GenerationResult to a JSON map.
+  Map<String, dynamic> toJson();
 
 
 @override
@@ -31,7 +34,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is GenerationResult&&const DeepCollectionEquality().equals(other.requestMessages, requestMessages)&&const DeepCollectionEquality().equals(other.generatedMessages, generatedMessages)&&(identical(other.usage, usage) || other.usage == usage)&&const DeepCollectionEquality().equals(other.extensions, extensions)&&(identical(other.responseText, responseText) || other.responseText == responseText));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(requestMessages),const DeepCollectionEquality().hash(generatedMessages),usage,const DeepCollectionEquality().hash(extensions),responseText);
 
@@ -216,11 +219,11 @@ return $default(_that.requestMessages,_that.generatedMessages,_that.usage,_that.
 }
 
 /// @nodoc
-
+@JsonSerializable()
 
 class _GenerationResult extends GenerationResult {
   const _GenerationResult({required this.requestMessages, required this.generatedMessages, required this.usage, final  Map<String, dynamic>? extensions, this.responseText}): _extensions = extensions,super._();
-  
+  factory _GenerationResult.fromJson(Map<String, dynamic> json) => _$GenerationResultFromJson(json);
 
 /// The original request message
 @override final  IList<CoreMessage> requestMessages;
@@ -245,14 +248,17 @@ class _GenerationResult extends GenerationResult {
 @pragma('vm:prefer-inline')
 _$GenerationResultCopyWith<_GenerationResult> get copyWith => __$GenerationResultCopyWithImpl<_GenerationResult>(this, _$identity);
 
-
+@override
+Map<String, dynamic> toJson() {
+  return _$GenerationResultToJson(this, );
+}
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _GenerationResult&&const DeepCollectionEquality().equals(other.requestMessages, requestMessages)&&const DeepCollectionEquality().equals(other.generatedMessages, generatedMessages)&&(identical(other.usage, usage) || other.usage == usage)&&const DeepCollectionEquality().equals(other._extensions, _extensions)&&(identical(other.responseText, responseText) || other.responseText == responseText));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(requestMessages),const DeepCollectionEquality().hash(generatedMessages),usage,const DeepCollectionEquality().hash(_extensions),responseText);
 
@@ -312,6 +318,7 @@ $GenerationUsageCopyWith<$Res>? get usage {
 }
 }
 
+
 /// @nodoc
 mixin _$GenerationUsage {
 
@@ -322,6 +329,8 @@ mixin _$GenerationUsage {
 @pragma('vm:prefer-inline')
 $GenerationUsageCopyWith<GenerationUsage> get copyWith => _$GenerationUsageCopyWithImpl<GenerationUsage>(this as GenerationUsage, _$identity);
 
+  /// Serializes this GenerationUsage to a JSON map.
+  Map<String, dynamic> toJson();
 
 
 @override
@@ -329,7 +338,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is GenerationUsage&&(identical(other.inputToken, inputToken) || other.inputToken == inputToken)&&(identical(other.outputToken, outputToken) || other.outputToken == outputToken)&&(identical(other.apiCallCount, apiCallCount) || other.apiCallCount == apiCallCount)&&const DeepCollectionEquality().equals(other.extensions, extensions));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,inputToken,outputToken,apiCallCount,const DeepCollectionEquality().hash(extensions));
 
@@ -501,11 +510,11 @@ return $default(_that.inputToken,_that.outputToken,_that.apiCallCount,_that.exte
 }
 
 /// @nodoc
-
+@JsonSerializable()
 
 class _GenerationUsage extends GenerationUsage {
   const _GenerationUsage({required this.inputToken, required this.outputToken, required this.apiCallCount, final  Map<String, dynamic>? extensions}): _extensions = extensions,super._();
-  
+  factory _GenerationUsage.fromJson(Map<String, dynamic> json) => _$GenerationUsageFromJson(json);
 
 @override final  int? inputToken;
 @override final  int? outputToken;
@@ -526,14 +535,17 @@ class _GenerationUsage extends GenerationUsage {
 @pragma('vm:prefer-inline')
 _$GenerationUsageCopyWith<_GenerationUsage> get copyWith => __$GenerationUsageCopyWithImpl<_GenerationUsage>(this, _$identity);
 
-
+@override
+Map<String, dynamic> toJson() {
+  return _$GenerationUsageToJson(this, );
+}
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _GenerationUsage&&(identical(other.inputToken, inputToken) || other.inputToken == inputToken)&&(identical(other.outputToken, outputToken) || other.outputToken == outputToken)&&(identical(other.apiCallCount, apiCallCount) || other.apiCallCount == apiCallCount)&&const DeepCollectionEquality().equals(other._extensions, _extensions));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,inputToken,outputToken,apiCallCount,const DeepCollectionEquality().hash(_extensions));
 
