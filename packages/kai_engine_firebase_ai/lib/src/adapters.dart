@@ -98,11 +98,20 @@ class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> 
     if (text.isEmpty) {
       final hasFunctionCall = parts.whereType<FunctionCall>().isNotEmpty;
       if (messageType == CoreMessageType.ai && hasFunctionCall) {
-        text = JsonEncoder.withIndent(' ').convert(parts.whereType<FunctionCall>().first.toJson());
+        text = [
+          // Include text parts if any
+          if (parts.whereType<TextPart>().isNotEmpty)
+            parts.whereType<TextPart>().map((p) => p.text).join(' ') + "\n\n",
+
+          // Include function call last
+          JsonEncoder.withIndent(' ').convert(parts.whereType<FunctionCall>().first.toJson())
+            ..replaceAll(r'\n', '\n').replaceAll(r'\', ''),
+        ].join('\n');
       } else if (messageType == CoreMessageType.function) {
-        text = JsonEncoder.withIndent(
-          ' ',
-        ).convert(parts.whereType<FunctionResponse>().firstOrNull?.toJson());
+        text = JsonEncoder.withIndent(' ')
+            .convert(parts.whereType<FunctionResponse>().firstOrNull?.toJson())
+            .replaceAll(r'\n', '\n')
+            .replaceAll(r'\', '');
       }
     }
 

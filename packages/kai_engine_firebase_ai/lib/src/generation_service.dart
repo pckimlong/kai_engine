@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:developer';
-
 import 'package:collection/collection.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:firebase_ai/firebase_ai.dart';
@@ -112,11 +109,6 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
         );
 
         if (response.candidates case [final candidate, ...]) {
-          log(
-            'Candidate: ${candidate.content.role}, parts:\n'
-            '${candidate.content.parts.map((e) => JsonEncoder.withIndent('  ').convert(e.toJson()).replaceAll(r'\n', '\n').replaceAll(r'\', '')).join("\n")}',
-          );
-
           final modelContent = candidate.content;
           conversationHistory.add(modelContent);
 
