@@ -43,7 +43,7 @@ abstract base class ChatControllerBase<TEntity> {
   /// Submit user input for processing and generation
   /// [revertInputOnError] indicates whether to revert user input if error occurs, by default it is false
   /// which means the user input will be retained even if an error occurs
-  Future<GenerationState<CoreMessage>> submit(
+  Future<GenerationState<GenerationResult>> submit(
     String input, {
     bool revertInputOnError = false,
   }) async {
@@ -174,9 +174,15 @@ abstract base class ChatControllerBase<TEntity> {
 
       // Save the AI-generated messages to the conversation
       if (generationResult.generatedMessages.isNotEmpty) {
-        final addedMessages = await _conversationManager.addMessages(
-          generationResult.generatedMessages,
-        );
+        final addedMessages = await _conversationManager
+            .addMessages(generationResult.generatedMessages)
+            .then((items) {
+              // Prevent from mistake in conversation manager which might lead to duplicate message being added
+              final originalIds = generationResult.generatedMessages
+                  .map((e) => e.messageId)
+                  .toSet();
+              return items.where((e) => originalIds.contains(e.messageId)).toIList();
+            });
 
         // Make sure generated message is updated to date with required metadata
         // before pass to other below service
@@ -206,7 +212,7 @@ abstract base class ChatControllerBase<TEntity> {
       await _inspector.endTimeline(sessionId, timelineId, aiResponse: aiResponse);
       final generationState = GenerationState<GenerationResult>.complete(generationResult);
       _generationStateController.add(generationState);
-      return _mapGenerationState(generationState);
+      return generationState;
     } catch (error, stackTrace) {
       await _inspector.endTimeline(sessionId, timelineId, status: TimelineStatus.failed);
 
@@ -218,7 +224,7 @@ abstract base class ChatControllerBase<TEntity> {
         KaiException.exception(error.toString(), stackTrace),
       );
       _generationStateController.add(errorState);
-      return _mapGenerationState(errorState);
+      return errorState;
     }
   }
 
@@ -230,26 +236,13 @@ abstract base class ChatControllerBase<TEntity> {
   Stream<IList<CoreMessage>> get messagesStream => _conversationManager.messagesStream;
   Future<IList<CoreMessage>> getAllMessages() => _conversationManager.getMessages();
 
-  Stream<GenerationState<CoreMessage>> get generationStateStream =>
-      _generationStateController.stream.map(_mapGenerationState);
+  Stream<GenerationState<GenerationResult>> get generationStateStream =>
+      _generationStateController.stream;
 
   /// Extends [ChatControllerBase] must call dispose to close streams otherwise memory leaks may occur
   void dispose() {
     _generationStateController.close();
     _cancelToken.cancel();
-  }
-
-  GenerationState<CoreMessage> _mapGenerationState(GenerationState<GenerationResult> state) {
-    return state.map(
-      loading: (l) => GenerationState.loading(l.phase),
-      initial: (value) => GenerationState.initial(),
-      streamingText: (text) => GenerationState.streamingText(text.text),
-      complete: (c) {
-        return GenerationState.complete(c.result.displayMessage);
-      },
-      error: (e) => GenerationState.error(e.exception),
-      functionCalling: (f) => GenerationState.functionCalling(f.names),
-    );
   }
 
   void _setState(GenerationState<GenerationResult> state) {

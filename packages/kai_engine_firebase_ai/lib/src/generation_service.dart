@@ -363,37 +363,16 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
       if (functionCalls.isEmpty) {
         // Extract only the newly generated content (everything after initial history)
         final newlyGeneratedContent = conversationHistory.skip(initialHistoryLength).toList();
-        _resultFromResponse(
-          lastResponse,
-          requestMessages: prompts,
-          generatedMessages: newlyGeneratedContent
-              .map((content) => _messageAdapter.toCoreMessage(content))
-              .toList(),
-          inputToken: totalInputTokens,
-          outputToken: totalOutputTokens,
-          apiCallCount: apiCallCount,
-        );
-
         yield GenerationState.complete(
-          GenerationResult(
+          _resultFromResponse(
+            lastResponse, // the text in this will contain chunked
             requestMessages: prompts,
             generatedMessages: newlyGeneratedContent
                 .map((content) => _messageAdapter.toCoreMessage(content))
-                .toIList(),
-            extensions: {
-              'prompt_feedback': {
-                'block_reason': lastResponse.promptFeedback?.blockReason?.toJson(),
-                'block_reason_message': lastResponse.promptFeedback?.blockReasonMessage,
-                'other_feedback': lastResponse.promptFeedback?.safetyRatings.map((e) {
-                  return e.toString();
-                }).toList(),
-              },
-            },
-            usage: GenerationUsage(
-              inputToken: totalInputTokens,
-              outputToken: totalOutputTokens,
-              apiCallCount: apiCallCount,
-            ),
+                .toList(),
+            inputToken: totalInputTokens,
+            outputToken: totalOutputTokens,
+            apiCallCount: apiCallCount,
           ),
         );
         return;
@@ -443,6 +422,7 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
 
     // If we've reached max total iterations, yield final result with current content
     final newlyGeneratedContent = conversationHistory.skip(initialHistoryLength).toList();
+    // TODO: This seem not right
     yield GenerationState.complete(
       GenerationResult(
         requestMessages: prompts,
@@ -467,17 +447,10 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
     int? outputToken,
     int? apiCallCount,
   }) {
-    String? responseText;
-    try {
-      responseText = response.text;
-    } catch (e) {
-      // Handle cases where response.text is not available (e.g., UNEXPECTED_TOOL_CALL)
-      responseText = null;
-    }
-
     return GenerationResult(
       requestMessages: requestMessages,
-      responseText: responseText,
+      // don't use response.text it not combine when in chunk of stream
+      // responseText: response.text,
       generatedMessages:
           generatedMessages?.toIList() ??
           (response.candidates.isNotEmpty
