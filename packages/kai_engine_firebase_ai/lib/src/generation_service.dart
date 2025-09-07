@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:collection/collection.dart';
@@ -111,10 +112,13 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
         );
 
         if (response.candidates case [final candidate, ...]) {
-          log('Candidate: ${candidate.content}');
+          log(
+            'Candidate: ${candidate.content.role}, parts:\n'
+            '${candidate.content.parts.map((e) => JsonEncoder.withIndent('  ').convert(e.toJson()).replaceAll(r'\n', '\n').replaceAll(r'\', '')).join("\n")}',
+          );
+
           final modelContent = candidate.content;
           conversationHistory.add(modelContent);
-          log('Conversation history: ${conversationHistory.map((e) => e.toJson())}');
 
           final functionCalls = modelContent.parts.whereType<FunctionCall>().toList();
 
@@ -214,8 +218,8 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
         usage: const GenerationUsage(inputToken: 0, outputToken: 0, apiCallCount: 0),
         extensions: const {},
       );
-    } catch (e) {
-      throw Exception('Invocation failed: $e');
+    } catch (e, stackTrace) {
+      throw Exception('Invocation failed: $e\nStackTrace: $stackTrace');
     }
   }
 
