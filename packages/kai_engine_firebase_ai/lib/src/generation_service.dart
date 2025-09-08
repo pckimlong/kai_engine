@@ -93,7 +93,8 @@ class FirebaseAiGenerationService implements GenerationServiceBase {
       final initialHistoryLength = conversationHistory.length;
 
       var maxTotalIterations = 50;
-      var maxConsecutiveSameFunction = 3;
+      // TODO: Use a better way to detect looping, eg compare full function call with parameters instead of just name
+      var maxConsecutiveSameFunction = 20;
       var iteration = 0;
       String? lastFunctionName;
       var consecutiveSameFunctionCount = 0;

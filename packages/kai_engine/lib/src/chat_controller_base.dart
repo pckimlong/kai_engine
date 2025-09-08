@@ -9,18 +9,18 @@ import '../kai_engine.dart';
 /// override to add more configuration
 /// [TEntity] is the type of the message object which can use to translate to the backend
 abstract base class ChatControllerBase<TEntity> {
-  final QueryEngineBase _queryEngine;
+  final QueryEngineBase? _queryEngine;
   final ConversationManager<TEntity> _conversationManager;
   final GenerationServiceBase _generationService;
-  final PostResponseEngineBase _postResponseEngine;
+  final PostResponseEngineBase? _postResponseEngine;
   final CancelToken _cancelToken;
   final KaiInspector _inspector;
 
   ChatControllerBase({
-    required ConversationManager<TEntity> conversationManager,
     required GenerationServiceBase generationService,
-    required QueryEngineBase queryEngine,
-    required PostResponseEngineBase postResponseEngine,
+    required ConversationManager<TEntity> conversationManager,
+    QueryEngineBase? queryEngine,
+    PostResponseEngineBase? postResponseEngine,
     KaiInspector? inspector,
   }) : _queryEngine = queryEngine,
        _conversationManager = conversationManager,
@@ -95,13 +95,23 @@ abstract base class ChatControllerBase<TEntity> {
           (messages) => messages.whereNot((m) => m.messageId == userMessage.messageId).toIList(),
         ),
       );
-      final queryContext = await _inspector.inspectPhase<QueryEngineInput, QueryContext>(
-        sessionId,
-        timelineId,
-        'Query Processing',
-        _queryEngine,
-        queryInput,
-      );
+
+      QueryContext queryContext;
+      if (_queryEngine == null) {
+        queryContext = QueryContext(
+          session: _conversationManager.session,
+          originalQuery: input,
+          processedQuery: input.trim(),
+        );
+      } else {
+        queryContext = await _inspector.inspectPhase<QueryEngineInput, QueryContext>(
+          sessionId,
+          timelineId,
+          'Query Processing',
+          _queryEngine,
+          queryInput,
+        );
+      }
 
       // Phase 2: Context Building
       _setLoadingPhase(LoadingPhase.buildContext());
@@ -189,22 +199,24 @@ abstract base class ChatControllerBase<TEntity> {
         generationResult = generationResult.copyWith(generatedMessages: addedMessages);
       }
 
-      // Phase 4: Post-Response Processing
-      final postResponseInput = PostResponseEngineInput(
-        input: queryContext,
-        initialRequestMessageId: userMessage.messageId,
-        requestMessages: contextResult.prompts,
-        result: generationResult,
-        conversationManager: _conversationManager,
-      );
+      if (_postResponseEngine != null) {
+        // Phase 4: Post-Response Processing
+        final postResponseInput = PostResponseEngineInput(
+          input: queryContext,
+          initialRequestMessageId: userMessage.messageId,
+          requestMessages: contextResult.prompts,
+          result: generationResult,
+          conversationManager: _conversationManager,
+        );
 
-      await _inspector.inspectPhase(
-        sessionId,
-        timelineId,
-        'Post-Response Processing',
-        _postResponseEngine,
-        postResponseInput,
-      );
+        await _inspector.inspectPhase(
+          sessionId,
+          timelineId,
+          'Post-Response Processing',
+          _postResponseEngine,
+          postResponseInput,
+        );
+      }
 
       // Extract AI response text from the generation result
       final aiResponse = generationResult.displayMessage.content;
