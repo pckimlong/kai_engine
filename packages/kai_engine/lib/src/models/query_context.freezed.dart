@@ -15,7 +15,8 @@ T _$identity<T>(T value) => value;
 mixin _$QueryContext {
 
  ConversationSession get session;/// Original input from user
- String get originalQuery; String get processedQuery; IList<double> get embeddings;/// Extensible map for more specific data
+ String get originalQuery; String get processedQuery;// Prefer normal lists over immutable ones due to it size
+ List<double> get embeddings;/// Extensible map for more specific data
  Map<String, dynamic> get metadata;
 /// Create a copy of QueryContext
 /// with the given fields replaced by the non-null parameter values.
@@ -47,7 +48,7 @@ abstract mixin class $QueryContextCopyWith<$Res>  {
   factory $QueryContextCopyWith(QueryContext value, $Res Function(QueryContext) _then) = _$QueryContextCopyWithImpl;
 @useResult
 $Res call({
- ConversationSession session, String originalQuery, String processedQuery, IList<double> embeddings, Map<String, dynamic> metadata
+ ConversationSession session, String originalQuery, String processedQuery, List<double> embeddings, Map<String, dynamic> metadata
 });
 
 
@@ -70,7 +71,7 @@ session: null == session ? _self.session : session // ignore: cast_nullable_to_n
 as ConversationSession,originalQuery: null == originalQuery ? _self.originalQuery : originalQuery // ignore: cast_nullable_to_non_nullable
 as String,processedQuery: null == processedQuery ? _self.processedQuery : processedQuery // ignore: cast_nullable_to_non_nullable
 as String,embeddings: null == embeddings ? _self.embeddings : embeddings // ignore: cast_nullable_to_non_nullable
-as IList<double>,metadata: null == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
+as List<double>,metadata: null == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,
   ));
 }
@@ -162,7 +163,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ConversationSession session,  String originalQuery,  String processedQuery,  IList<double> embeddings,  Map<String, dynamic> metadata)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ConversationSession session,  String originalQuery,  String processedQuery,  List<double> embeddings,  Map<String, dynamic> metadata)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _QueryContext() when $default != null:
 return $default(_that.session,_that.originalQuery,_that.processedQuery,_that.embeddings,_that.metadata);case _:
@@ -183,7 +184,7 @@ return $default(_that.session,_that.originalQuery,_that.processedQuery,_that.emb
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ConversationSession session,  String originalQuery,  String processedQuery,  IList<double> embeddings,  Map<String, dynamic> metadata)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ConversationSession session,  String originalQuery,  String processedQuery,  List<double> embeddings,  Map<String, dynamic> metadata)  $default,) {final _that = this;
 switch (_that) {
 case _QueryContext():
 return $default(_that.session,_that.originalQuery,_that.processedQuery,_that.embeddings,_that.metadata);}
@@ -200,7 +201,7 @@ return $default(_that.session,_that.originalQuery,_that.processedQuery,_that.emb
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ConversationSession session,  String originalQuery,  String processedQuery,  IList<double> embeddings,  Map<String, dynamic> metadata)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ConversationSession session,  String originalQuery,  String processedQuery,  List<double> embeddings,  Map<String, dynamic> metadata)?  $default,) {final _that = this;
 switch (_that) {
 case _QueryContext() when $default != null:
 return $default(_that.session,_that.originalQuery,_that.processedQuery,_that.embeddings,_that.metadata);case _:
@@ -215,14 +216,22 @@ return $default(_that.session,_that.originalQuery,_that.processedQuery,_that.emb
 
 
 class _QueryContext extends QueryContext {
-  const _QueryContext({required this.session, required this.originalQuery, required this.processedQuery, this.embeddings = const IList.empty(), final  Map<String, dynamic> metadata = const {}}): _metadata = metadata,super._();
+  const _QueryContext({required this.session, required this.originalQuery, required this.processedQuery, final  List<double> embeddings = const [], final  Map<String, dynamic> metadata = const {}}): _embeddings = embeddings,_metadata = metadata,super._();
   
 
 @override final  ConversationSession session;
 /// Original input from user
 @override final  String originalQuery;
 @override final  String processedQuery;
-@override@JsonKey() final  IList<double> embeddings;
+// Prefer normal lists over immutable ones due to it size
+ final  List<double> _embeddings;
+// Prefer normal lists over immutable ones due to it size
+@override@JsonKey() List<double> get embeddings {
+  if (_embeddings is EqualUnmodifiableListView) return _embeddings;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_embeddings);
+}
+
 /// Extensible map for more specific data
  final  Map<String, dynamic> _metadata;
 /// Extensible map for more specific data
@@ -243,12 +252,12 @@ _$QueryContextCopyWith<_QueryContext> get copyWith => __$QueryContextCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _QueryContext&&(identical(other.session, session) || other.session == session)&&(identical(other.originalQuery, originalQuery) || other.originalQuery == originalQuery)&&(identical(other.processedQuery, processedQuery) || other.processedQuery == processedQuery)&&const DeepCollectionEquality().equals(other.embeddings, embeddings)&&const DeepCollectionEquality().equals(other._metadata, _metadata));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _QueryContext&&(identical(other.session, session) || other.session == session)&&(identical(other.originalQuery, originalQuery) || other.originalQuery == originalQuery)&&(identical(other.processedQuery, processedQuery) || other.processedQuery == processedQuery)&&const DeepCollectionEquality().equals(other._embeddings, _embeddings)&&const DeepCollectionEquality().equals(other._metadata, _metadata));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,session,originalQuery,processedQuery,const DeepCollectionEquality().hash(embeddings),const DeepCollectionEquality().hash(_metadata));
+int get hashCode => Object.hash(runtimeType,session,originalQuery,processedQuery,const DeepCollectionEquality().hash(_embeddings),const DeepCollectionEquality().hash(_metadata));
 
 @override
 String toString() {
@@ -263,7 +272,7 @@ abstract mixin class _$QueryContextCopyWith<$Res> implements $QueryContextCopyWi
   factory _$QueryContextCopyWith(_QueryContext value, $Res Function(_QueryContext) _then) = __$QueryContextCopyWithImpl;
 @override @useResult
 $Res call({
- ConversationSession session, String originalQuery, String processedQuery, IList<double> embeddings, Map<String, dynamic> metadata
+ ConversationSession session, String originalQuery, String processedQuery, List<double> embeddings, Map<String, dynamic> metadata
 });
 
 
@@ -285,8 +294,8 @@ class __$QueryContextCopyWithImpl<$Res>
 session: null == session ? _self.session : session // ignore: cast_nullable_to_non_nullable
 as ConversationSession,originalQuery: null == originalQuery ? _self.originalQuery : originalQuery // ignore: cast_nullable_to_non_nullable
 as String,processedQuery: null == processedQuery ? _self.processedQuery : processedQuery // ignore: cast_nullable_to_non_nullable
-as String,embeddings: null == embeddings ? _self.embeddings : embeddings // ignore: cast_nullable_to_non_nullable
-as IList<double>,metadata: null == metadata ? _self._metadata : metadata // ignore: cast_nullable_to_non_nullable
+as String,embeddings: null == embeddings ? _self._embeddings : embeddings // ignore: cast_nullable_to_non_nullable
+as List<double>,metadata: null == metadata ? _self._metadata : metadata // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,
   ));
 }

@@ -31,6 +31,7 @@ This framework was born from developing [Resonate](https://resonate-app-link.com
 - **Post-Response Processing**: Process AI responses after generation with custom pipelines.
 - **Type Safety**: Strong typing throughout the system for better developer experience.
 - **Comprehensive Testability**: Designed for easy unit and integration testing.
+- **Built-in Debugging Tools**: Real-time inspection and debugging capabilities with Kai Inspector (see below).
 
 ## Architecture
 
@@ -199,7 +200,11 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  kai_engine: ^1.0.0
+  kai_engine:
+    git:
+      url: https://github.com/pckimlong/kai_engine.git
+      ref: main
+      path: packages/kai_engine
 ```
 
 Create a custom chat controller:
@@ -258,6 +263,37 @@ The Kai Engine is battle-tested in production applications:
 - **Performance Optimized**: Parallel processing where possible
 - **Memory Efficient**: Proper resource disposal and stream management
 - **Scalable Architecture**: Modular design allows for easy scaling
+
+## Debugging with Kai Inspector
+
+The Kai Engine includes built-in support for real-time debugging and inspection through the optional [Kai Inspector](../kai_inspector) package.
+
+### Features
+- Real-time visualization of message processing pipelines
+- Performance metrics and token usage analytics
+- Detailed phase-by-phase execution tracking
+- Error and warning monitoring
+- Export capabilities for offline analysis
+
+### Usage
+To enable debugging, simply add the Kai Inspector package to your dev dependencies and inject it into your chat controller:
+
+```dart
+// In your app setup
+final inspector = DefaultKaiInspector();
+
+final chatController = ChatController(
+  // ... other services
+  inspector: inspector, // Enable debugging
+);
+
+// In your debug UI
+KaiInspectorScreen(inspector: inspector);
+```
+
+When not injected, the inspection system has zero performance impact on your production application.
+
+For more details, see the [Kai Inspector documentation](../kai_inspector).
 
 ## License
 

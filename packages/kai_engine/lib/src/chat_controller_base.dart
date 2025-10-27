@@ -1,46 +1,33 @@
 import 'dart:async';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:kai_engine/src/post_response_engine.dart';
-import 'package:kai_engine/src/tool_schema.dart';
 import 'package:rxdart/rxdart.dart';
 
-import 'conversation_manager.dart';
-import 'generation_service_base.dart';
-import 'kai_logger.dart';
-import 'models/cancel_token.dart';
-import 'models/core_message.dart';
-import 'models/generation_result.dart';
-import 'models/generation_state.dart';
-import 'models/kai_exception.dart';
-import 'prompt_engine.dart';
-import 'query_engine.dart';
-
-typedef GenerationExecuteConfig = ({List<ToolSchema> tools, Map<String, dynamic>? config});
+import '../kai_engine.dart';
 
 /// Base orchestrator for chat interactions
 /// override to add more configuration
 /// [TEntity] is the type of the message object which can use to translate to the backend
 abstract base class ChatControllerBase<TEntity> {
-  final QueryEngine _queryEngine;
+  final QueryEngineBase? _queryEngine;
   final ConversationManager<TEntity> _conversationManager;
   final GenerationServiceBase _generationService;
-  final PostResponseEngine _postResponseEngine;
+  final PostResponseEngineBase? _postResponseEngine;
   final CancelToken _cancelToken;
-  final KaiLogger _logger;
+  final KaiInspector _inspector;
 
   ChatControllerBase({
-    required ConversationManager<TEntity> conversationManager,
     required GenerationServiceBase generationService,
-    required QueryEngine queryEngine,
-    required PostResponseEngine postResponseEngine,
-    KaiLogger? logger,
+    required ConversationManager<TEntity> conversationManager,
+    QueryEngineBase? queryEngine,
+    PostResponseEngineBase? postResponseEngine,
+    KaiInspector? inspector,
   }) : _queryEngine = queryEngine,
        _conversationManager = conversationManager,
        _generationService = generationService,
        _postResponseEngine = postResponseEngine,
        _cancelToken = CancelToken(),
-       _logger = logger ?? const NoOpKaiLogger();
+       _inspector = inspector ?? NoOpKaiInspector();
 
   /// Handle generation state updates
   final _generationStateController = BehaviorSubject<GenerationState<GenerationResult>>.seeded(
@@ -50,147 +37,206 @@ abstract base class ChatControllerBase<TEntity> {
   ContextEngine build();
 
   /// Provide custom generative config in addition to default configuration of generative service base on the prompt which will send to server
-  GenerationExecuteConfig generativeConfigs(IList<CoreMessage> prompts) {
-    return (tools: [], config: null);
-  }
+  GenerationExecuteConfig generativeConfigs(IList<CoreMessage> prompts) =>
+      GenerationExecuteConfig.none();
 
   /// Submit user input for processing and generation
   /// [revertInputOnError] indicates whether to revert user input if error occurs, by default it is false
   /// which means the user input will be retained even if an error occurs
-  Future<GenerationState<CoreMessage>> submit(
+  Future<GenerationState<GenerationResult>> submit(
     String input, {
     bool revertInputOnError = false,
   }) async {
-    CoreMessage? userMessage;
-    CoreMessage? placeholder;
+    var userMessage = CoreMessage.user(content: input);
+
+    // Use ConversationSession ID for inspector session and user message ID as timeline ID
+    final sessionId = _conversationManager.session.id;
+    final timelineId = userMessage.messageId; // Use user message ID to track this specific input
+
+    await _inspector.startSession(sessionId);
+    await _inspector.startTimeline(sessionId, timelineId, input);
 
     try {
-      await _logger.logInfo('Chat submission started', data: {'input': input});
+      // Reset cancel token for new generation
+      _cancelToken.reset();
+
+      // Add initial log to the first phase (Query Processing)
+      await _inspector.recordPhaseLog(
+        sessionId,
+        timelineId,
+        'query-processing',
+        TimelineLog(
+          message: 'Chat submission started',
+          timestamp: DateTime.now(),
+          severity: TimelineLogSeverity.info,
+          metadata: {'input': input},
+        ),
+      );
+
       _setState(GenerationState.loading());
-      placeholder = _conversationManager.addPlaceholderUserMessage(input);
 
-      // Optimize query
+      // Variable to store the final generation result
+      late GenerationResult generationResult;
+
+      unawaited(
+        _conversationManager.addMessages([userMessage].lock).then((inserted) async {
+          userMessage = inserted.first;
+        }),
+      );
+
+      // Phase 1: Query Processing
       _setLoadingPhase(LoadingPhase.processingQuery());
-      final inputQuery = await _queryEngine.process(
-        input,
+      final queryInput = QueryEngineInput(
+        rawInput: input,
         session: _conversationManager.session,
-        onStageStart: (name) {
-          _setLoadingPhase(LoadingPhase.processingQuery(name));
-        },
+        // Exclude the current user message from history, by natural flow user message is happening after query input
+        // but to trickly show message in UI faster, we trickly hide this
+        histories: await _conversationManager.getMessages().then(
+          (messages) => messages.whereNot((m) => m.messageId == userMessage.messageId).toIList(),
+        ),
       );
 
-      // Build context/history with input ready
+      QueryContext queryContext;
+      if (_queryEngine == null) {
+        queryContext = QueryContext(
+          session: _conversationManager.session,
+          originalQuery: input,
+          processedQuery: input.trim(),
+        );
+      } else {
+        queryContext = await _inspector.inspectPhase<QueryEngineInput, QueryContext>(
+          sessionId,
+          timelineId,
+          'Query Processing',
+          _queryEngine,
+          queryInput,
+        );
+      }
+
+      // Phase 2: Context Building
       _setLoadingPhase(LoadingPhase.buildContext());
-      final contextResult = await build().generate(
-        source: await _conversationManager.getMessages(),
-        inputQuery: inputQuery,
-        onStageStart: (name) {
-          _setLoadingPhase(LoadingPhase.buildContext(name));
-        },
+      final contextInput = ContextEngineInput(
+        inputQuery: queryContext,
+        conversationMessages: await _conversationManager.getMessages(),
+        providedUserMessage: userMessage,
+      );
+      final contextResult = await _inspector.inspectPhase(
+        sessionId,
+        timelineId,
+        'Context Building',
+        build(),
+        contextInput,
       );
 
-      // Extract user message and prompts from record
-      userMessage = contextResult.$1;
-      final prompts = contextResult.$2;
+      // Log the actual prompt messages for debugging
+      await _inspector.recordPromptMessagesLog(
+        sessionId,
+        timelineId,
+        'Context Building',
+        PromptMessagesLog(
+          message:
+              'Context building completed with ${contextResult.prompts.length} prompt messages',
+          timestamp: DateTime.now(),
+          promptMessages: contextResult.prompts.toList(),
+          severity: TimelineLogSeverity.info,
+          metadata: {'prompt_count': contextResult.prompts.length},
+        ),
+      );
 
-      // persist user message (replace placeholder)
-      await _conversationManager.replacePlaceholderMessage(placeholder, userMessage);
-
-      // Generate response
-      final configs = generativeConfigs(prompts);
+      // Phase 3: AI Generation
+      final configs = generativeConfigs(contextResult.prompts);
       _setLoadingPhase(LoadingPhase.generatingResponse());
-      final responseStream = _generationService.stream(
-        prompts,
+      onPromptsReady(contextResult.prompts);
+
+      final aiGenerationInput = AIGenerationInput(
+        prompts: contextResult.prompts,
         cancelToken: _cancelToken,
         tools: configs.tools,
         config: configs.config,
+        onStateUpdate: (state) => _generationStateController.add(state),
       );
 
-      GenerationState<GenerationResult>? finalState;
-      await for (final state in responseStream) {
-        if (state is! GenerationStreamingTextState) {
-          // If it not a generation streaming, log it to better see what behind
-          _logger.logInfo('Generation state updated: $state');
-        }
+      generationResult = await _inspector.inspectPhase(
+        sessionId,
+        timelineId,
+        'AI Generation',
+        AIGenerationPhase(_generationService),
+        aiGenerationInput,
+      );
 
-        // Handle error states from the stream
-        if (state is GenerationErrorState<GenerationResult>) {
-          // Emit error state through the controller
-          _generationStateController.add(state);
+      // Log the actual generated messages for debugging
+      await _inspector.recordGeneratedMessagesLog(
+        sessionId,
+        timelineId,
+        'AI Generation',
+        GeneratedMessagesLog(
+          message:
+              'AI generation completed with ${generationResult.generatedMessages.length} generated messages',
+          timestamp: DateTime.now(),
+          generatedMessages: generationResult.generatedMessages.toList(),
+          severity: TimelineLogSeverity.info,
+          metadata: {
+            'generated_count': generationResult.generatedMessages.length,
+            'total_tokens': generationResult.usage?.tokenCount,
+          },
+        ),
+      );
 
-          // Handle revertInputOnError for stream errors
-          if (revertInputOnError) {
-            await _conversationManager.removeMessages([userMessage].lock);
-          }
+      // Save the AI-generated messages to the conversation
+      if (generationResult.generatedMessages.isNotEmpty) {
+        final addedMessages = await _conversationManager
+            .addMessages(generationResult.generatedMessages)
+            .then((items) {
+              // Prevent from mistake in conversation manager which might lead to duplicate message being added
+              final originalIds = generationResult.generatedMessages
+                  .map((e) => e.messageId)
+                  .toSet();
+              return items.where((e) => originalIds.contains(e.messageId)).toIList();
+            });
 
-          await _logger.logError('Generation stream error', error: state.exception);
-          return _mapGenerationState(state);
-        }
-
-        if (state is GenerationCompleteState<GenerationResult>) {
-          // Process background task on generated response, eg summarize, generate embedding
-          // without blocking process
-          // added messages might get modified again by post-processing
-          _postResponseEngine
-              .process(
-                prompts: prompts,
-                result: state.result,
-                conversationManager: _conversationManager,
-              )
-              .catchError((error, stackTrace) {
-                _logger.logError(
-                  'Post response processing failed',
-                  error: error,
-                  stackTrace: stackTrace,
-                );
-              });
-
-          // Validate generatedMessage contains only newly generated content
-          assert(
-            state.result.generatedMessage.isNotEmpty,
-            'generatedMessage should not be empty - this indicates a bug in the generation service'
-          );
-          assert(
-            state.result.generatedMessage.every((msg) => 
-              msg.type == CoreMessageType.ai || msg.type == CoreMessageType.function),
-            'generatedMessage should only contain AI responses and function calls/responses, '
-            'not system prompts or user messages. Found: ${state.result.generatedMessage.map((m) => m.type).toList()}'
-          );
-          
-          // Save AI responses, added messages might get modified again by post-processing
-          await _conversationManager.addMessages(state.result.generatedMessage);
-        }
-
-        // Emit state through the controller
-        finalState = state;
-        _generationStateController.add(state);
+        // Make sure generated message is updated to date with required metadata
+        // before pass to other below service
+        generationResult = generationResult.copyWith(generatedMessages: addedMessages);
       }
 
-      if (finalState == null) {
-        throw KaiException.exception('Response stream completed without emitting a final state');
+      if (_postResponseEngine != null) {
+        // Phase 4: Post-Response Processing
+        final postResponseInput = PostResponseEngineInput(
+          input: queryContext,
+          initialRequestMessageId: userMessage.messageId,
+          requestMessages: contextResult.prompts,
+          result: generationResult,
+          conversationManager: _conversationManager,
+        );
+
+        await _inspector.inspectPhase(
+          sessionId,
+          timelineId,
+          'Post-Response Processing',
+          _postResponseEngine,
+          postResponseInput,
+        );
       }
 
-      final result = _mapGenerationState(finalState);
-      await _logger.logInfo('Chat submission completed successfully');
-      return result;
+      // Extract AI response text from the generation result
+      final aiResponse = generationResult.displayMessage.content;
+
+      await _inspector.endTimeline(sessionId, timelineId, aiResponse: aiResponse);
+      final generationState = GenerationState<GenerationResult>.complete(generationResult);
+      _generationStateController.add(generationState);
+      return generationState;
     } catch (error, stackTrace) {
-      await _logger.logError('Chat submission failed', error: error, stackTrace: stackTrace);
+      await _inspector.endTimeline(sessionId, timelineId, status: TimelineStatus.failed);
 
       if (revertInputOnError) {
-        // If userMessage is set, it means we successfully processed the input and persisted it
-        if (userMessage != null) {
-          await _conversationManager.removeMessages([userMessage].lock);
-        } else if (placeholder != null) {
-          // If we only have a placeholder, remove it from local state
-          await _conversationManager.removeMessages([placeholder].lock);
-        }
+        await _conversationManager.removeMessages([userMessage].lock);
       }
 
       final errorState = GenerationState<GenerationResult>.error(
         KaiException.exception(error.toString(), stackTrace),
       );
       _generationStateController.add(errorState);
-      return _mapGenerationState(errorState);
+      return errorState;
     }
   }
 
@@ -200,9 +246,10 @@ abstract base class ChatControllerBase<TEntity> {
   }
 
   Stream<IList<CoreMessage>> get messagesStream => _conversationManager.messagesStream;
+  Future<IList<CoreMessage>> getAllMessages() => _conversationManager.getMessages();
 
-  Stream<GenerationState<CoreMessage>> get generationStateStream =>
-      _generationStateController.stream.map(_mapGenerationState);
+  Stream<GenerationState<GenerationResult>> get generationStateStream =>
+      _generationStateController.stream;
 
   /// Extends [ChatControllerBase] must call dispose to close streams otherwise memory leaks may occur
   void dispose() {
@@ -210,21 +257,18 @@ abstract base class ChatControllerBase<TEntity> {
     _cancelToken.cancel();
   }
 
-  GenerationState<CoreMessage> _mapGenerationState(
-    GenerationState<GenerationResult> state,
-  ) {
-    return state.map(
-      loading: (l) => GenerationState.loading(l.phase),
-      initial: (value) => GenerationState.initial(),
-      streamingText: (text) => GenerationState.streamingText(text.text),
-      complete: (c) {
-        return GenerationState.complete(c.result.displayMessage);
-      },
-      error: (e) => GenerationState.error(e.exception),
-      functionCalling: (f) => GenerationState.functionCalling(f.names),
-    );
+  void _setState(GenerationState<GenerationResult> state) {
+    _generationStateController.add(state);
+    onStateChange(state);
   }
 
-  void _setState(GenerationState<GenerationResult> state) => _generationStateController.add(state);
   void _setLoadingPhase(LoadingPhase phase) => _setState(GenerationState.loading(phase));
+
+  /// Callback to listen for state changes, this helpful for implementing custom logic or log the
+  /// state provide more flexible. default to do nothing
+  void onStateChange(GenerationState<GenerationResult> state) {}
+
+  /// Execute before the final generation step, allow to track what being send for generation
+  /// this allow to track what being sent for generation. this helpful for logging etc
+  void onPromptsReady(IList<CoreMessage> messages) {}
 }

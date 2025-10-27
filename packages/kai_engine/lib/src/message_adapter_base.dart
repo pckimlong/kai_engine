@@ -4,7 +4,10 @@ import 'models/core_message.dart';
 
 /// Class response for transform CoreMessage type to any type
 abstract interface class MessageAdapterBase<T> {
-  T fromCoreMessage(CoreMessage message, {required ConversationSession session});
+  T fromCoreMessage(
+    CoreMessage message, {
+    required ConversationSession session,
+  });
   CoreMessage toCoreMessage(T object);
 }
 
@@ -18,7 +21,10 @@ abstract interface class GenerativeMessageAdapterBase<T> {
 /// eg memory conversation
 final class CoreMessageAdapter implements MessageAdapterBase<CoreMessage> {
   @override
-  CoreMessage fromCoreMessage(CoreMessage message, {required ConversationSession session}) {
+  CoreMessage fromCoreMessage(
+    CoreMessage message, {
+    required ConversationSession session,
+  }) {
     return message;
   }
 

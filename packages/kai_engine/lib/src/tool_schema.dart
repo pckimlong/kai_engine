@@ -17,7 +17,7 @@ sealed class ToolResult<T> with _$ToolResult<T> {
   /// Represents a failed tool execution result.
   ///
   /// Contains an [error] message describing what went wrong during tool execution.
-  const factory ToolResult.failure(String error) = _ToolResultFailure;
+  const factory ToolResult.failure(String error, StackTrace stackTrace) = _ToolResultFailure;
 }
 
 /// Encapsulates the definition of a tool that can be called by the AI.
@@ -202,7 +202,7 @@ abstract base class ToolSchema<TDeclaration, TCall, TResponse> {
   Map<String, Object?> buildResponse(ToolResult<TResponse> result) {
     return result.when(
       success: (data, response) => response,
-      failure: (error) => {'error': error},
+      failure: (error, _) => {'error': error},
     );
   }
 

@@ -4,7 +4,11 @@ abstract class KaiLogger {
   Future<void> logInfo(String message, {Object? data});
 
   /// Log error messages
-  Future<void> logError(String message, {Object? error, StackTrace? stackTrace});
+  Future<void> logError(
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+  });
 }
 
 /// No-op implementation of KaiLogger
@@ -15,5 +19,9 @@ class NoOpKaiLogger implements KaiLogger {
   Future<void> logInfo(String message, {Object? data}) async {}
 
   @override
-  Future<void> logError(String message, {Object? error, StackTrace? stackTrace}) async {}
+  Future<void> logError(
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+  }) async {}
 }

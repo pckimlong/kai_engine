@@ -18,9 +18,7 @@ class ConversationManager<T> {
   IList<CoreMessage> _messages = IList(const []);
   final BehaviorSubject<IList<CoreMessage>> _messagesController =
       BehaviorSubject<IList<CoreMessage>>();
-  final BehaviorSubject<bool> _loadingController = BehaviorSubject<bool>.seeded(
-    false,
-  );
+  final BehaviorSubject<bool> _loadingController = BehaviorSubject<bool>.seeded(false);
 
   ConversationManager._({
     required this.session,
@@ -56,77 +54,34 @@ class ConversationManager<T> {
     }
   }
 
-  /// Adds a placeholder user message for immediate UI feedback
-  /// Returns the placeholder message that was added
-  CoreMessage addPlaceholderUserMessage(String input) {
-    final placeholder = CoreMessage.user(content: input);
-    _messages = _messages.add(placeholder);
-    _messagesController.add(_messages);
-    return placeholder;
-  }
-
-  /// Replaces a placeholder message with the actual message and persists it
-  Future<void> replacePlaceholderMessage(CoreMessage placeholder, CoreMessage actualMessage) async {
-    // Store original state for rollback
-    final originalMessages = _messages;
-
-    try {
-      // Optimistic update: Replace placeholder with actual message immediately
-      _messages = _messages
-          .removeWhere((e) => e.messageId == placeholder.messageId)
-          .add(actualMessage);
-      _messagesController.add(_messages);
-
-      // Save actual message to repository
-      final result = await _repository
-          .saveMessages(
-            session: session,
-            messages: [_messageAdapter.fromCoreMessage(actualMessage, session: session)],
-          )
-          .then((e) => e.map(_messageAdapter.toCoreMessage));
-
-      // Replace optimistic message with repository result
-      _messages = _messages
-          .removeWhere((e) => e.messageId == actualMessage.messageId)
-          .addAll(result);
-      _messagesController.add(_messages);
-    } catch (error) {
-      // Rollback optimistic update on failure
-      _messages = originalMessages;
-      _messagesController.add(_messages);
-      rethrow;
-    }
-  }
-
   /// Adds a message to the conversation
-  Future<void> addMessages(
-    IList<CoreMessage> messages,
-  ) async {
+  Future<IList<CoreMessage>> addMessages(IList<CoreMessage> messages) async {
     // Ensure system messages are ignored
-    final nonSystemMessages = messages.where((m) => m.type != CoreMessageType.system).toList();
+    final persistentMessages = messages.where((m) => m.isMessageSavable).toList();
 
     // Store original state for rollback
     final originalMessages = _messages;
 
     try {
       // Optimistic update: Add to local state first for instant UI feedback
-      _messages = _messages.addAll(nonSystemMessages);
+      _messages = _messages.addAll(persistentMessages);
       _messagesController.add(_messages);
 
       // Save to repository
       final result = await _repository
           .saveMessages(
             session: session,
-            messages: nonSystemMessages.map(
+            messages: persistentMessages.map(
               (e) => _messageAdapter.fromCoreMessage(e, session: session),
             ),
           )
           .then((e) => e.map(_messageAdapter.toCoreMessage));
 
       _messages = _messages
-          .removeWhere((e) => nonSystemMessages.any((m) => m.messageId == e.messageId))
+          .removeWhere((e) => persistentMessages.any((m) => m.messageId == e.messageId))
           .addAll(result);
       _messagesController.add(_messages);
+      return result.toIList();
     } catch (error) {
       // Rollback optimistic update on failure
       _messages = originalMessages;
@@ -136,31 +91,35 @@ class ConversationManager<T> {
   }
 
   Future<void> updateMessages(IList<CoreMessage> messages) async {
-    final nonSystemMessages = messages.where((m) => m.type != CoreMessageType.system).toList();
+    final persistentMessages = messages.where((m) => m.isMessageSavable).toList();
 
     // Store original state for rollback
     final originalMessages = _messages;
 
     try {
+      // Create a map for efficient lookups
+      final messageMap = {for (var m in persistentMessages) m.messageId: m};
+
       // Optimistic update: Update local state first for instant UI feedback
-      _messages = _messages.updateById(
-        nonSystemMessages,
-        (e) => nonSystemMessages.any((m) => m.messageId == e.messageId),
-      );
+      _messages = _messages.map((message) {
+        return messageMap[message.messageId] ?? message;
+      }).toIList();
       _messagesController.add(_messages);
 
       // Update repository
       final result = await _repository
           .updateMessages(
-            nonSystemMessages.map((e) => _messageAdapter.fromCoreMessage(e, session: session)),
+            persistentMessages.map((e) => _messageAdapter.fromCoreMessage(e, session: session)),
           )
           .then((e) => e.map(_messageAdapter.toCoreMessage));
 
+      // Create a map for the repository results
+      final resultMap = {for (var m in result) m.messageId: m};
+
       // Replace optimistic updates with actual repository results
-      _messages = _messages.updateById(
-        result,
-        (e) => result.any((m) => m.messageId == e.messageId),
-      );
+      _messages = _messages.map((message) {
+        return resultMap[message.messageId] ?? message;
+      }).toIList();
       _messagesController.add(_messages);
     } catch (error) {
       // Rollback optimistic update on failure
@@ -210,9 +169,12 @@ class ConversationManager<T> {
 
 /// Prebuilt for in memory management of conversation messages
 final class InMemoryConversationManager extends ConversationManager<CoreMessage> {
-  InMemoryConversationManager({required super.session})
-    : super._(
-        repository: InMemoryMessageRepository(),
-        messageAdapter: CoreMessageAdapter(),
-      );
+  InMemoryConversationManager({
+    required super.session,
+    MessageRepositoryBase<CoreMessage>? repository,
+    MessageAdapterBase<CoreMessage>? messageAdapter,
+  }) : super._(
+         repository: repository ?? InMemoryMessageRepository(),
+         messageAdapter: messageAdapter ?? CoreMessageAdapter(),
+       );
 }

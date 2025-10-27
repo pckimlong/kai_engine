@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 // ignore: implementation_imports
 import 'package:firebase_ai/src/content.dart'; // Access parsePart function
 import 'package:kai_engine/kai_engine.dart';
@@ -26,6 +25,8 @@ class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> 
         try {
           // Parse the entire Content object back from JSON
           final parsedContent = parseContent(originalContentJson);
+
+          //TODO: function response type currently unsupported, it will parse to unknown, firebase AI will throw error log of it, due it not being support yet as
 
           // Check if any parts were parsed as UnknownPart that shouldn't be
           final reconstructedParts = <Part>[];
@@ -90,11 +91,31 @@ class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> 
       _ => CoreMessageType.unknown,
     };
 
-    return CoreMessage.create(
-      type: messageType,
-      content: combinedText,
-      extensions: extensions.lock,
-    );
+    String text = combinedText;
+
+    // Handle empty text cases which might be function call or system message
+    // this helpful for debugging, but not actual use
+    if (text.isEmpty || parts.length > 1) {
+      final hasFunctionCall = parts.whereType<FunctionCall>().isNotEmpty;
+      if (messageType == CoreMessageType.ai && hasFunctionCall) {
+        text = [
+          // Include text parts if any
+          if (parts.whereType<TextPart>().isNotEmpty)
+            parts.whereType<TextPart>().map((p) => p.text).join(' ') + "\n\n",
+
+          // Include function call last
+          JsonEncoder.withIndent(' ').convert(parts.whereType<FunctionCall>().first.toJson())
+            ..replaceAll(r'\n', '\n').replaceAll(r'\', ''),
+        ].join('\n');
+      } else if (messageType == CoreMessageType.function) {
+        text = JsonEncoder.withIndent(' ')
+            .convert(parts.whereType<FunctionResponse>().firstOrNull?.toJson())
+            .replaceAll(r'\n', '\n')
+            .replaceAll(r'\', '');
+      }
+    }
+
+    return CoreMessage.create(type: messageType, content: text, extensions: extensions);
   }
 
   /// Helper method to manually reconstruct parts that Firebase AI's parseContent doesn't handle
@@ -136,10 +157,7 @@ class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> 
     // Handle FileData
     if (partJson.containsKey('fileData')) {
       final fileData = partJson['fileData'] as Map<String, dynamic>;
-      return FileData(
-        fileData['mimeType'] as String,
-        fileData['fileUri'] as String,
-      );
+      return FileData(fileData['mimeType'] as String, fileData['fileUri'] as String);
     }
 
     // If we can't reconstruct it, return null

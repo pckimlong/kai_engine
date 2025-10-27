@@ -24,7 +24,10 @@ abstract interface class CoreMessageRepositoryBase extends MessageRepositoryBase
 
 /// Prebuilt repository for memory persistence.
 final class InMemoryMessageRepository implements CoreMessageRepositoryBase {
-  final List<CoreMessage> _messages = [];
+  InMemoryMessageRepository({Iterable<CoreMessage>? initialMessages})
+    : _messages = initialMessages?.toList() ?? [];
+
+  final List<CoreMessage> _messages;
 
   @override
   Future<Iterable<CoreMessage>> getMessages(ConversationSession session) {

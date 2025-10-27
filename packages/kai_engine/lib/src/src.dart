@@ -1,12 +1,15 @@
+export 'ai_generation_phase.dart';
 export 'chat_controller_base.dart';
+export 'content_builder.dart';
 export 'context_builder.dart';
 export 'conversation_manager.dart';
 export 'flex_template.dart';
 export 'generation_service_base.dart';
+export 'inspector/inspector.dart';
 export 'kai_logger.dart';
 export 'message_adapter_base.dart';
 export 'message_repository_base.dart';
-export 'post_response_engine.dart';
+export 'post_response_engine_base.dart';
 export 'prompt_engine.dart';
-export 'query_engine.dart';
+export 'query_engine_base.dart';
 export 'tool_schema.dart';

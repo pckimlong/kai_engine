@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$GenerativeConfig {
 
- String get model; List<SafetySetting>? get safetySettings; GenerationConfig? get generationConfig; List<FirebaseAiToolSchema>? get toolSchemas; ToolConfig? get toolConfig; String? get systemPrompt;
+ String get model; List<SafetySetting>? get safetySettings; GenerationConfig? get generationConfig; List<FirebaseAiToolSchema>? get toolSchemas; ToolingConfig? get toolConfig; String? get systemPrompt;
 /// Create a copy of GenerativeConfig
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -45,11 +45,11 @@ abstract mixin class $GenerativeConfigCopyWith<$Res>  {
   factory $GenerativeConfigCopyWith(GenerativeConfig value, $Res Function(GenerativeConfig) _then) = _$GenerativeConfigCopyWithImpl;
 @useResult
 $Res call({
- String model, List<SafetySetting>? safetySettings, GenerationConfig? generationConfig, List<FirebaseAiToolSchema>? toolSchemas, ToolConfig? toolConfig, String? systemPrompt
+ String model, List<SafetySetting>? safetySettings, GenerationConfig? generationConfig, List<FirebaseAiToolSchema>? toolSchemas, ToolingConfig? toolConfig, String? systemPrompt
 });
 
 
-
+$ToolingConfigCopyWith<$Res>? get toolConfig;
 
 }
 /// @nodoc
@@ -69,11 +69,23 @@ as String,safetySettings: freezed == safetySettings ? _self.safetySettings : saf
 as List<SafetySetting>?,generationConfig: freezed == generationConfig ? _self.generationConfig : generationConfig // ignore: cast_nullable_to_non_nullable
 as GenerationConfig?,toolSchemas: freezed == toolSchemas ? _self.toolSchemas : toolSchemas // ignore: cast_nullable_to_non_nullable
 as List<FirebaseAiToolSchema>?,toolConfig: freezed == toolConfig ? _self.toolConfig : toolConfig // ignore: cast_nullable_to_non_nullable
-as ToolConfig?,systemPrompt: freezed == systemPrompt ? _self.systemPrompt : systemPrompt // ignore: cast_nullable_to_non_nullable
+as ToolingConfig?,systemPrompt: freezed == systemPrompt ? _self.systemPrompt : systemPrompt // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
+/// Create a copy of GenerativeConfig
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ToolingConfigCopyWith<$Res>? get toolConfig {
+    if (_self.toolConfig == null) {
+    return null;
+  }
 
+  return $ToolingConfigCopyWith<$Res>(_self.toolConfig!, (value) {
+    return _then(_self.copyWith(toolConfig: value));
+  });
+}
 }
 
 
@@ -152,7 +164,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String model,  List<SafetySetting>? safetySettings,  GenerationConfig? generationConfig,  List<FirebaseAiToolSchema>? toolSchemas,  ToolConfig? toolConfig,  String? systemPrompt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String model,  List<SafetySetting>? safetySettings,  GenerationConfig? generationConfig,  List<FirebaseAiToolSchema>? toolSchemas,  ToolingConfig? toolConfig,  String? systemPrompt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GenerativeConfig() when $default != null:
 return $default(_that.model,_that.safetySettings,_that.generationConfig,_that.toolSchemas,_that.toolConfig,_that.systemPrompt);case _:
@@ -173,7 +185,7 @@ return $default(_that.model,_that.safetySettings,_that.generationConfig,_that.to
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String model,  List<SafetySetting>? safetySettings,  GenerationConfig? generationConfig,  List<FirebaseAiToolSchema>? toolSchemas,  ToolConfig? toolConfig,  String? systemPrompt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String model,  List<SafetySetting>? safetySettings,  GenerationConfig? generationConfig,  List<FirebaseAiToolSchema>? toolSchemas,  ToolingConfig? toolConfig,  String? systemPrompt)  $default,) {final _that = this;
 switch (_that) {
 case _GenerativeConfig():
 return $default(_that.model,_that.safetySettings,_that.generationConfig,_that.toolSchemas,_that.toolConfig,_that.systemPrompt);}
@@ -190,7 +202,7 @@ return $default(_that.model,_that.safetySettings,_that.generationConfig,_that.to
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String model,  List<SafetySetting>? safetySettings,  GenerationConfig? generationConfig,  List<FirebaseAiToolSchema>? toolSchemas,  ToolConfig? toolConfig,  String? systemPrompt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String model,  List<SafetySetting>? safetySettings,  GenerationConfig? generationConfig,  List<FirebaseAiToolSchema>? toolSchemas,  ToolingConfig? toolConfig,  String? systemPrompt)?  $default,) {final _that = this;
 switch (_that) {
 case _GenerativeConfig() when $default != null:
 return $default(_that.model,_that.safetySettings,_that.generationConfig,_that.toolSchemas,_that.toolConfig,_that.systemPrompt);case _:
@@ -228,7 +240,7 @@ class _GenerativeConfig extends GenerativeConfig {
   return EqualUnmodifiableListView(value);
 }
 
-@override final  ToolConfig? toolConfig;
+@override final  ToolingConfig? toolConfig;
 @override final  String? systemPrompt;
 
 /// Create a copy of GenerativeConfig
@@ -261,11 +273,11 @@ abstract mixin class _$GenerativeConfigCopyWith<$Res> implements $GenerativeConf
   factory _$GenerativeConfigCopyWith(_GenerativeConfig value, $Res Function(_GenerativeConfig) _then) = __$GenerativeConfigCopyWithImpl;
 @override @useResult
 $Res call({
- String model, List<SafetySetting>? safetySettings, GenerationConfig? generationConfig, List<FirebaseAiToolSchema>? toolSchemas, ToolConfig? toolConfig, String? systemPrompt
+ String model, List<SafetySetting>? safetySettings, GenerationConfig? generationConfig, List<FirebaseAiToolSchema>? toolSchemas, ToolingConfig? toolConfig, String? systemPrompt
 });
 
 
-
+@override $ToolingConfigCopyWith<$Res>? get toolConfig;
 
 }
 /// @nodoc
@@ -285,12 +297,24 @@ as String,safetySettings: freezed == safetySettings ? _self._safetySettings : sa
 as List<SafetySetting>?,generationConfig: freezed == generationConfig ? _self.generationConfig : generationConfig // ignore: cast_nullable_to_non_nullable
 as GenerationConfig?,toolSchemas: freezed == toolSchemas ? _self._toolSchemas : toolSchemas // ignore: cast_nullable_to_non_nullable
 as List<FirebaseAiToolSchema>?,toolConfig: freezed == toolConfig ? _self.toolConfig : toolConfig // ignore: cast_nullable_to_non_nullable
-as ToolConfig?,systemPrompt: freezed == systemPrompt ? _self.systemPrompt : systemPrompt // ignore: cast_nullable_to_non_nullable
+as ToolingConfig?,systemPrompt: freezed == systemPrompt ? _self.systemPrompt : systemPrompt // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
 
+/// Create a copy of GenerativeConfig
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ToolingConfigCopyWith<$Res>? get toolConfig {
+    if (_self.toolConfig == null) {
+    return null;
+  }
 
+  return $ToolingConfigCopyWith<$Res>(_self.toolConfig!, (value) {
+    return _then(_self.copyWith(toolConfig: value));
+  });
+}
 }
 
 // dart format on

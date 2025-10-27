@@ -119,11 +119,11 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( T data,  Map<String, Object?> response)?  success,TResult Function( String error)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( T data,  Map<String, Object?> response)?  success,TResult Function( String error,  StackTrace stackTrace)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ToolResultSuccessWithData() when success != null:
 return success(_that.data,_that.response);case _ToolResultFailure() when failure != null:
-return failure(_that.error);case _:
+return failure(_that.error,_that.stackTrace);case _:
   return orElse();
 
 }
@@ -141,11 +141,11 @@ return failure(_that.error);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( T data,  Map<String, Object?> response)  success,required TResult Function( String error)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( T data,  Map<String, Object?> response)  success,required TResult Function( String error,  StackTrace stackTrace)  failure,}) {final _that = this;
 switch (_that) {
 case _ToolResultSuccessWithData():
 return success(_that.data,_that.response);case _ToolResultFailure():
-return failure(_that.error);}
+return failure(_that.error,_that.stackTrace);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -159,11 +159,11 @@ return failure(_that.error);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( T data,  Map<String, Object?> response)?  success,TResult? Function( String error)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( T data,  Map<String, Object?> response)?  success,TResult? Function( String error,  StackTrace stackTrace)?  failure,}) {final _that = this;
 switch (_that) {
 case _ToolResultSuccessWithData() when success != null:
 return success(_that.data,_that.response);case _ToolResultFailure() when failure != null:
-return failure(_that.error);case _:
+return failure(_that.error,_that.stackTrace);case _:
   return null;
 
 }
@@ -249,10 +249,11 @@ as Map<String, Object?>,
 
 
 class _ToolResultFailure<T> extends ToolResult<T> {
-  const _ToolResultFailure(this.error): super._();
+  const _ToolResultFailure(this.error, this.stackTrace): super._();
   
 
  final  String error;
+ final  StackTrace stackTrace;
 
 /// Create a copy of ToolResult
 /// with the given fields replaced by the non-null parameter values.
@@ -264,16 +265,16 @@ _$ToolResultFailureCopyWith<T, _ToolResultFailure<T>> get copyWith => __$ToolRes
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ToolResultFailure<T>&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ToolResultFailure<T>&&(identical(other.error, error) || other.error == error)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,error);
+int get hashCode => Object.hash(runtimeType,error,stackTrace);
 
 @override
 String toString() {
-  return 'ToolResult<$T>.failure(error: $error)';
+  return 'ToolResult<$T>.failure(error: $error, stackTrace: $stackTrace)';
 }
 
 
@@ -284,7 +285,7 @@ abstract mixin class _$ToolResultFailureCopyWith<T,$Res> implements $ToolResultC
   factory _$ToolResultFailureCopyWith(_ToolResultFailure<T> value, $Res Function(_ToolResultFailure<T>) _then) = __$ToolResultFailureCopyWithImpl;
 @useResult
 $Res call({
- String error
+ String error, StackTrace stackTrace
 });
 
 
@@ -301,10 +302,11 @@ class __$ToolResultFailureCopyWithImpl<T,$Res>
 
 /// Create a copy of ToolResult
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? error = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? error = null,Object? stackTrace = null,}) {
   return _then(_ToolResultFailure<T>(
 null == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
-as String,
+as String,null == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
+as StackTrace,
   ));
 }
 

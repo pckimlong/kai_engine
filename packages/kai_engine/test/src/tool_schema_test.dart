@@ -41,15 +41,11 @@ final class TestToolSchema extends ToolSchema<TestToolDeclaration, TestToolCall,
   @override
   Future<ToolResult<String>> execute(TestToolCall call) async {
     if (call.query.isEmpty) {
-      return const ToolResult.failure('Query cannot be empty');
+      return ToolResult.failure('Query cannot be empty', StackTrace.current);
     }
 
     final result = 'Processed: ${call.query} with limit ${call.limit}';
-    return ToolResult.success(result, {
-      'query': call.query,
-      'limit': call.limit,
-      'result': result,
-    });
+    return ToolResult.success(result, {'query': call.query, 'limit': call.limit, 'result': result});
   }
 }
 
@@ -89,15 +85,11 @@ final class TestToolSchemaWithCallback
   @override
   Future<ToolResult<String>> execute(TestToolCall call) async {
     if (call.query.isEmpty) {
-      return const ToolResult.failure('Query cannot be empty');
+      return ToolResult.failure('Query cannot be empty', StackTrace.current);
     }
 
     final result = 'Callback test: ${call.query} with limit ${call.limit}';
-    return ToolResult.success(result, {
-      'query': call.query,
-      'limit': call.limit,
-      'result': result,
-    });
+    return ToolResult.success(result, {'query': call.query, 'limit': call.limit, 'result': result});
   }
 }
 
@@ -114,18 +106,21 @@ void main() {
           expect(actualData, equals(data));
           expect(actualResponse, equals(response));
         },
-        failure: (error) => fail('Expected success, got failure: $error'),
+        failure: (error, _) => fail('Expected success, got failure: $error'),
       );
     });
 
     test('creates failure result with error message', () {
       const errorMessage = 'Something went wrong';
-      final result = ToolResult<String>.failure(errorMessage);
+      final result = ToolResult<String>.failure(errorMessage, StackTrace.current);
 
       expect(result, isA<ToolResult<String>>());
       result.when(
         success: (data, response) => fail('Expected failure, got success'),
-        failure: (error) => expect(error, equals(errorMessage)),
+        failure: (error, stackTrace) {
+          expect(error, equals(errorMessage));
+          expect(stackTrace, isNotNull);
+        },
       );
     });
 
@@ -134,18 +129,18 @@ void main() {
 
       final successResult = result.when(
         success: (data, response) => 'Success: $data',
-        failure: (error) => 'Failure: $error',
+        failure: (error, _) => 'Failure: $error',
       );
 
       expect(successResult, equals('Success: data'));
     });
 
     test('when method handles failure case correctly', () {
-      final result = ToolResult<String>.failure('error message');
+      final result = ToolResult<String>.failure('error message', StackTrace.current);
 
       final failureResult = result.when(
         success: (data, response) => 'Success: $data',
-        failure: (error) => 'Failure: $error',
+        failure: (error, _) => 'Failure: $error',
       );
 
       expect(failureResult, equals('Failure: error message'));
@@ -161,10 +156,7 @@ void main() {
         parameters: {'param1': 'string'},
       );
 
-      const toolDeclaration = ToolDeclaration(
-        name: name,
-        declaration: declaration,
-      );
+      const toolDeclaration = ToolDeclaration(name: name, declaration: declaration);
 
       expect(toolDeclaration.name, equals(name));
       expect(toolDeclaration.declaration, equals(declaration));
@@ -173,11 +165,7 @@ void main() {
     test('is immutable', () {
       const toolDeclaration = ToolDeclaration(
         name: 'test',
-        declaration: TestToolDeclaration(
-          name: 'test',
-          description: 'Test',
-          parameters: {},
-        ),
+        declaration: TestToolDeclaration(name: 'test', description: 'Test', parameters: {}),
       );
 
       expect(() => toolDeclaration.name, returnsNormally);
@@ -237,10 +225,7 @@ void main() {
 
     test('handles error response format', () {
       const response = {'error': 'Something went wrong'};
-      const toolResponse = ToolResponse(
-        toolName: 'error_tool',
-        response: response,
-      );
+      const toolResponse = ToolResponse(toolName: 'error_tool', response: response);
 
       expect(toolResponse.response['error'], equals('Something went wrong'));
     });
@@ -278,7 +263,7 @@ void main() {
           expect(response['query'], equals('test query'));
           expect(response['limit'], equals(5));
         },
-        failure: (error) => fail('Expected success, got failure: $error'),
+        failure: (error, _) => fail('Expected success, got failure: $error'),
       );
     });
 
@@ -289,15 +274,12 @@ void main() {
       expect(result, isA<ToolResult<String>>());
       result.when(
         success: (data, response) => fail('Expected failure, got success'),
-        failure: (error) => expect(error, equals('Query cannot be empty')),
+        failure: (error, _) => expect(error, equals('Query cannot be empty')),
       );
     });
 
     test('buildResponse returns response data for success', () {
-      final successResult = ToolResult.success('data', {
-        'key': 'value',
-        'count': 42,
-      });
+      final successResult = ToolResult.success('data', {'key': 'value', 'count': 42});
 
       final response = toolSchema.buildResponse(successResult);
 
@@ -305,7 +287,7 @@ void main() {
     });
 
     test('buildResponse returns error for failure', () {
-      final failureResult = ToolResult<String>.failure('error message');
+      final failureResult = ToolResult<String>.failure('error message', StackTrace.current);
 
       final response = toolSchema.buildResponse(failureResult);
 
@@ -313,10 +295,7 @@ void main() {
     });
 
     test('call method orchestrates complete flow for success', () async {
-      const toolCall = ToolCall(
-        toolName: 'test_tool',
-        arguments: {'query': 'test', 'limit': 3},
-      );
+      const toolCall = ToolCall(toolName: 'test_tool', arguments: {'query': 'test', 'limit': 3});
 
       final toolResponse = await toolSchema.call(toolCall);
 
@@ -327,10 +306,7 @@ void main() {
     });
 
     test('call method handles parsing and execution failure', () async {
-      const toolCall = ToolCall(
-        toolName: 'test_tool',
-        arguments: {'query': '', 'limit': 5},
-      );
+      const toolCall = ToolCall(toolName: 'test_tool', arguments: {'query': '', 'limit': 5});
 
       final toolResponse = await toolSchema.call(toolCall);
 
@@ -340,10 +316,7 @@ void main() {
 
     test('call method handles exception during execution', () async {
       final failingSchema = TestFailingToolSchema();
-      const toolCall = ToolCall(
-        toolName: 'failing_tool',
-        arguments: {'query': 'test'},
-      );
+      const toolCall = ToolCall(toolName: 'failing_tool', arguments: {'query': 'test'});
 
       expect(() => failingSchema.call(toolCall), throwsA(isA<Exception>()));
     });
@@ -374,7 +347,7 @@ void main() {
         success: (data, response) {
           expect(data, contains('callback test'));
         },
-        failure: (error) => fail('Expected success in callback'),
+        failure: (error, _) => fail('Expected success in callback'),
       );
     });
 
@@ -416,15 +389,12 @@ void main() {
       expect(capturedFailureResult, isNotNull);
       capturedFailureResult!.when(
         success: (data, response) => fail('Expected failure in callback'),
-        failure: (error) => expect(error, equals('Query cannot be empty')),
+        failure: (error, _) => expect(error, equals('Query cannot be empty')),
       );
     });
 
     test('parser is used to convert arguments to typed call', () async {
-      const toolCall = ToolCall(
-        toolName: 'test_tool',
-        arguments: {'query': 'parsing test'},
-      );
+      const toolCall = ToolCall(toolName: 'test_tool', arguments: {'query': 'parsing test'});
 
       final result = await toolSchema.call(toolCall);
 

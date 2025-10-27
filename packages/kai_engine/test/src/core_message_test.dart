@@ -1,4 +1,3 @@
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kai_engine/src/models/core_message.dart';
 
@@ -23,13 +22,16 @@ void main() {
         expect(message.content, equals(content));
         expect(message.type, equals(CoreMessageType.user));
         expect(message.messageId, isNotEmpty);
-        expect(message.extensions, equals(const IMap<String, dynamic>.empty()));
+        expect(message.extensions, equals({}));
       });
 
       test('creates user message with custom messageId', () {
         const messageId = 'custom-id';
         const content = 'Hello with custom ID';
-        final message = CoreMessage.user(messageId: messageId, content: content);
+        final message = CoreMessage.user(
+          messageId: messageId,
+          content: content,
+        );
 
         expect(message.messageId, equals(messageId));
         expect(message.content, equals(content));
@@ -54,7 +56,7 @@ void main() {
         expect(message.content, equals(content));
         expect(message.type, equals(CoreMessageType.ai));
         expect(message.messageId, isNotEmpty);
-        expect(message.extensions, equals(const IMap<String, dynamic>.empty()));
+        expect(message.extensions, equals({}));
       });
 
       test('creates ai message with custom messageId', () {
@@ -83,7 +85,7 @@ void main() {
         expect(message.content, equals(prompt));
         expect(message.type, equals(CoreMessageType.system));
         expect(message.messageId, isNotEmpty);
-        expect(message.extensions, equals(const IMap<String, dynamic>.empty()));
+        expect(message.extensions, equals({}));
       });
 
       test('generates unique messageId for system messages', () {
@@ -98,7 +100,7 @@ void main() {
       test('creates message with all parameters', () {
         const content = 'Custom message';
         const type = CoreMessageType.function;
-        final extensions = {'key': 'value', 'number': 42}.lock;
+        final extensions = {'key': 'value', 'number': 42};
 
         final message = CoreMessage.create(
           content: content,
@@ -116,12 +118,12 @@ void main() {
         final message1 = CoreMessage.create(
           content: 'Message 1',
           type: CoreMessageType.unknown,
-          extensions: const IMap<String, dynamic>.empty(),
+          extensions: {},
         );
         final message2 = CoreMessage.create(
           content: 'Message 2',
           type: CoreMessageType.unknown,
-          extensions: const IMap<String, dynamic>.empty(),
+          extensions: {},
         );
 
         expect(message1.messageId, isNot(equals(message2.messageId)));
@@ -133,29 +135,39 @@ void main() {
         const messageId = 'test-id';
         const type = CoreMessageType.user;
         const content = 'Test content';
-        final extensions = {'test': true}.lock;
+        final extensions = {'test': true};
+        final timestamp = DateTime.now();
 
         final message = CoreMessage(
           messageId: messageId,
           type: type,
           content: content,
           extensions: extensions,
+          timestamp: timestamp,
         );
 
         expect(message.messageId, equals(messageId));
         expect(message.type, equals(type));
         expect(message.content, equals(content));
         expect(message.extensions, equals(extensions));
+        expect(message.timestamp, equals(timestamp));
       });
 
       test('uses empty extensions by default', () {
-        const message = CoreMessage(
-          messageId: 'test-id',
-          type: CoreMessageType.ai,
-          content: 'Test content',
+        const messageId = 'test-id';
+        const type = CoreMessageType.ai;
+        const content = 'Test content';
+        final timestamp = DateTime.now();
+
+        final message = CoreMessage(
+          messageId: messageId,
+          type: type,
+          content: content,
+          timestamp: timestamp,
         );
 
-        expect(message.extensions, equals(const IMap<String, dynamic>.empty()));
+        expect(message.extensions, equals({}));
+        expect(message.timestamp, equals(timestamp));
       });
     });
   });
@@ -180,7 +192,7 @@ void main() {
       final message = CoreMessage.create(
         content: 'Function result',
         type: CoreMessageType.function,
-        extensions: const IMap<String, dynamic>.empty(),
+        extensions: {},
       );
       expect(message.isDisplayable, isFalse);
     });
@@ -189,7 +201,7 @@ void main() {
       final message = CoreMessage.create(
         content: 'Unknown message',
         type: CoreMessageType.unknown,
-        extensions: const IMap<String, dynamic>.empty(),
+        extensions: {},
       );
       expect(message.isDisplayable, isFalse);
     });
@@ -197,9 +209,9 @@ void main() {
 
   group('copyWithExtensions', () {
     test('updates existing extension values', () {
-      final original = CoreMessage.user(content: 'Test').copyWith(
-        extensions: {'key1': 'value1', 'key2': 'value2'}.lock,
-      );
+      final original = CoreMessage.user(
+        content: 'Test',
+      ).copyWith(extensions: {'key1': 'value1', 'key2': 'value2'});
 
       final updated = original.copyWithExtensions({'key1': 'updated_value1'});
 
@@ -211,9 +223,9 @@ void main() {
     });
 
     test('adds new keys to extensions', () {
-      final original = CoreMessage.user(content: 'Test').copyWith(
-        extensions: {'existing': 'value'}.lock,
-      );
+      final original = CoreMessage.user(
+        content: 'Test',
+      ).copyWith(extensions: {'existing': 'value'});
 
       final updated = original.copyWithExtensions({
         'existing': 'updated',
@@ -226,9 +238,9 @@ void main() {
     });
 
     test('preserves original values when update map lacks keys', () {
-      final original = CoreMessage.user(content: 'Test').copyWith(
-        extensions: {'key1': 'value1', 'key2': 'value2'}.lock,
-      );
+      final original = CoreMessage.user(
+        content: 'Test',
+      ).copyWith(extensions: {'key1': 'value1', 'key2': 'value2'});
 
       final updated = original.copyWithExtensions({'key1': 'updated'});
 
@@ -245,9 +257,9 @@ void main() {
     });
 
     test('removes keys when null value is provided', () {
-      final original = CoreMessage.user(content: 'Test').copyWith(
-        extensions: {'key1': 'value1', 'key2': 'value2'}.lock,
-      );
+      final original = CoreMessage.user(
+        content: 'Test',
+      ).copyWith(extensions: {'key1': 'value1', 'key2': 'value2'});
 
       final updated = original.copyWithExtensions({'key1': null});
 
@@ -259,7 +271,7 @@ void main() {
 
   group('JSON serialization', () {
     test('serializes and deserializes correctly', () {
-      final extensions = {'metadata': 'test', 'count': 5}.lock;
+      final extensions = {'metadata': 'test', 'count': 5};
       final original = CoreMessage.create(
         content: 'Test message',
         type: CoreMessageType.user,
@@ -281,7 +293,7 @@ void main() {
       final json = original.toJson();
       final deserialized = CoreMessage.fromJson(json);
 
-      expect(deserialized.extensions, equals(const IMap<String, dynamic>.empty()));
+      expect(deserialized.extensions, equals({}));
     });
 
     test('preserves all message types through JSON', () {
@@ -289,7 +301,7 @@ void main() {
         final original = CoreMessage.create(
           content: 'Content for $type',
           type: type,
-          extensions: const IMap<String, dynamic>.empty(),
+          extensions: {},
         );
 
         final json = original.toJson();
@@ -322,7 +334,7 @@ void main() {
 
     test('creates copy with modified extensions', () {
       final original = CoreMessage.user(content: 'Test content');
-      final newExtensions = {'new': 'data'}.lock;
+      final newExtensions = {'new': 'data'};
       final modified = original.copyWith(extensions: newExtensions);
 
       expect(modified.extensions, equals(newExtensions));
@@ -336,13 +348,15 @@ void main() {
       const messageId = 'test-id';
       const content = 'Test content';
       const type = CoreMessageType.user;
-      final extensions = {'key': 'value'}.lock;
+      final extensions = {'key': 'value'};
+      final timestamp = DateTime.now();
 
       final message1 = CoreMessage(
         messageId: messageId,
         type: type,
         content: content,
         extensions: extensions,
+        timestamp: timestamp,
       );
 
       final message2 = CoreMessage(
@@ -350,6 +364,7 @@ void main() {
         type: type,
         content: content,
         extensions: extensions,
+        timestamp: timestamp,
       );
 
       expect(message1, equals(message2));

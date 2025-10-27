@@ -6,25 +6,44 @@ import 'package:kai_engine/kai_engine.dart';
 import 'package:kai_engine_firebase_ai/kai_engine_firebase_ai.dart';
 
 // Test FirebaseAiToolSchema for testing
-base class TestFirebaseAiToolSchema extends FirebaseAiToolSchema<FunctionCall, String> {
-  TestFirebaseAiToolSchema()
+base class TestFirebaseAiToolSchema
+    extends FirebaseAiToolSchema<FunctionCall, String> {
+  final String _response;
+
+  TestFirebaseAiToolSchema([this._response = 'test result'])
     : super(
-        parser: (Map<String, Object?> json) => FunctionCall(
-          'testFirebaseTool',
-          Map<String, Object?>.from(json),
-        ),
+        parser: (Map<String, Object?> json) =>
+            FunctionCall('testFirebaseTool', Map<String, Object?>.from(json)),
         declaration: FunctionDeclaration(
           'testFirebaseTool',
           'A test Firebase tool',
-          parameters: {
-            'query': Schema.string(description: 'Search query'),
-          },
+          parameters: {'query': Schema.string(description: 'Search query')},
         ),
       );
 
   @override
   Future<ToolResult<String>> execute(dynamic call) async {
-    return ToolResult.success('test result', {'result': 'test'});
+    return ToolResult.success(_response, {'result': _response});
+  }
+}
+
+// Test FirebaseAiToolSchema that returns empty response
+base class EmptyResponseToolSchema
+    extends FirebaseAiToolSchema<FunctionCall, String> {
+  EmptyResponseToolSchema()
+    : super(
+        parser: (Map<String, Object?> json) =>
+            FunctionCall('emptyTool', Map<String, Object?>.from(json)),
+        declaration: FunctionDeclaration(
+          'emptyTool',
+          'A tool that returns empty response',
+          parameters: {'query': Schema.string(description: 'Search query')},
+        ),
+      );
+
+  @override
+  Future<ToolResult<String>> execute(dynamic call) async {
+    return ToolResult.success('', {});
   }
 }
 
@@ -35,7 +54,10 @@ base class TestGenericToolSchema
     : super(
         name: 'testGenericTool',
         parser: (Map<String, Object?> json) => Map<String, dynamic>.from(json),
-        declaration: {'name': 'testGenericTool', 'description': 'A generic tool'},
+        declaration: {
+          'name': 'testGenericTool',
+          'description': 'A generic tool',
+        },
       );
 
   @override
@@ -126,9 +148,7 @@ void main() {
       });
 
       test('handles single system message', () {
-        final messages = [
-          CoreMessage.system('Only system'),
-        ].toIList();
+        final messages = [CoreMessage.system('Only system')].toIList();
 
         final filtered = filterSystemMessages(messages);
 
@@ -219,102 +239,75 @@ void main() {
     group('Service instantiation', () {
       test('creates service with default adapter', () {
         // This is more of a smoke test to ensure the service can be instantiated
-        expect(
-          () => FirebaseAiGenerationService,
-          returnsNormally,
-        );
+        expect(() => FirebaseAiGenerationService, returnsNormally);
       });
     });
   });
 
   group('FirebaseAiGenerationService - Generation Result Structure', () {
-    test('generatedMessage contains only newly generated content, excluding existing history', () {
-      // Test the logic that ensures generatedMessage field only contains
-      // newly generated content during the current generation cycle
+    test(
+      'generatedMessages contains only newly generated content, excluding existing history',
+      () {
+        // Test the logic that ensures generatedMessages field only contains
+        // newly generated content during the current generation cycle
 
-      // 2. New content generated during this cycle (including function calls if any)
-      final newlyGeneratedContent = [
-        Content.model([
-          FunctionCall('weather_tool', {'location': 'NYC'}),
-        ]), // AI makes function call
-        Content.functionResponses([
-          FunctionResponse('weather_tool', {'temp': '72F'}),
-        ]), // Function response
-        Content.model([
-          TextPart('Based on the weather data, it\'s 72F in NYC today!'),
-        ]), // Final AI response
-      ];
+        // 2. New content generated during this cycle (including function calls if any)
+        final newlyGeneratedContent = [
+          Content.model([
+            FunctionCall('weather_tool', {'location': 'NYC'}),
+          ]), // AI makes function call
+          Content.functionResponses([
+            FunctionResponse('weather_tool', {'temp': '72F'}),
+          ]), // Function response
+          Content.model([
+            TextPart('Based on the weather data, it\'s 72F in NYC today!'),
+          ]), // Final AI response
+        ];
 
-      // 3. Simulate extracting only newly generated content
-      final adapter = FirebaseAiContentAdapter();
-      final generatedMessage = newlyGeneratedContent.map((content) {
-        return adapter.toCoreMessage(content);
-      }).toIList();
+        // 3. Simulate extracting only newly generated content
+        final adapter = FirebaseAiContentAdapter();
+        final generatedMessages = newlyGeneratedContent.map((content) {
+          return adapter.toCoreMessage(content);
+        }).toIList();
 
-      // Verify that generatedMessage contains all newly generated content
-      expect(generatedMessage.length, equals(3));
+        // Verify that generatedMessages contains all newly generated content
+        expect(generatedMessages.length, equals(3));
 
-      // First message should be the function call
-      expect(generatedMessage[0].type, equals(CoreMessageType.ai));
+        // First message should be the function call
+        expect(generatedMessages[0].type, equals(CoreMessageType.ai));
 
-      // Second message should be the function response
-      expect(generatedMessage[1].type, equals(CoreMessageType.function));
+        // Second message should be the function response
+        expect(generatedMessages[1].type, equals(CoreMessageType.function));
 
-      // Third message should be the final AI response (with usage data)
-      expect(generatedMessage[2].content, contains('Based on the weather data'));
-      expect(generatedMessage[2].type, equals(CoreMessageType.ai));
-      // Note: The actual generationUsage attachment is tested separately
-      // Here we focus on the core logic of including all generated content
-    });
+        // Third message should be the final AI response (with usage data)
+        expect(
+          generatedMessages[2].content,
+          contains('Based on the weather data'),
+        );
+        expect(generatedMessages[2].type, equals(CoreMessageType.ai));
+        // Note: The actual generationUsage attachment is tested separately
+        // Here we focus on the core logic of including all generated content
+      },
+    );
 
-    test('generatedMessage for simple response without function calls', () {
+    test('generatedMessages for simple response without function calls', () {
       // Test simple case without function calling
       final newlyGeneratedContent = [
         Content.model([TextPart('This is a simple AI response')]),
       ];
 
       final adapter = FirebaseAiContentAdapter();
-      final generatedMessage = newlyGeneratedContent.map((content) {
+      final generatedMessages = newlyGeneratedContent.map((content) {
         return adapter.toCoreMessage(content);
       }).toIList();
 
-      expect(generatedMessage.length, equals(1));
-      expect(generatedMessage.first.content, equals('This is a simple AI response'));
-      expect(generatedMessage.first.type, equals(CoreMessageType.ai));
+      expect(generatedMessages.length, equals(1));
+      expect(
+        generatedMessages.first.content,
+        equals('This is a simple AI response'),
+      );
+      expect(generatedMessages.first.type, equals(CoreMessageType.ai));
       // Note: The actual generationUsage attachment is tested separately
-    });
-
-    test('copyWithGenerationUsage works correctly', () {
-      final originalMessage = CoreMessage.ai(content: 'Test response');
-      final usage = GenerationUsage(
-        inputToken: 100,
-        outputToken: 50,
-        apiCallCount: 1,
-      );
-
-      final messageWithUsage = originalMessage.copyWithGenerationUsage(usage);
-
-      expect(messageWithUsage.generationUsage, isNotNull);
-      expect(messageWithUsage.generationUsage!.inputToken, equals(100));
-      expect(messageWithUsage.generationUsage!.outputToken, equals(50));
-      expect(messageWithUsage.generationUsage!.apiCallCount, equals(1));
-      expect(messageWithUsage.content, equals('Test response'));
-    });
-
-    test('copyWithGenerationUsage can remove usage when null is passed', () {
-      final originalMessage = CoreMessage.ai(content: 'Test response');
-      final usage = GenerationUsage(
-        inputToken: 100,
-        outputToken: 50,
-        apiCallCount: 1,
-      );
-
-      final messageWithUsage = originalMessage.copyWithGenerationUsage(usage);
-      expect(messageWithUsage.generationUsage, isNotNull);
-
-      final messageWithoutUsage = messageWithUsage.copyWithGenerationUsage(null);
-      expect(messageWithoutUsage.generationUsage, isNull);
-      expect(messageWithoutUsage.content, equals('Test response'));
     });
   });
 
@@ -348,7 +341,10 @@ void main() {
 
         // Since both tools have the same name, duplicates are removed
         expect(effectiveTools.length, equals(1));
-        expect(effectiveTools.every((tool) => tool is TestFirebaseAiToolSchema), isTrue);
+        expect(
+          effectiveTools.every((tool) => tool is TestFirebaseAiToolSchema),
+          isTrue,
+        );
       });
 
       test('handles list with only generic ToolSchema instances', () {
@@ -372,6 +368,97 @@ void main() {
         // Should have 1 tool since duplicates by name are removed
         expect(effectiveTools.length, equals(1));
       });
+    });
+  });
+
+  group('FirebaseAiGenerationService - Tooling Function', () {
+    late FirebaseAiGenerationService service;
+    late MockFirebaseAI mockFirebaseAI;
+
+    setUp(() {
+      mockFirebaseAI = MockFirebaseAI();
+      const config = GenerativeConfig(model: 'gemini-1.5-flash');
+      service = FirebaseAiGenerationService(
+        firebaseAi: mockFirebaseAI,
+        config: config,
+      );
+    });
+
+    test('throws assertion error when tools list is empty', () async {
+      final messages = [CoreMessage.user(content: 'Hello')].toIList();
+      final tools = <ToolSchema>[];
+
+      expect(
+        () => service.tooling(
+          prompts: messages,
+          tools: tools,
+          toolingConfig: ToolingConfig.auto(),
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('tooling method exists and accepts correct parameters', () async {
+      final messages = [CoreMessage.user(content: 'Hello')].toIList();
+      final tools = [TestFirebaseAiToolSchema()];
+
+      // Test that the method can be called and throws the expected error due to mocking limitations
+      expect(
+        () => service.tooling(
+          prompts: messages,
+          tools: tools,
+          toolingConfig: ToolingConfig.auto(),
+        ),
+        throwsA(predicate((e) => e.toString().contains('UnimplementedError'))),
+      );
+    });
+  });
+
+  group('FirebaseAiGenerationService - Tooling Edge Cases', () {
+    test('empty response detection logic works correctly', () {
+      // Test the logic for detecting empty responses - simulate tool execution responses
+      final mockResponses = [
+        {'name': 'tool1', 'response': ''},
+        {'name': 'tool2', 'response': '{}'},
+        {'name': 'tool3', 'response': 'valid response'},
+      ];
+
+      final hasValidResponses = mockResponses.any((response) {
+        final responseStr = response['response'] as String;
+        return responseStr.isNotEmpty && responseStr != '{}';
+      });
+
+      expect(hasValidResponses, isTrue);
+    });
+
+    test('all empty responses are detected correctly', () {
+      final mockResponses = [
+        {'name': 'tool1', 'response': ''},
+        {'name': 'tool2', 'response': '{}'},
+        {'name': 'tool3', 'response': ''},
+      ];
+
+      final hasValidResponses = mockResponses.any((response) {
+        final responseStr = response['response'] as String;
+        return responseStr.isNotEmpty && responseStr != '{}';
+      });
+
+      expect(hasValidResponses, isFalse);
+    });
+
+    test('mixed empty and valid responses are handled correctly', () {
+      final mockResponses = [
+        {'name': 'tool1', 'response': ''},
+        {'name': 'tool2', 'response': 'some data'},
+        {'name': 'tool3', 'response': '{}'},
+      ];
+
+      final hasValidResponses = mockResponses.any((response) {
+        final responseStr = response['response'] as String;
+        return responseStr.isNotEmpty && responseStr != '{}';
+      });
+
+      expect(hasValidResponses, isTrue);
     });
   });
 }
