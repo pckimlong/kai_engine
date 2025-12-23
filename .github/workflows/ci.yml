@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: [kai_engine, kai_engine_firebase_ai, kai_engine_chat_ui, prompt_block]
+        package: [kai_engine, kai_engine_firebase_ai, prompt_block]
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
