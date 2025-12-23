@@ -28,8 +28,7 @@ class AIGenerationInput {
 }
 
 /// Dedicated phase for AI generation with streaming support
-final class AIGenerationPhase
-    extends KaiPhase<AIGenerationInput, GenerationResult> {
+final class AIGenerationPhase extends KaiPhase<AIGenerationInput, GenerationResult> {
   final GenerationServiceBase _generationService;
 
   AIGenerationPhase(this._generationService);
@@ -55,11 +54,9 @@ final class AIGenerationPhase
     }
 
     if (finalResult == null) {
-      throw Exception(
-        'Generation stream completed without emitting a final result',
-      );
+      throw Exception('Generation stream completed without emitting a final result');
     }
 
-    return finalResult!;
+    return finalResult;
   }
 }
