@@ -4,10 +4,10 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'context_builder.dart';
-import 'inspector/kai_phase.dart';
-import 'inspector/phase_types.dart';
 import 'models/core_message.dart';
 import 'models/query_context.dart';
+import 'pipeline/kai_phase.dart';
+import 'pipeline/phase_types.dart';
 
 part 'prompt_engine.freezed.dart';
 
@@ -71,22 +71,10 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
     final userMessage = providedUserMessage ?? CoreMessage.user(content: inputQuery.originalQuery);
     final messageId = userMessage.messageId;
 
-    // Use inspector logging instead of debug methods
-    await withStep(
-      'context-engine-processing',
-      operation: (step) async {
-        await step.addLogMessage(
-          'Processing prompt templates',
-          metadata: {'prompt-templates': promptBuilder.length, 'source-messages': source.length},
-        );
-      },
-    );
-
     assert(
       promptBuilder.whereType<InputPromptTemplate>().length == 1,
       "Must define exactly one input prompt.",
     );
-
 
     // Create indexed pairs to preserve original order
     final indexedBuilders = promptBuilder
@@ -103,20 +91,6 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
     final sequentialItems = indexedBuilders
         .where((item) => item.builder is _BuildSequentialPromptTemplate)
         .toList();
-
-    // Use inspector logging
-    await withStep(
-      'builder-distribution',
-      operation: (step) async {
-        await step.addLogMessage(
-          'Builder distribution',
-          metadata: {
-            'parallel-builders': parallelItems.length,
-            'sequential-builders': sequentialItems.length,
-          },
-        );
-      },
-    );
 
     // Process both concurrently
     final parallelFuture = _buildParallelWithIndex(parallelItems, source, inputQuery, messageId);
@@ -195,20 +169,6 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
     // Final cleanup to remove any duplicates (but preserve the user message position)
     finalContexts.removeDuplicates(by: (e) => e.messageId);
 
-    // Use inspector logging for final results
-    await withStep(
-      'final-results',
-      operation: (step) async {
-        await step.addLogMessage(
-          'Final context results',
-          metadata: {
-            'final-context-messages': finalContexts.length,
-            'total-prompt-messages': finalContexts.length,
-          },
-        );
-      },
-    );
-
     return (userMessage: finalUserMessage, prompts: finalContexts.toIList());
   }
 
@@ -233,22 +193,8 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
       items.map((item) async {
         final parallelBuilder = item.builder as _BuildParallelPromptTemplate;
         final builder = parallelBuilder.builder;
-        final builderName = 'parallel-${builder.runtimeType}';
-
-        return await withStep(
-          builderName,
-          operation: (step) async {
-            try {
-              final result = await builder.build(inputQuery, messageId, source);
-
-              await step.addLogMessage('Built ${result.length} messages');
-              return (index: item.index, result: result);
-            } catch (e) {
-              await step.addLogMessage('Failed to build: $e', metadata: {'error': e.toString()});
-              rethrow;
-            }
-          },
-        );
+        final result = await builder.build(inputQuery, messageId, source);
+        return (index: item.index, result: result);
       }),
     );
   }
@@ -279,24 +225,7 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
     for (final item in items) {
       final sequentialBuilder = item.builder as _BuildSequentialPromptTemplate;
       final builder = sequentialBuilder.builder;
-      final builderName = 'sequential-${builder.runtimeType}';
-
-      final context = await withStep(
-        builderName,
-        operation: (step) async {
-          try {
-            final context = await builder.build(inputQuery, messageId, currentContext);
-
-            await step.addLogMessage(
-              'Built ${context.length} messages from context size ${currentContext.length}',
-            );
-            return context;
-          } catch (e) {
-            await step.addLogMessage('Failed to build: $e', metadata: {'error': e.toString()});
-            rethrow;
-          }
-        },
-      );
+      final context = await builder.build(inputQuery, messageId, currentContext);
 
       currentContext = context;
       results.add((index: item.index, result: context));

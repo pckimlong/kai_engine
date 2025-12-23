@@ -14,20 +14,17 @@ abstract base class ChatControllerBase<TEntity> {
   final GenerationServiceBase _generationService;
   final PostResponseEngineBase? _postResponseEngine;
   final CancelToken _cancelToken;
-  final KaiInspector _inspector;
 
   ChatControllerBase({
     required GenerationServiceBase generationService,
     required ConversationManager<TEntity> conversationManager,
     QueryEngineBase? queryEngine,
     PostResponseEngineBase? postResponseEngine,
-    KaiInspector? inspector,
   }) : _queryEngine = queryEngine,
        _conversationManager = conversationManager,
        _generationService = generationService,
        _postResponseEngine = postResponseEngine,
-       _cancelToken = CancelToken(),
-       _inspector = inspector ?? NoOpKaiInspector();
+       _cancelToken = CancelToken();
 
   /// Handle generation state updates
   final _generationStateController = BehaviorSubject<GenerationState<GenerationResult>>.seeded(
@@ -49,29 +46,9 @@ abstract base class ChatControllerBase<TEntity> {
   }) async {
     var userMessage = CoreMessage.user(content: input);
 
-    // Use ConversationSession ID for inspector session and user message ID as timeline ID
-    final sessionId = _conversationManager.session.id;
-    final timelineId = userMessage.messageId; // Use user message ID to track this specific input
-
-    await _inspector.startSession(sessionId);
-    await _inspector.startTimeline(sessionId, timelineId, input);
-
     try {
       // Reset cancel token for new generation
       _cancelToken.reset();
-
-      // Add initial log to the first phase (Query Processing)
-      await _inspector.recordPhaseLog(
-        sessionId,
-        timelineId,
-        'query-processing',
-        TimelineLog(
-          message: 'Chat submission started',
-          timestamp: DateTime.now(),
-          severity: TimelineLogSeverity.info,
-          metadata: {'input': input},
-        ),
-      );
 
       _setState(GenerationState.loading());
 
@@ -104,13 +81,7 @@ abstract base class ChatControllerBase<TEntity> {
           processedQuery: input.trim(),
         );
       } else {
-        queryContext = await _inspector.inspectPhase<QueryEngineInput, QueryContext>(
-          sessionId,
-          timelineId,
-          'Query Processing',
-          _queryEngine,
-          queryInput,
-        );
+        queryContext = await _queryEngine.execute(queryInput);
       }
 
       // Phase 2: Context Building
@@ -120,28 +91,7 @@ abstract base class ChatControllerBase<TEntity> {
         conversationMessages: await _conversationManager.getMessages(),
         providedUserMessage: userMessage,
       );
-      final contextResult = await _inspector.inspectPhase(
-        sessionId,
-        timelineId,
-        'Context Building',
-        build(),
-        contextInput,
-      );
-
-      // Log the actual prompt messages for debugging
-      await _inspector.recordPromptMessagesLog(
-        sessionId,
-        timelineId,
-        'Context Building',
-        PromptMessagesLog(
-          message:
-              'Context building completed with ${contextResult.prompts.length} prompt messages',
-          timestamp: DateTime.now(),
-          promptMessages: contextResult.prompts.toList(),
-          severity: TimelineLogSeverity.info,
-          metadata: {'prompt_count': contextResult.prompts.length},
-        ),
-      );
+      final contextResult = await build().execute(contextInput);
 
       // Phase 3: AI Generation
       final configs = generativeConfigs(contextResult.prompts);
@@ -156,31 +106,7 @@ abstract base class ChatControllerBase<TEntity> {
         onStateUpdate: (state) => _generationStateController.add(state),
       );
 
-      generationResult = await _inspector.inspectPhase(
-        sessionId,
-        timelineId,
-        'AI Generation',
-        AIGenerationPhase(_generationService),
-        aiGenerationInput,
-      );
-
-      // Log the actual generated messages for debugging
-      await _inspector.recordGeneratedMessagesLog(
-        sessionId,
-        timelineId,
-        'AI Generation',
-        GeneratedMessagesLog(
-          message:
-              'AI generation completed with ${generationResult.generatedMessages.length} generated messages',
-          timestamp: DateTime.now(),
-          generatedMessages: generationResult.generatedMessages.toList(),
-          severity: TimelineLogSeverity.info,
-          metadata: {
-            'generated_count': generationResult.generatedMessages.length,
-            'total_tokens': generationResult.usage?.tokenCount,
-          },
-        ),
-      );
+      generationResult = await AIGenerationPhase(_generationService).execute(aiGenerationInput);
 
       // Save the AI-generated messages to the conversation
       if (generationResult.generatedMessages.isNotEmpty) {
@@ -209,25 +135,12 @@ abstract base class ChatControllerBase<TEntity> {
           conversationManager: _conversationManager,
         );
 
-        await _inspector.inspectPhase(
-          sessionId,
-          timelineId,
-          'Post-Response Processing',
-          _postResponseEngine,
-          postResponseInput,
-        );
+        await _postResponseEngine.execute(postResponseInput);
       }
-
-      // Extract AI response text from the generation result
-      final aiResponse = generationResult.displayMessage.content;
-
-      await _inspector.endTimeline(sessionId, timelineId, aiResponse: aiResponse);
       final generationState = GenerationState<GenerationResult>.complete(generationResult);
       _generationStateController.add(generationState);
       return generationState;
     } catch (error, stackTrace) {
-      await _inspector.endTimeline(sessionId, timelineId, status: TimelineStatus.failed);
-
       if (revertInputOnError) {
         await _conversationManager.removeMessages([userMessage].lock);
       }

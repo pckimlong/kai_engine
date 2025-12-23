@@ -15,7 +15,6 @@ This repository is a monorepo containing the following packages:
 |---------|-------------|
 | [`kai_engine`](packages/kai_engine/) | The core AI chat engine with a pipeline-based architecture |
 | [`kai_engine_firebase_ai`](packages/kai_engine_firebase_ai/) | Firebase AI adapter for the Kai Engine |
-| [`kai_inspector`](packages/kai_inspector/) | A powerful debugging and inspection tool for the Kai Engine |
 | [`prompt_block`](packages/prompt_block/) | A powerful Dart package for creating and managing structured prompt blocks in AI applications |
 
 ## Overview
@@ -44,7 +43,6 @@ The core framework provides essential abstractions for building conversational A
 - **Template Engine**: Built-in flexible template engine for dynamic content generation.
 - **Structured Prompt Blocks**: Create and manage structured prompt blocks with the Prompt Block package.
 - **Post-Response Processing**: Process AI responses after generation with custom pipelines.
-- **Real-time Inspection**: Debug and monitor AI processing pipelines with Kai Inspector.
 - **Type Safety**: Strong typing throughout the system for better developer experience.
 - **Comprehensive Testability**: Designed for easy unit and integration testing.
 
@@ -83,23 +81,11 @@ dependencies:
       path: packages/kai_engine_firebase_ai
 ```
 
-For debugging and inspection capabilities (development only):
-
-```yaml
-dev_dependencies:
-  kai_inspector:
-    git:
-      url: https://github.com/pckimlong/kai_engine.git
-      ref: main
-      path: packages/kai_inspector
-```
-
 ## Documentation
 
 See the individual package READMEs for detailed documentation:
 - [kai_engine README](packages/kai_engine/README.md)
 - [kai_engine_firebase_ai README](packages/kai_engine_firebase_ai/README.md)
-- [kai_inspector README](packages/kai_inspector/README.md)
 - [prompt_block README](packages/prompt_block/README.md)
 
 ## Contributing
