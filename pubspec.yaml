@@ -17,4 +17,5 @@ dev_dependencies:
 workspace:
   - packages/kai_engine
   - packages/kai_engine_firebase_ai
+  - packages/kai_engine_chat_ui
   - packages/prompt_block

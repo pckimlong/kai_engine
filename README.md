@@ -13,6 +13,7 @@ This repository is a monorepo containing the following packages:
 |---------|-------------|
 | [`kai_engine`](packages/kai_engine/) | The core AI chat engine with a pipeline-based architecture |
 | [`kai_engine_firebase_ai`](packages/kai_engine_firebase_ai/) | Firebase AI adapter for the Kai Engine |
+| [`kai_engine_chat_ui`](packages/kai_engine_chat_ui/) | Flutter chat UI widgets for Kai Engine (Riverpod-free) |
 | [`prompt_block`](packages/prompt_block/) | A powerful Dart package for creating and managing structured prompt blocks in AI applications |
 
 ## Overview
@@ -78,6 +79,7 @@ dependencies:
 See the individual package READMEs for detailed documentation:
 - [kai_engine README](packages/kai_engine/README.md)
 - [kai_engine_firebase_ai README](packages/kai_engine_firebase_ai/README.md)
+- [kai_engine_chat_ui README](packages/kai_engine_chat_ui/README.md)
 - [prompt_block README](packages/prompt_block/README.md)
 
 ## Contributing
