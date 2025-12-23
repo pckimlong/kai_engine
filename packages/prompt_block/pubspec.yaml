@@ -8,7 +8,7 @@ documentation: https://github.com/pckimlong/kai_engine#readme
 resolution: workspace
 
 environment:
-  sdk: '^3.9.0-333.2.beta'
+  sdk: ^3.10.1
 
 dependencies:
   rxdart: ^0.28.0
