@@ -4,10 +4,10 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'context_builder.dart';
-import 'inspector/kai_phase.dart';
-import 'inspector/phase_types.dart';
 import 'models/core_message.dart';
 import 'models/query_context.dart';
+import 'pipeline/kai_phase.dart';
+import 'pipeline/phase_types.dart';
 
 part 'prompt_engine.freezed.dart';
 
@@ -23,7 +23,8 @@ base class ContextEngineBuilder extends ContextEngine {
 /// system prompts, historical context, and user input according to a defined template structure.
 /// It supports both parallel and sequential context building strategies to optimize performance
 /// while maintaining logical ordering where required.
-abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEngineOutput> {
+abstract base class ContextEngine
+    extends KaiPhase<ContextEngineInput, ContextEngineOutput> {
   static ContextEngineBuilder builder(List<PromptTemplate> promptBuilder) {
     return ContextEngineBuilder(promptBuilder);
   }
@@ -41,7 +42,10 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
       inputQuery: input.inputQuery,
       providedUserMessage: input.providedUserMessage,
     );
-    return ContextEngineOutput(prompts: result.prompts);
+    return ContextEngineOutput(
+      userMessage: result.userMessage,
+      prompts: result.prompts,
+    );
   }
 
   /// Generates a complete contextual prompt ready for AI consumption.
@@ -68,25 +72,15 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
     CoreMessage? providedUserMessage,
   }) async {
     // Extract messageId for debug tracking
-    final userMessage = providedUserMessage ?? CoreMessage.user(content: inputQuery.originalQuery);
+    final userMessage =
+        providedUserMessage ??
+        CoreMessage.user(content: inputQuery.originalQuery);
     final messageId = userMessage.messageId;
-
-    // Use inspector logging instead of debug methods
-    await withStep(
-      'context-engine-processing',
-      operation: (step) async {
-        await step.addLogMessage(
-          'Processing prompt templates',
-          metadata: {'prompt-templates': promptBuilder.length, 'source-messages': source.length},
-        );
-      },
-    );
 
     assert(
       promptBuilder.whereType<InputPromptTemplate>().length == 1,
       "Must define exactly one input prompt.",
     );
-
 
     // Create indexed pairs to preserve original order
     final indexedBuilders = promptBuilder
@@ -104,22 +98,13 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
         .where((item) => item.builder is _BuildSequentialPromptTemplate)
         .toList();
 
-    // Use inspector logging
-    await withStep(
-      'builder-distribution',
-      operation: (step) async {
-        await step.addLogMessage(
-          'Builder distribution',
-          metadata: {
-            'parallel-builders': parallelItems.length,
-            'sequential-builders': sequentialItems.length,
-          },
-        );
-      },
-    );
-
     // Process both concurrently
-    final parallelFuture = _buildParallelWithIndex(parallelItems, source, inputQuery, messageId);
+    final parallelFuture = _buildParallelWithIndex(
+      parallelItems,
+      source,
+      inputQuery,
+      messageId,
+    );
     final sequentialFuture = _buildSequentialWithIndex(
       sequentialItems,
       source,
@@ -188,26 +173,14 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
         finalContexts.addAll(allResults[i]!);
       } else {
         // This should not happen - all template types should be handled above
-        throw StateError('Unhandled template type at index $i: ${template.runtimeType}');
+        throw StateError(
+          'Unhandled template type at index $i: ${template.runtimeType}',
+        );
       }
     }
 
     // Final cleanup to remove any duplicates (but preserve the user message position)
     finalContexts.removeDuplicates(by: (e) => e.messageId);
-
-    // Use inspector logging for final results
-    await withStep(
-      'final-results',
-      operation: (step) async {
-        await step.addLogMessage(
-          'Final context results',
-          metadata: {
-            'final-context-messages': finalContexts.length,
-            'total-prompt-messages': finalContexts.length,
-          },
-        );
-      },
-    );
 
     return (userMessage: finalUserMessage, prompts: finalContexts.toIList());
   }
@@ -223,7 +196,8 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
   ///
   /// Returns:
   /// - A list of results with their original indices for proper reordering
-  Future<List<({int index, IList<CoreMessage> result})>> _buildParallelWithIndex(
+  Future<List<({int index, IList<CoreMessage> result})>>
+  _buildParallelWithIndex(
     List<({int index, PromptTemplate builder})> items,
     IList<CoreMessage> source,
     QueryContext inputQuery,
@@ -233,22 +207,8 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
       items.map((item) async {
         final parallelBuilder = item.builder as _BuildParallelPromptTemplate;
         final builder = parallelBuilder.builder;
-        final builderName = 'parallel-${builder.runtimeType}';
-
-        return await withStep(
-          builderName,
-          operation: (step) async {
-            try {
-              final result = await builder.build(inputQuery, messageId, source);
-
-              await step.addLogMessage('Built ${result.length} messages');
-              return (index: item.index, result: result);
-            } catch (e) {
-              await step.addLogMessage('Failed to build: $e', metadata: {'error': e.toString()});
-              rethrow;
-            }
-          },
-        );
+        final result = await builder.build(inputQuery, messageId, source);
+        return (index: item.index, result: result);
       }),
     );
   }
@@ -267,7 +227,8 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
   ///
   /// Returns:
   /// - A list of results with their original indices for proper reordering
-  Future<List<({int index, IList<CoreMessage> result})>> _buildSequentialWithIndex(
+  Future<List<({int index, IList<CoreMessage> result})>>
+  _buildSequentialWithIndex(
     List<({int index, PromptTemplate builder})> items,
     IList<CoreMessage> source,
     QueryContext inputQuery,
@@ -279,23 +240,10 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
     for (final item in items) {
       final sequentialBuilder = item.builder as _BuildSequentialPromptTemplate;
       final builder = sequentialBuilder.builder;
-      final builderName = 'sequential-${builder.runtimeType}';
-
-      final context = await withStep(
-        builderName,
-        operation: (step) async {
-          try {
-            final context = await builder.build(inputQuery, messageId, currentContext);
-
-            await step.addLogMessage(
-              'Built ${context.length} messages from context size ${currentContext.length}',
-            );
-            return context;
-          } catch (e) {
-            await step.addLogMessage('Failed to build: $e', metadata: {'error': e.toString()});
-            rethrow;
-          }
-        },
+      final context = await builder.build(
+        inputQuery,
+        messageId,
+        currentContext,
       );
 
       currentContext = context;
@@ -304,7 +252,6 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
 
     return results;
   }
-
 }
 
 /// A simple context engine implementation for basic chat interactions.
@@ -327,6 +274,18 @@ final class SimpleContextEngine extends ContextEngine {
 @freezed
 sealed class PromptTemplate with _$PromptTemplate {
   const PromptTemplate._();
+
+  static PromptTemplate buildParallelFn(ParallelContextBuilderFn builder) {
+    return PromptTemplate.buildParallel(
+      _FunctionParallelContextBuilder(builder),
+    );
+  }
+
+  static PromptTemplate buildSequentialFn(SequentialContextBuilderFn builder) {
+    return PromptTemplate.buildSequential(
+      _FunctionSequentialContextBuilder(builder),
+    );
+  }
 
   /// Creates a system prompt template with fixed text content.
   ///
@@ -363,8 +322,9 @@ sealed class PromptTemplate with _$PromptTemplate {
   ///
   /// Parameters:
   /// - [builder]: The context builder that will generate the prompt content
-  const factory PromptTemplate.buildSequential(SequentialContextBuilder builder) =
-      _BuildSequentialPromptTemplate;
+  const factory PromptTemplate.buildSequential(
+    SequentialContextBuilder builder,
+  ) = _BuildSequentialPromptTemplate;
 
   /// Creates an input prompt template for the user's message.
   ///
@@ -380,6 +340,55 @@ sealed class PromptTemplate with _$PromptTemplate {
   /// - [input]: The user's raw input message
   /// - [messages]: The final list of messages in the conversation context after processing other templates include system prompts
   const factory PromptTemplate.input([
-    FutureOr<String> Function(QueryContext input, IList<CoreMessage> finalizedMessages)? revision,
+    FutureOr<String> Function(
+      QueryContext input,
+      IList<CoreMessage> finalizedMessages,
+    )?
+    revision,
   ]) = InputPromptTemplate;
+}
+
+typedef ParallelContextBuilderFn =
+    Future<IList<CoreMessage>> Function(
+      QueryContext input,
+      String inputMessageId,
+      IList<CoreMessage> context,
+    );
+
+typedef SequentialContextBuilderFn =
+    Future<IList<CoreMessage>> Function(
+      QueryContext input,
+      String inputMessageId,
+      IList<CoreMessage> previous,
+    );
+
+final class _FunctionParallelContextBuilder implements ParallelContextBuilder {
+  final ParallelContextBuilderFn _builder;
+
+  const _FunctionParallelContextBuilder(this._builder);
+
+  @override
+  Future<IList<CoreMessage>> build(
+    QueryContext input,
+    String inputMessageId,
+    IList<CoreMessage> context,
+  ) {
+    return _builder(input, inputMessageId, context);
+  }
+}
+
+final class _FunctionSequentialContextBuilder
+    implements SequentialContextBuilder {
+  final SequentialContextBuilderFn _builder;
+
+  const _FunctionSequentialContextBuilder(this._builder);
+
+  @override
+  Future<NextSequentialContext> build(
+    QueryContext input,
+    String inputMessageId,
+    IList<CoreMessage> previous,
+  ) {
+    return _builder(input, inputMessageId, previous);
+  }
 }

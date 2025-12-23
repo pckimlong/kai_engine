@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: [kai_engine, kai_engine_firebase_ai]
+        package: [kai_engine, kai_engine_firebase_ai, kai_engine_chat_ui, prompt_block]
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: [kai_engine, kai_engine_firebase_ai]
+        package: [kai_engine, kai_engine_firebase_ai, prompt_block]
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
@@ -58,33 +58,3 @@ jobs:
         run: |
           cd packages/${{ matrix.package }}
           flutter test --coverage
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: packages/${{ matrix.package }}/coverage/lcov.info
-          flags: ${{ matrix.package }}
-        if: matrix.package == 'kai_engine'
-
-  # Check that the code builds without issues
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        package: [kai_engine, kai_engine_firebase_ai]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: stable
-      - name: Install Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-      - name: Install dependencies
-        run: |
-          cd packages/${{ matrix.package }}
-          flutter pub get
-      - name: Check build
-        run: |
-          cd packages/${{ matrix.package }}
-          flutter pub publish --dry-run

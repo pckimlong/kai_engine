@@ -5,8 +5,6 @@
 
 A modular, extensible AI chat engine built with a pipeline-based architecture.
 
-> **Battle-tested in production** - Powers [Resonate](https://resonate-app-link.com), a modern AI chat application.
-
 ## Packages
 
 This repository is a monorepo containing the following packages:
@@ -15,7 +13,7 @@ This repository is a monorepo containing the following packages:
 |---------|-------------|
 | [`kai_engine`](packages/kai_engine/) | The core AI chat engine with a pipeline-based architecture |
 | [`kai_engine_firebase_ai`](packages/kai_engine_firebase_ai/) | Firebase AI adapter for the Kai Engine |
-| [`kai_inspector`](packages/kai_inspector/) | A powerful debugging and inspection tool for the Kai Engine |
+| [`kai_engine_chat_ui`](packages/kai_engine_chat_ui/) | Flutter chat UI widgets for Kai Engine (Riverpod-free) |
 | [`prompt_block`](packages/prompt_block/) | A powerful Dart package for creating and managing structured prompt blocks in AI applications |
 
 ## Overview
@@ -23,12 +21,6 @@ This repository is a monorepo containing the following packages:
 The Kai Engine is a flexible framework for building AI-powered chat applications with a clean, modular architecture. It follows a pipeline-first pattern, allowing developers to easily customize and extend the processing pipeline with domain-specific logic.
 
 The Prompt Block package provides a flexible framework for creating, managing, and organizing prompt blocks used in AI applications. Combined with the Kai Engine, it offers a complete solution for building sophisticated AI applications.
-
-The core framework provides essential abstractions for building conversational AI applications while remaining unopinionated about concrete implementations, allowing maximum flexibility.
-
-## Features
-
-The Kai Engine is a flexible framework for building AI-powered chat applications with a clean, modular architecture. It follows a pipeline-first pattern, allowing developers to easily customize and extend the processing pipeline with domain-specific logic.
 
 The core framework provides essential abstractions for building conversational AI applications while remaining unopinionated about concrete implementations, allowing maximum flexibility.
 
@@ -44,7 +36,6 @@ The core framework provides essential abstractions for building conversational A
 - **Template Engine**: Built-in flexible template engine for dynamic content generation.
 - **Structured Prompt Blocks**: Create and manage structured prompt blocks with the Prompt Block package.
 - **Post-Response Processing**: Process AI responses after generation with custom pipelines.
-- **Real-time Inspection**: Debug and monitor AI processing pipelines with Kai Inspector.
 - **Type Safety**: Strong typing throughout the system for better developer experience.
 - **Comprehensive Testability**: Designed for easy unit and integration testing.
 
@@ -83,23 +74,12 @@ dependencies:
       path: packages/kai_engine_firebase_ai
 ```
 
-For debugging and inspection capabilities (development only):
-
-```yaml
-dev_dependencies:
-  kai_inspector:
-    git:
-      url: https://github.com/pckimlong/kai_engine.git
-      ref: main
-      path: packages/kai_inspector
-```
-
 ## Documentation
 
 See the individual package READMEs for detailed documentation:
 - [kai_engine README](packages/kai_engine/README.md)
 - [kai_engine_firebase_ai README](packages/kai_engine_firebase_ai/README.md)
-- [kai_inspector README](packages/kai_inspector/README.md)
+- [kai_engine_chat_ui README](packages/kai_engine_chat_ui/README.md)
 - [prompt_block README](packages/prompt_block/README.md)
 
 ## Contributing

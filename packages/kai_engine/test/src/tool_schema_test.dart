@@ -9,9 +9,11 @@ part 'tool_schema_test.g.dart';
 sealed class TestToolCall with _$TestToolCall {
   const TestToolCall._();
 
-  const factory TestToolCall({required String query, @Default(10) int limit}) = _TestToolCall;
+  const factory TestToolCall({required String query, @Default(10) int limit}) =
+      _TestToolCall;
 
-  factory TestToolCall.fromJson(Map<String, dynamic> json) => _$TestToolCallFromJson(json);
+  factory TestToolCall.fromJson(Map<String, dynamic> json) =>
+      _$TestToolCallFromJson(json);
 }
 
 class TestToolDeclaration {
@@ -26,7 +28,8 @@ class TestToolDeclaration {
   });
 }
 
-final class TestToolSchema extends ToolSchema<TestToolDeclaration, TestToolCall, String> {
+final class TestToolSchema
+    extends ToolSchema<TestToolDeclaration, TestToolCall, String> {
   TestToolSchema()
     : super(
         name: 'test_tool',
@@ -45,11 +48,16 @@ final class TestToolSchema extends ToolSchema<TestToolDeclaration, TestToolCall,
     }
 
     final result = 'Processed: ${call.query} with limit ${call.limit}';
-    return ToolResult.success(result, {'query': call.query, 'limit': call.limit, 'result': result});
+    return ToolResult.success(result, {
+      'query': call.query,
+      'limit': call.limit,
+      'result': result,
+    });
   }
 }
 
-final class TestFailingToolSchema extends ToolSchema<TestToolDeclaration, TestToolCall, String> {
+final class TestFailingToolSchema
+    extends ToolSchema<TestToolDeclaration, TestToolCall, String> {
   TestFailingToolSchema()
     : super(
         name: 'failing_tool',
@@ -89,7 +97,11 @@ final class TestToolSchemaWithCallback
     }
 
     final result = 'Callback test: ${call.query} with limit ${call.limit}';
-    return ToolResult.success(result, {'query': call.query, 'limit': call.limit, 'result': result});
+    return ToolResult.success(result, {
+      'query': call.query,
+      'limit': call.limit,
+      'result': result,
+    });
   }
 }
 
@@ -112,7 +124,10 @@ void main() {
 
     test('creates failure result with error message', () {
       const errorMessage = 'Something went wrong';
-      final result = ToolResult<String>.failure(errorMessage, StackTrace.current);
+      final result = ToolResult<String>.failure(
+        errorMessage,
+        StackTrace.current,
+      );
 
       expect(result, isA<ToolResult<String>>());
       result.when(
@@ -136,7 +151,10 @@ void main() {
     });
 
     test('when method handles failure case correctly', () {
-      final result = ToolResult<String>.failure('error message', StackTrace.current);
+      final result = ToolResult<String>.failure(
+        'error message',
+        StackTrace.current,
+      );
 
       final failureResult = result.when(
         success: (data, response) => 'Success: $data',
@@ -156,7 +174,10 @@ void main() {
         parameters: {'param1': 'string'},
       );
 
-      const toolDeclaration = ToolDeclaration(name: name, declaration: declaration);
+      const toolDeclaration = ToolDeclaration(
+        name: name,
+        declaration: declaration,
+      );
 
       expect(toolDeclaration.name, equals(name));
       expect(toolDeclaration.declaration, equals(declaration));
@@ -165,7 +186,11 @@ void main() {
     test('is immutable', () {
       const toolDeclaration = ToolDeclaration(
         name: 'test',
-        declaration: TestToolDeclaration(name: 'test', description: 'Test', parameters: {}),
+        declaration: TestToolDeclaration(
+          name: 'test',
+          description: 'Test',
+          parameters: {},
+        ),
       );
 
       expect(() => toolDeclaration.name, returnsNormally);
@@ -225,7 +250,10 @@ void main() {
 
     test('handles error response format', () {
       const response = {'error': 'Something went wrong'};
-      const toolResponse = ToolResponse(toolName: 'error_tool', response: response);
+      const toolResponse = ToolResponse(
+        toolName: 'error_tool',
+        response: response,
+      );
 
       expect(toolResponse.response['error'], equals('Something went wrong'));
     });
@@ -279,7 +307,10 @@ void main() {
     });
 
     test('buildResponse returns response data for success', () {
-      final successResult = ToolResult.success('data', {'key': 'value', 'count': 42});
+      final successResult = ToolResult.success('data', {
+        'key': 'value',
+        'count': 42,
+      });
 
       final response = toolSchema.buildResponse(successResult);
 
@@ -287,7 +318,10 @@ void main() {
     });
 
     test('buildResponse returns error for failure', () {
-      final failureResult = ToolResult<String>.failure('error message', StackTrace.current);
+      final failureResult = ToolResult<String>.failure(
+        'error message',
+        StackTrace.current,
+      );
 
       final response = toolSchema.buildResponse(failureResult);
 
@@ -295,7 +329,10 @@ void main() {
     });
 
     test('call method orchestrates complete flow for success', () async {
-      const toolCall = ToolCall(toolName: 'test_tool', arguments: {'query': 'test', 'limit': 3});
+      const toolCall = ToolCall(
+        toolName: 'test_tool',
+        arguments: {'query': 'test', 'limit': 3},
+      );
 
       final toolResponse = await toolSchema.call(toolCall);
 
@@ -306,7 +343,10 @@ void main() {
     });
 
     test('call method handles parsing and execution failure', () async {
-      const toolCall = ToolCall(toolName: 'test_tool', arguments: {'query': '', 'limit': 5});
+      const toolCall = ToolCall(
+        toolName: 'test_tool',
+        arguments: {'query': '', 'limit': 5},
+      );
 
       final toolResponse = await toolSchema.call(toolCall);
 
@@ -316,7 +356,10 @@ void main() {
 
     test('call method handles exception during execution', () async {
       final failingSchema = TestFailingToolSchema();
-      const toolCall = ToolCall(toolName: 'failing_tool', arguments: {'query': 'test'});
+      const toolCall = ToolCall(
+        toolName: 'failing_tool',
+        arguments: {'query': 'test'},
+      );
 
       expect(() => failingSchema.call(toolCall), throwsA(isA<Exception>()));
     });
@@ -394,7 +437,10 @@ void main() {
     });
 
     test('parser is used to convert arguments to typed call', () async {
-      const toolCall = ToolCall(toolName: 'test_tool', arguments: {'query': 'parsing test'});
+      const toolCall = ToolCall(
+        toolName: 'test_tool',
+        arguments: {'query': 'parsing test'},
+      );
 
       final result = await toolSchema.call(toolCall);
 

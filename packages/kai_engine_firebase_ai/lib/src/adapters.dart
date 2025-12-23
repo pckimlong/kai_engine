@@ -5,7 +5,8 @@ import 'package:firebase_ai/src/content.dart'; // Access parsePart function
 import 'package:kai_engine/kai_engine.dart';
 
 /// Adapter for Firebase AI content to Core Message
-class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> {
+class FirebaseAiContentAdapter
+    implements GenerativeMessageAdapterBase<Content> {
   const FirebaseAiContentAdapter();
 
   @override
@@ -32,7 +33,8 @@ class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> 
           final reconstructedParts = <Part>[];
           final originalJson = originalContentJson as Map<String, dynamic>;
           final originalParts =
-              (originalJson['parts'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+              (originalJson['parts'] as List?)?.cast<Map<String, dynamic>>() ??
+              [];
 
           for (int i = 0; i < parsedContent.parts.length; i++) {
             final parsedPart = parsedContent.parts[i];
@@ -40,10 +42,13 @@ class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> 
             // If this was parsed as UnknownPart but we have original JSON, try to reconstruct manually
             // Also handle InlineDataPart with null willContinue field
             if ((parsedPart is UnknownPart ||
-                    (parsedPart is InlineDataPart && parsedPart.willContinue == null)) &&
+                    (parsedPart is InlineDataPart &&
+                        parsedPart.willContinue == null)) &&
                 i < originalParts.length) {
               final originalPartJson = originalParts[i];
-              final reconstructedPart = _reconstructPartFromJson(originalPartJson);
+              final reconstructedPart = _reconstructPartFromJson(
+                originalPartJson,
+              );
               reconstructedParts.add(reconstructedPart ?? parsedPart);
             } else {
               reconstructedParts.add(parsedPart);
@@ -91,31 +96,11 @@ class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> 
       _ => CoreMessageType.unknown,
     };
 
-    String text = combinedText;
-
-    // Handle empty text cases which might be function call or system message
-    // this helpful for debugging, but not actual use
-    if (text.isEmpty || parts.length > 1) {
-      final hasFunctionCall = parts.whereType<FunctionCall>().isNotEmpty;
-      if (messageType == CoreMessageType.ai && hasFunctionCall) {
-        text = [
-          // Include text parts if any
-          if (parts.whereType<TextPart>().isNotEmpty)
-            parts.whereType<TextPart>().map((p) => p.text).join(' ') + "\n\n",
-
-          // Include function call last
-          JsonEncoder.withIndent(' ').convert(parts.whereType<FunctionCall>().first.toJson())
-            ..replaceAll(r'\n', '\n').replaceAll(r'\', ''),
-        ].join('\n');
-      } else if (messageType == CoreMessageType.function) {
-        text = JsonEncoder.withIndent(' ')
-            .convert(parts.whereType<FunctionResponse>().firstOrNull?.toJson())
-            .replaceAll(r'\n', '\n')
-            .replaceAll(r'\', '');
-      }
-    }
-
-    return CoreMessage.create(type: messageType, content: text, extensions: extensions);
+    return CoreMessage.create(
+      type: messageType,
+      content: combinedText,
+      extensions: extensions,
+    );
   }
 
   /// Helper method to manually reconstruct parts that Firebase AI's parseContent doesn't handle
@@ -126,7 +111,9 @@ class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> 
       final response = fr['response'];
       return FunctionResponse(
         fr['name'] as String,
-        response is Map ? Map<String, Object?>.from(response) : <String, Object?>{},
+        response is Map
+            ? Map<String, Object?>.from(response)
+            : <String, Object?>{},
         id: fr['id'] as String?,
       );
     }
@@ -157,7 +144,10 @@ class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> 
     // Handle FileData
     if (partJson.containsKey('fileData')) {
       final fileData = partJson['fileData'] as Map<String, dynamic>;
-      return FileData(fileData['mimeType'] as String, fileData['fileUri'] as String);
+      return FileData(
+        fileData['mimeType'] as String,
+        fileData['fileUri'] as String,
+      );
     }
 
     // If we can't reconstruct it, return null

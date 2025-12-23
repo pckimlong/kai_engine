@@ -2,21 +2,11 @@
 
 A modular, extensible AI chat engine built with a pipeline-based architecture.
 
-> **Battle-tested in production** - Powers [Resonate](https://resonate-app-link.com), a modern AI chat application.
-
 ## Overview
 
 The Kai Engine is a flexible framework for building AI-powered chat applications with a clean, modular architecture. It follows a pipeline-first pattern, allowing developers to easily customize and extend the processing pipeline with domain-specific logic.
 
 The core framework provides essential abstractions for building conversational AI applications while remaining unopinionated about concrete implementations, allowing maximum flexibility.
-
-### Built from Real-World Experience
-
-This framework was born from developing [Resonate](https://resonate-app-link.com), ensuring it handles real production challenges:
-- ✅ Scalable pipeline architecture
-- ✅ Production-grade error handling  
-- ✅ Flexible configuration system
-- ✅ Stream-based real-time responses
 
 ## Features
 
@@ -31,7 +21,6 @@ This framework was born from developing [Resonate](https://resonate-app-link.com
 - **Post-Response Processing**: Process AI responses after generation with custom pipelines.
 - **Type Safety**: Strong typing throughout the system for better developer experience.
 - **Comprehensive Testability**: Designed for easy unit and integration testing.
-- **Built-in Debugging Tools**: Real-time inspection and debugging capabilities with Kai Inspector (see below).
 
 ## Architecture
 
@@ -40,9 +29,9 @@ The Kai Engine follows a flexible architecture with clearly defined components:
 1. **ChatControllerBase**: Orchestrates the entire chat flow and manages the interaction between components.
 2. **ConversationManager**: Manages conversation state, persistence, and optimistic UI updates.
 3. **GenerationServiceBase**: Abstracts AI model interactions and streaming responses.
-4. **QueryEngine**: Processes and optimizes user input.
+4. **QueryEngineBase**: Processes and optimizes user input before context building.
 5. **ContextEngine**: Builds conversation context with flexible template system.
-6. **PostResponseEngine**: Processes AI responses after generation.
+6. **PostResponseEngineBase**: Processes AI responses after generation.
 7. **MessageAdapterBase**: Bridges between internal CoreMessage and your custom message types.
 8. **MessageRepositoryBase**: Abstracts message persistence layer.
 
@@ -111,10 +100,17 @@ graph TD
 The main orchestrator that manages the complete chat flow:
 
 ```dart
-abstract base class ChatControllerBase<UIEntity, TEntity> {
-  Future<GenerationState<UIEntity>> submit(String input, {bool revertInputOnError = false});
-  Stream<IList<UIEntity>> get messagesStream;
-  Stream<GenerationState<UIEntity>> get generationStateStream;
+abstract base class ChatControllerBase<TEntity> {
+  Future<GenerationState<GenerationResult>> submit(
+    String input, {
+    bool revertInputOnError = false,
+  });
+  
+  Stream<IList<CoreMessage>> get messagesStream;
+  Stream<GenerationState<GenerationResult>> get generationStateStream;
+  
+  ContextEngine build();
+  GenerationExecuteConfig generativeConfigs(IList<CoreMessage> prompts);
 }
 ```
 
@@ -130,8 +126,9 @@ Manages conversation state with optimistic updates:
 
 ```dart
 class ConversationManager<T> {
-  Future<void> addMessages(IList<CoreMessage> messages);
-  Future<void> replacePlaceholderMessage(CoreMessage placeholder, CoreMessage actualMessage);
+  Future<IList<CoreMessage>> addMessages(IList<CoreMessage> messages);
+  Future<void> updateMessages(IList<CoreMessage> messages);
+  Future<void> removeMessages(IList<CoreMessage> messages);
   Stream<IList<CoreMessage>> get messagesStream;
 }
 ```
@@ -148,10 +145,11 @@ Flexible prompt building with template system:
 ```dart
 abstract base class ContextEngine {
   List<PromptTemplate> get promptBuilder;
-  Future<(CoreMessage userMessage, IList<CoreMessage> prompts)> generate({
+  
+  Future<({CoreMessage userMessage, IList<CoreMessage> prompts})> generate({
     required IList<CoreMessage> source,
     required QueryContext inputQuery,
-    void Function(String name)? onStageStart,
+    CoreMessage? providedUserMessage,
   });
 }
 ```
@@ -160,6 +158,50 @@ Features:
 - Parallel and sequential context building
 - Flexible template system with system prompts, user input, and custom contexts
 - Built-in HistoryContext implementation
+
+### PromptTemplate
+
+Define your prompt structure with various template types:
+
+```dart
+final class SimpleContextEngine extends ContextEngine {
+  @override
+  List<PromptTemplate> get promptBuilder => [
+    PromptTemplate.system("You're kai, a useful friendly personal assistant."),
+    PromptTemplate.buildSequential(HistoryContext()),
+    PromptTemplate.input(),
+  ];
+}
+```
+
+Template types:
+- `PromptTemplate.system(String)` - Static system prompts
+- `PromptTemplate.input()` - User input placeholder
+- `PromptTemplate.buildParallel(ParallelContextBuilder)` - Parallel context building
+- `PromptTemplate.buildSequential(SequentialContextBuilder)` - Sequential context building
+- `PromptTemplate.buildParallelFn(Function)` - Parallel context with inline function
+
+### QueryEngineBase
+
+Process user input before context building:
+
+```dart
+abstract base class QueryEngineBase extends KaiPhase<QueryEngineInput, QueryContext> {
+  @override
+  Future<QueryContext> execute(QueryEngineInput input);
+}
+```
+
+### PostResponseEngineBase
+
+Process AI responses after generation:
+
+```dart
+abstract base class PostResponseEngineBase extends KaiPhase<PostResponseEngineInput, void> {
+  @override
+  Future<void> execute(PostResponseEngineInput input);
+}
+```
 
 ### Tool Calling
 
@@ -189,10 +231,15 @@ print(template.render({'name': 'World'})); // "Hello World!"
 
 Features:
 - Variable interpolation: `{{name}}`
+- Nested properties: `{{user.name}}`
 - Conditionals: `{{#if condition}}...{{#else}}...{{/if}}`
-- Loops: `{{#each list as item}}...{{/each}}`
-- Built-in functions: `{{upper(name)}}`, `{{date("yyyy-MM-dd")}}`
+- Equality checks: `{{#if status == "active"}}...{{/if}}`
+- Negation: `{{#if !isInactive}}...{{/if}}`
+- Loops: `{{#each list as item}}{{item}}{{/each}}`
+- Loop helpers: `{{@index}}`, `{{@first}}`, `{{@last}}`
+- Built-in functions: `{{upper(name)}}`, `{{lower(name)}}`, `{{length(name)}}`, `{{default(value, "fallback")}}`
 - Custom functions registration
+- Custom delimiters support
 
 ## Getting Started
 
@@ -210,91 +257,85 @@ dependencies:
 Create a custom chat controller:
 
 ```dart
-class MyChatController extends ChatControllerBase<MyUIMessage, MyMessage> {
+final class MyChatController extends ChatControllerBase<MyMessage> {
   MyChatController({
-    required ConversationManager<MyMessage> conversationManager,
-    required GenerationServiceBase generationService,
-    required QueryEngine queryEngine,
-    required PostResponseEngine postResponseEngine,
-    required MessageAdapterBase<MyUIMessage> messageAdapter,
-  }) : super(
-    conversationManager: conversationManager,
-    generationService: generationService,
-    queryEngine: queryEngine,
-    postResponseEngine: postResponseEngine,
-    messageAdapter: messageAdapter,
-  );
+    required super.conversationManager,
+    required super.generationService,
+    super.queryEngine,
+    super.postResponseEngine,
+  });
 
   @override
   ContextEngine build() => SimpleContextEngine();
+  
+  @override
+  GenerationExecuteConfig generativeConfigs(IList<CoreMessage> prompts) {
+    return const GenerationExecuteConfig(
+      tools: [],
+      config: {'temperature': 0.7},
+    );
+  }
 }
+```
+
+Use the controller:
+
+```dart
+final controller = MyChatController(
+  conversationManager: myConversationManager,
+  generationService: myGenerationService,
+);
+
+// Submit a message
+final result = await controller.submit('Hello, world!');
+
+// Listen to messages
+controller.messagesStream.listen((messages) {
+  // Update UI with messages
+});
+
+// Listen to generation state
+controller.generationStateStream.listen((state) {
+  if (state.isLoading) {
+    // Show loading indicator
+  } else if (state.isStreaming) {
+    // Show streaming text
+  }
+});
 ```
 
 ## Testing
 
-The Kai Engine is designed for comprehensive testing with built-in support for mocking:
+The Kai Engine is designed for comprehensive testing:
 
 ```dart
 void main() {
   test('ChatController submits user input', () async {
-    // Arrange
-    final controller = TestChatController(/* ... */);
+    final mockConversationManager = MockConversationManager();
+    final mockGenerationService = MockGenerationService();
     
-    // Act
+    when(() => mockConversationManager.getMessages())
+        .thenAnswer((_) async => const IList.empty());
+    
+    when(() => mockConversationManager.addMessages(any()))
+        .thenAnswer((inv) async => inv.positionalArguments[0]);
+    
+    when(() => mockGenerationService.stream(any(), ...))
+        .thenAnswer((_) => Stream.value(GenerationState.complete(result)));
+    
+    final controller = TestChatController(
+      conversationManager: mockConversationManager,
+      generationService: mockGenerationService,
+      testContextEngine: TestContextEngine(),
+    );
+    
     final result = await controller.submit('Hello, world!');
     
-    // Assert
-    expect(result, isA<GenerationCompleteState>());
+    expect(result, isA<GenerationCompleteState<GenerationResult>>());
   });
 }
 ```
 
-Features:
-- Comprehensive test suite included
-- Mocking support with mocktail
-- Stream testing utilities
-- Integration test examples
-
-## Production Use
-
-The Kai Engine is battle-tested in production applications:
-
-- **Resilient Error Handling**: Comprehensive error handling with automatic rollback
-- **Performance Optimized**: Parallel processing where possible
-- **Memory Efficient**: Proper resource disposal and stream management
-- **Scalable Architecture**: Modular design allows for easy scaling
-
-## Debugging with Kai Inspector
-
-The Kai Engine includes built-in support for real-time debugging and inspection through the optional [Kai Inspector](../kai_inspector) package.
-
-### Features
-- Real-time visualization of message processing pipelines
-- Performance metrics and token usage analytics
-- Detailed phase-by-phase execution tracking
-- Error and warning monitoring
-- Export capabilities for offline analysis
-
-### Usage
-To enable debugging, simply add the Kai Inspector package to your dev dependencies and inject it into your chat controller:
-
-```dart
-// In your app setup
-final inspector = DefaultKaiInspector();
-
-final chatController = ChatController(
-  // ... other services
-  inspector: inspector, // Enable debugging
-);
-
-// In your debug UI
-KaiInspectorScreen(inspector: inspector);
-```
-
-When not injected, the inspection system has zero performance impact on your production application.
-
-For more details, see the [Kai Inspector documentation](../kai_inspector).
-
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](../../LICENSE) file for details.
