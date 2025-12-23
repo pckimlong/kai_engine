@@ -588,6 +588,8 @@ $CoreMessageCopyWith<$Res>? get providedUserMessage {
 /// @nodoc
 mixin _$ContextEngineOutput {
 
+/// Final user message after applying any `PromptTemplate.input(revision: ...)` logic.
+ CoreMessage get userMessage;/// The final prompts to send to the generation service.
  IList<CoreMessage> get prompts;
 /// Create a copy of ContextEngineOutput
 /// with the given fields replaced by the non-null parameter values.
@@ -599,16 +601,16 @@ $ContextEngineOutputCopyWith<ContextEngineOutput> get copyWith => _$ContextEngin
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ContextEngineOutput&&const DeepCollectionEquality().equals(other.prompts, prompts));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ContextEngineOutput&&(identical(other.userMessage, userMessage) || other.userMessage == userMessage)&&const DeepCollectionEquality().equals(other.prompts, prompts));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(prompts));
+int get hashCode => Object.hash(runtimeType,userMessage,const DeepCollectionEquality().hash(prompts));
 
 @override
 String toString() {
-  return 'ContextEngineOutput(prompts: $prompts)';
+  return 'ContextEngineOutput(userMessage: $userMessage, prompts: $prompts)';
 }
 
 
@@ -619,11 +621,11 @@ abstract mixin class $ContextEngineOutputCopyWith<$Res>  {
   factory $ContextEngineOutputCopyWith(ContextEngineOutput value, $Res Function(ContextEngineOutput) _then) = _$ContextEngineOutputCopyWithImpl;
 @useResult
 $Res call({
- IList<CoreMessage> prompts
+ CoreMessage userMessage, IList<CoreMessage> prompts
 });
 
 
-
+$CoreMessageCopyWith<$Res> get userMessage;
 
 }
 /// @nodoc
@@ -636,13 +638,23 @@ class _$ContextEngineOutputCopyWithImpl<$Res>
 
 /// Create a copy of ContextEngineOutput
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? prompts = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? userMessage = null,Object? prompts = null,}) {
   return _then(_self.copyWith(
-prompts: null == prompts ? _self.prompts : prompts // ignore: cast_nullable_to_non_nullable
+userMessage: null == userMessage ? _self.userMessage : userMessage // ignore: cast_nullable_to_non_nullable
+as CoreMessage,prompts: null == prompts ? _self.prompts : prompts // ignore: cast_nullable_to_non_nullable
 as IList<CoreMessage>,
   ));
 }
-
+/// Create a copy of ContextEngineOutput
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CoreMessageCopyWith<$Res> get userMessage {
+  
+  return $CoreMessageCopyWith<$Res>(_self.userMessage, (value) {
+    return _then(_self.copyWith(userMessage: value));
+  });
+}
 }
 
 
@@ -721,10 +733,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( IList<CoreMessage> prompts)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CoreMessage userMessage,  IList<CoreMessage> prompts)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ContextEngineOutput() when $default != null:
-return $default(_that.prompts);case _:
+return $default(_that.userMessage,_that.prompts);case _:
   return orElse();
 
 }
@@ -742,10 +754,10 @@ return $default(_that.prompts);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( IList<CoreMessage> prompts)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CoreMessage userMessage,  IList<CoreMessage> prompts)  $default,) {final _that = this;
 switch (_that) {
 case _ContextEngineOutput():
-return $default(_that.prompts);}
+return $default(_that.userMessage,_that.prompts);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -759,10 +771,10 @@ return $default(_that.prompts);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( IList<CoreMessage> prompts)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CoreMessage userMessage,  IList<CoreMessage> prompts)?  $default,) {final _that = this;
 switch (_that) {
 case _ContextEngineOutput() when $default != null:
-return $default(_that.prompts);case _:
+return $default(_that.userMessage,_that.prompts);case _:
   return null;
 
 }
@@ -774,9 +786,12 @@ return $default(_that.prompts);case _:
 
 
 class _ContextEngineOutput implements ContextEngineOutput {
-  const _ContextEngineOutput({required this.prompts});
+  const _ContextEngineOutput({required this.userMessage, required this.prompts});
   
 
+/// Final user message after applying any `PromptTemplate.input(revision: ...)` logic.
+@override final  CoreMessage userMessage;
+/// The final prompts to send to the generation service.
 @override final  IList<CoreMessage> prompts;
 
 /// Create a copy of ContextEngineOutput
@@ -789,16 +804,16 @@ _$ContextEngineOutputCopyWith<_ContextEngineOutput> get copyWith => __$ContextEn
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ContextEngineOutput&&const DeepCollectionEquality().equals(other.prompts, prompts));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ContextEngineOutput&&(identical(other.userMessage, userMessage) || other.userMessage == userMessage)&&const DeepCollectionEquality().equals(other.prompts, prompts));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(prompts));
+int get hashCode => Object.hash(runtimeType,userMessage,const DeepCollectionEquality().hash(prompts));
 
 @override
 String toString() {
-  return 'ContextEngineOutput(prompts: $prompts)';
+  return 'ContextEngineOutput(userMessage: $userMessage, prompts: $prompts)';
 }
 
 
@@ -809,11 +824,11 @@ abstract mixin class _$ContextEngineOutputCopyWith<$Res> implements $ContextEngi
   factory _$ContextEngineOutputCopyWith(_ContextEngineOutput value, $Res Function(_ContextEngineOutput) _then) = __$ContextEngineOutputCopyWithImpl;
 @override @useResult
 $Res call({
- IList<CoreMessage> prompts
+ CoreMessage userMessage, IList<CoreMessage> prompts
 });
 
 
-
+@override $CoreMessageCopyWith<$Res> get userMessage;
 
 }
 /// @nodoc
@@ -826,14 +841,24 @@ class __$ContextEngineOutputCopyWithImpl<$Res>
 
 /// Create a copy of ContextEngineOutput
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? prompts = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? userMessage = null,Object? prompts = null,}) {
   return _then(_ContextEngineOutput(
-prompts: null == prompts ? _self.prompts : prompts // ignore: cast_nullable_to_non_nullable
+userMessage: null == userMessage ? _self.userMessage : userMessage // ignore: cast_nullable_to_non_nullable
+as CoreMessage,prompts: null == prompts ? _self.prompts : prompts // ignore: cast_nullable_to_non_nullable
 as IList<CoreMessage>,
   ));
 }
 
-
+/// Create a copy of ContextEngineOutput
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CoreMessageCopyWith<$Res> get userMessage {
+  
+  return $CoreMessageCopyWith<$Res>(_self.userMessage, (value) {
+    return _then(_self.copyWith(userMessage: value));
+  });
+}
 }
 
 /// @nodoc

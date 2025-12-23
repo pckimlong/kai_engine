@@ -41,7 +41,7 @@ abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEn
       inputQuery: input.inputQuery,
       providedUserMessage: input.providedUserMessage,
     );
-    return ContextEngineOutput(prompts: result.prompts);
+    return ContextEngineOutput(userMessage: result.userMessage, prompts: result.prompts);
   }
 
   /// Generates a complete contextual prompt ready for AI consumption.
@@ -257,6 +257,14 @@ final class SimpleContextEngine extends ContextEngine {
 sealed class PromptTemplate with _$PromptTemplate {
   const PromptTemplate._();
 
+  static PromptTemplate buildParallelFn(ParallelContextBuilderFn builder) {
+    return PromptTemplate.buildParallel(_FunctionParallelContextBuilder(builder));
+  }
+
+  static PromptTemplate buildSequentialFn(SequentialContextBuilderFn builder) {
+    return PromptTemplate.buildSequential(_FunctionSequentialContextBuilder(builder));
+  }
+
   /// Creates a system prompt template with fixed text content.
   ///
   /// System prompts define the AI's role, personality, and general behavior guidelines.
@@ -311,4 +319,40 @@ sealed class PromptTemplate with _$PromptTemplate {
   const factory PromptTemplate.input([
     FutureOr<String> Function(QueryContext input, IList<CoreMessage> finalizedMessages)? revision,
   ]) = InputPromptTemplate;
+}
+
+typedef ParallelContextBuilderFn =
+    Future<IList<CoreMessage>> Function(QueryContext input, String inputMessageId, IList<CoreMessage> context);
+
+typedef SequentialContextBuilderFn =
+    Future<IList<CoreMessage>> Function(QueryContext input, String inputMessageId, IList<CoreMessage> previous);
+
+final class _FunctionParallelContextBuilder implements ParallelContextBuilder {
+  final ParallelContextBuilderFn _builder;
+
+  const _FunctionParallelContextBuilder(this._builder);
+
+  @override
+  Future<IList<CoreMessage>> build(
+    QueryContext input,
+    String inputMessageId,
+    IList<CoreMessage> context,
+  ) {
+    return _builder(input, inputMessageId, context);
+  }
+}
+
+final class _FunctionSequentialContextBuilder implements SequentialContextBuilder {
+  final SequentialContextBuilderFn _builder;
+
+  const _FunctionSequentialContextBuilder(this._builder);
+
+  @override
+  Future<NextSequentialContext> build(
+    QueryContext input,
+    String inputMessageId,
+    IList<CoreMessage> previous,
+  ) {
+    return _builder(input, inputMessageId, previous);
+  }
 }

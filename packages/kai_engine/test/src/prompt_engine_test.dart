@@ -85,6 +85,24 @@ void main() {
       verify(() => mockBuilder.build(any(), any(), any())).called(1);
     });
 
+    test('generates prompt with parallel function builder', () async {
+      final engine = TestContextEngine([
+        const PromptTemplate.system('You are a helpful assistant'),
+        PromptTemplate.buildParallelFn((input, inputMessageId, context) async {
+          return [CoreMessage.backgroundContext('Current date: 2023-01-01')].lock;
+        }),
+        const PromptTemplate.input(),
+      ]);
+
+      final result = await engine.generate(source: sourceMessages, inputQuery: queryContext);
+
+      expect(result, isNotNull);
+      expect(result.prompts.length, 3);
+      expect(result.prompts[0].content, 'You are a helpful assistant');
+      expect(result.prompts[1].content, 'Current date: 2023-01-01');
+      expect(result.userMessage.content, 'Tell me a joke');
+    });
+
     test('generates prompt with sequential builders', () async {
       final mockBuilder = MockSequentialContextBuilder();
       when(

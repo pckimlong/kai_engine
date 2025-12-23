@@ -34,7 +34,13 @@ sealed class ContextEngineInput with _$ContextEngineInput {
 /// Output type for ContextEngine phase
 @freezed
 sealed class ContextEngineOutput with _$ContextEngineOutput {
-  const factory ContextEngineOutput({required IList<CoreMessage> prompts}) = _ContextEngineOutput;
+  const factory ContextEngineOutput({
+    /// Final user message after applying any `PromptTemplate.input(revision: ...)` logic.
+    required CoreMessage userMessage,
+
+    /// The final prompts to send to the generation service.
+    required IList<CoreMessage> prompts,
+  }) = _ContextEngineOutput;
 }
 
 /// Input type for GenerationService phase

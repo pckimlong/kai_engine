@@ -55,9 +55,13 @@ abstract base class ChatControllerBase<TEntity> {
       // Variable to store the final generation result
       late GenerationResult generationResult;
 
+      final insertedUserMessageFuture = _conversationManager
+          .addMessages([userMessage].lock)
+          .then((inserted) => inserted.first);
+
       unawaited(
-        _conversationManager.addMessages([userMessage].lock).then((inserted) async {
-          userMessage = inserted.first;
+        insertedUserMessageFuture.then((inserted) {
+          userMessage = inserted;
         }),
       );
 
@@ -92,6 +96,15 @@ abstract base class ChatControllerBase<TEntity> {
         providedUserMessage: userMessage,
       );
       final contextResult = await build().execute(contextInput);
+
+      // Persist any input revision (PromptTemplate.input(revision: ...)) back into the stored user message.
+      final insertedUserMessage = await insertedUserMessageFuture;
+      userMessage = insertedUserMessage;
+      if (contextResult.userMessage.content != insertedUserMessage.content) {
+        final revised = insertedUserMessage.copyWith(content: contextResult.userMessage.content);
+        await _conversationManager.updateMessages(IList([revised]));
+        userMessage = revised;
+      }
 
       // Phase 3: AI Generation
       final configs = generativeConfigs(contextResult.prompts);
