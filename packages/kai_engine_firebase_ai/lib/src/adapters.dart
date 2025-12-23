@@ -96,34 +96,9 @@ class FirebaseAiContentAdapter
       _ => CoreMessageType.unknown,
     };
 
-    String text = combinedText;
-
-    // Handle empty text cases which might be function call or system message
-    // this helpful for debugging, but not actual use
-    if (text.isEmpty || parts.length > 1) {
-      final hasFunctionCall = parts.whereType<FunctionCall>().isNotEmpty;
-      if (messageType == CoreMessageType.ai && hasFunctionCall) {
-        text = [
-          // Include text parts if any
-          if (parts.whereType<TextPart>().isNotEmpty)
-            parts.whereType<TextPart>().map((p) => p.text).join(' ') + "\n\n",
-
-          // Include function call last
-          JsonEncoder.withIndent(' ').convert(
-            parts.whereType<FunctionCall>().first.toJson(),
-          )..replaceAll(r'\n', '\n').replaceAll(r'\', ''),
-        ].join('\n');
-      } else if (messageType == CoreMessageType.function) {
-        text = JsonEncoder.withIndent(' ')
-            .convert(parts.whereType<FunctionResponse>().firstOrNull?.toJson())
-            .replaceAll(r'\n', '\n')
-            .replaceAll(r'\', '');
-      }
-    }
-
     return CoreMessage.create(
       type: messageType,
-      content: text,
+      content: combinedText,
       extensions: extensions,
     );
   }

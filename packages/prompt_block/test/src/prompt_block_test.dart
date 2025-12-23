@@ -334,7 +334,7 @@ void main() {
             .add(PromptBlock(title: '## Child 1'))
             .add(PromptBlock(title: '## Child 2'));
         final output = section.output();
-        expect(output, equals('# Root\n\n## Child 1\n\n## Child 2'));
+        expect(output, equals('# Root\n## Child 1\n\n## Child 2'));
       });
 
       test('outputs deeply nested sections correctly', () {
@@ -349,7 +349,7 @@ void main() {
         expect(
           output,
           equals(
-            '# Root\n\n## Level 1\n\n### Level 2\n\n## Another Level 1\n\n## Another Root Child',
+            '# Root\n## Level 1\n### Level 2\n\n## Another Level 1\n\n## Another Root Child',
           ),
         );
       });
@@ -396,7 +396,7 @@ void main() {
         expect(
           output,
           equals(
-            '# Final Prompt For Gemini\n\n<user_context name="Kim">\n  ## User Profile\n\n  - Currently pursuing a Master\'s degree\n  - Expected graduation: September 2025\n  - Interests: AI, Dart, Flutter\n\n  <conversation_history turns="2">\n    <memory author="assistant">\n      Hey Kim! Good morning.\n    </memory>\n\n    <memory author="user">\n      Good morning to you too!\n    </memory>\n  </conversation_history>\n</user_context>\n\n## Task\n\nSummarize the user\'s current status based on the context provided.',
+            '# Final Prompt For Gemini\n<user_context name="Kim">\n  ## User Profile\n  - Currently pursuing a Master\'s degree\n  - Expected graduation: September 2025\n  - Interests: AI, Dart, Flutter\n\n  <conversation_history turns="2">\n    <memory author="assistant">\n      Hey Kim! Good morning.\n    </memory>\n    <memory author="user">\n      Good morning to you too!\n    </memory>\n  </conversation_history>\n</user_context>\n\n## Task\nSummarize the user\'s current status based on the context provided.',
           ),
         );
       });
@@ -512,7 +512,7 @@ void main() {
         expect(
           prompt,
           equals(
-            '# System Prompt\n\n<user_id>\n  user-12345\n</user_id>\n\n## Task\nAnalyze the user request.',
+            '# System Prompt\n<user_id>user-12345</user_id>\n\n## Task\nAnalyze the user request.',
           ),
         );
       });
@@ -527,19 +527,11 @@ void main() {
           prompt,
           equals(
             '# System Prompt\n'
-            '\n'
-            '<user_id>\n'
-            '  user-12345\n'
-            '</user_id>\n'
+            '<user_id>user-12345</user_id>\n'
             '\n'
             '<errors>\n'
-            '  <error>\n'
-            '    Connection timed out\n'
-            '  </error>\n'
-            '\n'
-            '  <error>\n'
-            '    Authentication failed\n'
-            '  </error>\n'
+            '  <error>Connection timed out</error>\n'
+            '  <error>Authentication failed</error>\n'
             '</errors>\n'
             '\n'
             '<debug_info>\n'
@@ -565,10 +557,7 @@ void main() {
           prompt,
           equals(
             '# System Prompt\n'
-            '\n'
-            '<user_id>\n'
-            '  user-12345\n'
-            '</user_id>\n'
+            '<user_id>user-12345</user_id>\n'
             '\n'
             '<debug_info>\n'
             '  ```\n'
@@ -592,19 +581,11 @@ void main() {
           prompt,
           equals(
             '# System Prompt\n'
-            '\n'
-            '<user_id>\n'
-            '  user-12345\n'
-            '</user_id>\n'
+            '<user_id>user-12345</user_id>\n'
             '\n'
             '<errors>\n'
-            '  <error>\n'
-            '    Network error\n'
-            '  </error>\n'
-            '\n'
-            '  <error>\n'
-            '    Server timeout\n'
-            '  </error>\n'
+            '  <error>Network error</error>\n'
+            '  <error>Server timeout</error>\n'
             '</errors>\n'
             '\n'
             '## Task\n'
@@ -726,7 +707,7 @@ void main() {
           builder: () => 'This is a note',
         );
         final output = section.output();
-        expect(output, equals('<notes>\n This is a note\n</notes>'));
+        expect(output, equals('<notes>\n  This is a note\n</notes>'));
       });
 
       test('omits section when builder returns null', () {
