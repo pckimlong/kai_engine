@@ -2,7 +2,12 @@ import 'package:flutter/widgets.dart';
 
 /// A lightweight 3-dot typing indicator.
 class KaiTypingIndicator extends StatefulWidget {
-  const KaiTypingIndicator({super.key, this.dotSize = 8, this.dotSpacing = 4, this.color});
+  const KaiTypingIndicator({
+    super.key,
+    this.dotSize = 8,
+    this.dotSpacing = 4,
+    this.color,
+  });
 
   final double dotSize;
   final double dotSpacing;
@@ -12,7 +17,8 @@ class KaiTypingIndicator extends StatefulWidget {
   State<KaiTypingIndicator> createState() => _KaiTypingIndicatorState();
 }
 
-class _KaiTypingIndicatorState extends State<KaiTypingIndicator> with SingleTickerProviderStateMixin {
+class _KaiTypingIndicatorState extends State<KaiTypingIndicator>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _dot1;
   late final Animation<double> _dot2;
@@ -21,12 +27,23 @@ class _KaiTypingIndicatorState extends State<KaiTypingIndicator> with SingleTick
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
-      ..repeat();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
 
-    _dot1 = CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.6, curve: Curves.easeInOut));
-    _dot2 = CurvedAnimation(parent: _controller, curve: const Interval(0.2, 0.8, curve: Curves.easeInOut));
-    _dot3 = CurvedAnimation(parent: _controller, curve: const Interval(0.4, 1.0, curve: Curves.easeInOut));
+    _dot1 = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+    );
+    _dot2 = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.2, 0.8, curve: Curves.easeInOut),
+    );
+    _dot3 = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.4, 1.0, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -76,4 +93,3 @@ class _Dot extends StatelessWidget {
     );
   }
 }
-

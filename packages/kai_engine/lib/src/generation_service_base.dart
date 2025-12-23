@@ -14,7 +14,8 @@ sealed class ToolingConfig with _$ToolingConfig {
   const ToolingConfig._();
 
   const factory ToolingConfig.auto() = _ToolingConfigAuto;
-  const factory ToolingConfig.any(Set<String> allowedFunctionNames) = _ToolingConfigAny;
+  const factory ToolingConfig.any(Set<String> allowedFunctionNames) =
+      _ToolingConfigAny;
   const factory ToolingConfig.none() = _ToolingConfigNone;
 }
 

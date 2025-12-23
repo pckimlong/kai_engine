@@ -37,7 +37,8 @@ sealed class GenerationResult with _$GenerationResult {
     return generatedMessages.lastWhere((e) => e.type == CoreMessageType.ai);
   }
 
-  factory GenerationResult.fromJson(Map<String, Object?> json) => _$GenerationResultFromJson(json);
+  factory GenerationResult.fromJson(Map<String, Object?> json) =>
+      _$GenerationResultFromJson(json);
 }
 
 @freezed
@@ -58,5 +59,6 @@ sealed class GenerationUsage with _$GenerationUsage {
     return null;
   }
 
-  factory GenerationUsage.fromJson(Map<String, Object?> json) => _$GenerationUsageFromJson(json);
+  factory GenerationUsage.fromJson(Map<String, Object?> json) =>
+      _$GenerationUsageFromJson(json);
 }

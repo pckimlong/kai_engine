@@ -6,17 +6,23 @@ part 'kai_exception.freezed.dart';
 sealed class KaiException with _$KaiException implements Exception {
   const KaiException._();
 
-  const factory KaiException.exception([String? message, StackTrace? stackTrace]) = _KaiException;
+  const factory KaiException.exception([
+    String? message,
+    StackTrace? stackTrace,
+  ]) = _KaiException;
 
   const factory KaiException.cancelled() = _KaiExceptionCancelled;
   const factory KaiException.noResponse() = _KaiExceptionNoResponse;
-  const factory KaiException.toolFailure([String? reason, StackTrace? stackTrace]) =
-      _KaiExceptionToolFailure;
+  const factory KaiException.toolFailure([
+    String? reason,
+    StackTrace? stackTrace,
+  ]) = _KaiExceptionToolFailure;
 
   ({String message, StackTrace? stackTrace}) get errorDetails => when(
     exception: (e, s) => (message: e.toString(), stackTrace: s),
     cancelled: () => (message: 'Request was cancelled', stackTrace: null),
     noResponse: () => (message: 'No response received', stackTrace: null),
-    toolFailure: (tool, stackTrace) => (message: 'Tool failed: $tool', stackTrace: stackTrace),
+    toolFailure: (tool, stackTrace) =>
+        (message: 'Tool failed: $tool', stackTrace: stackTrace),
   );
 }

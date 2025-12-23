@@ -81,7 +81,9 @@ sealed class PostResponseEngineInput with _$PostResponseEngineInput {
   IList<CoreMessage> get newRequestMessages {
     // identity user input message position
     final inputIndex = requestMessages.lastIndexWhere(
-      (m) => m.type == CoreMessageType.user && m.messageId == initialRequestMessageId.trim(),
+      (m) =>
+          m.type == CoreMessageType.user &&
+          m.messageId == initialRequestMessageId.trim(),
     );
     return requestMessages.sublist(inputIndex);
   }

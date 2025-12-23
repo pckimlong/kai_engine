@@ -20,7 +20,10 @@ class KaiChatTheme extends ThemeExtension<KaiChatTheme> {
     this.maxBubbleWidthMobile = 320,
     this.maxBubbleWidthDesktop = 480,
     this.bubbleRadius = 16,
-    this.bubblePadding = const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    this.bubblePadding = const EdgeInsets.symmetric(
+      horizontal: 12,
+      vertical: 10,
+    ),
     this.listPadding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     this.itemSpacing = 12,
     this.userBubbleColor,
@@ -44,7 +47,8 @@ class KaiChatTheme extends ThemeExtension<KaiChatTheme> {
   }) {
     return KaiChatTheme(
       maxBubbleWidthMobile: maxBubbleWidthMobile ?? this.maxBubbleWidthMobile,
-      maxBubbleWidthDesktop: maxBubbleWidthDesktop ?? this.maxBubbleWidthDesktop,
+      maxBubbleWidthDesktop:
+          maxBubbleWidthDesktop ?? this.maxBubbleWidthDesktop,
       bubbleRadius: bubbleRadius ?? this.bubbleRadius,
       bubblePadding: bubblePadding ?? this.bubblePadding,
       listPadding: listPadding ?? this.listPadding,
@@ -60,8 +64,16 @@ class KaiChatTheme extends ThemeExtension<KaiChatTheme> {
   KaiChatTheme lerp(ThemeExtension<KaiChatTheme>? other, double t) {
     if (other is! KaiChatTheme) return this;
     return KaiChatTheme(
-      maxBubbleWidthMobile: lerpDouble(maxBubbleWidthMobile, other.maxBubbleWidthMobile, t)!,
-      maxBubbleWidthDesktop: lerpDouble(maxBubbleWidthDesktop, other.maxBubbleWidthDesktop, t)!,
+      maxBubbleWidthMobile: lerpDouble(
+        maxBubbleWidthMobile,
+        other.maxBubbleWidthMobile,
+        t,
+      )!,
+      maxBubbleWidthDesktop: lerpDouble(
+        maxBubbleWidthDesktop,
+        other.maxBubbleWidthDesktop,
+        t,
+      )!,
       bubbleRadius: lerpDouble(bubbleRadius, other.bubbleRadius, t)!,
       bubblePadding: EdgeInsets.lerp(bubblePadding, other.bubblePadding, t)!,
       listPadding: EdgeInsets.lerp(listPadding, other.listPadding, t)!,
@@ -75,6 +87,6 @@ class KaiChatTheme extends ThemeExtension<KaiChatTheme> {
 }
 
 extension KaiChatThemeX on BuildContext {
-  KaiChatTheme get kaiChatTheme => Theme.of(this).extension<KaiChatTheme>() ?? const KaiChatTheme();
+  KaiChatTheme get kaiChatTheme =>
+      Theme.of(this).extension<KaiChatTheme>() ?? const KaiChatTheme();
 }
-

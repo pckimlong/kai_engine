@@ -21,7 +21,8 @@ class KaiStreamingText extends StatefulWidget {
   State<KaiStreamingText> createState() => _KaiStreamingTextState();
 }
 
-class _KaiStreamingTextState extends State<KaiStreamingText> with TickerProviderStateMixin {
+class _KaiStreamingTextState extends State<KaiStreamingText>
+    with TickerProviderStateMixin {
   late AnimationController _textController;
   late Animation<int> _characterCount;
 
@@ -44,12 +45,15 @@ class _KaiStreamingTextState extends State<KaiStreamingText> with TickerProvider
       vsync: this,
     );
 
-    _characterCount = IntTween(begin: 0, end: widget.text.length).animate(
-      CurvedAnimation(parent: _textController, curve: Curves.easeOut),
-    );
+    _characterCount = IntTween(
+      begin: 0,
+      end: widget.text.length,
+    ).animate(CurvedAnimation(parent: _textController, curve: Curves.easeOut));
 
-    _cursorController = AnimationController(duration: const Duration(milliseconds: 800), vsync: this)
-      ..repeat(reverse: true);
+    _cursorController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    )..repeat(reverse: true);
 
     _cursorOpacity = Tween<double>(begin: 0.2, end: 1.0).animate(
       CurvedAnimation(parent: _cursorController, curve: Curves.easeInOut),
@@ -72,12 +76,15 @@ class _KaiStreamingTextState extends State<KaiStreamingText> with TickerProvider
 
     _previousText = oldWidget.text;
 
-    final isAppend = widget.text.startsWith(_previousText) && widget.text.length > _previousText.length;
+    final isAppend =
+        widget.text.startsWith(_previousText) &&
+        widget.text.length > _previousText.length;
     final begin = isAppend ? _previousText.length : 0;
 
-    _characterCount = IntTween(begin: begin, end: widget.text.length).animate(
-      CurvedAnimation(parent: _textController, curve: Curves.easeOut),
-    );
+    _characterCount = IntTween(
+      begin: begin,
+      end: widget.text.length,
+    ).animate(CurvedAnimation(parent: _textController, curve: Curves.easeOut));
 
     final remaining = widget.text.length - begin;
     _textController.duration = Duration(milliseconds: 200 + (remaining * 12));
@@ -94,7 +101,10 @@ class _KaiStreamingTextState extends State<KaiStreamingText> with TickerProvider
   @override
   Widget build(BuildContext context) {
     final effectiveStyle = widget.style ?? DefaultTextStyle.of(context).style;
-    final cursorColor = widget.cursorColor ?? effectiveStyle.color ?? Theme.of(context).colorScheme.onSurface;
+    final cursorColor =
+        widget.cursorColor ??
+        effectiveStyle.color ??
+        Theme.of(context).colorScheme.onSurface;
     final cursorHeight = widget.cursorHeight ?? (effectiveStyle.fontSize ?? 16);
 
     return AnimatedBuilder(
@@ -104,8 +114,8 @@ class _KaiStreamingTextState extends State<KaiStreamingText> with TickerProvider
         final visibleText = (count <= 0)
             ? ''
             : (count >= widget.text.length)
-                ? widget.text
-                : widget.text.substring(0, count);
+            ? widget.text
+            : widget.text.substring(0, count);
 
         return Text.rich(
           TextSpan(
@@ -140,4 +150,3 @@ class _KaiStreamingTextState extends State<KaiStreamingText> with TickerProvider
     );
   }
 }
-

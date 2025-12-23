@@ -5,4 +5,3 @@
 abstract class KaiPhase<Input, Output> {
   Future<Output> execute(Input input);
 }
-

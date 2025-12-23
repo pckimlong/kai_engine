@@ -39,11 +39,17 @@ import 'package:kai_engine/kai_engine.dart';
 
 abstract base class FirebaseAiToolSchema<TCall, TResponse>
     extends ToolSchema<FunctionDeclaration, TCall, TResponse> {
-  FirebaseAiToolSchema({required super.parser, required super.declaration, super.onSuccess})
-    : super(name: declaration.name);
+  FirebaseAiToolSchema({
+    required super.parser,
+    required super.declaration,
+    super.onSuccess,
+  }) : super(name: declaration.name);
 
   Future<FunctionResponse> toFunctionResponse(FunctionCall functionCall) async {
-    final toolCall = ToolCall(toolName: functionCall.name, arguments: functionCall.args);
+    final toolCall = ToolCall(
+      toolName: functionCall.name,
+      arguments: functionCall.args,
+    );
     final result = await call(toolCall);
     return FunctionResponse(functionCall.name, result.response);
   }
@@ -70,7 +76,10 @@ extension FirebaseAiToolSchemaListHelper on List<FirebaseAiToolSchema> {
         }
       } else {
         // This issue might be cause by incorrect configuration
-        throw KaiException.toolFailure('Tool not found: ${call.name}', StackTrace.current);
+        throw KaiException.toolFailure(
+          'Tool not found: ${call.name}',
+          StackTrace.current,
+        );
       }
     });
 
@@ -86,7 +95,9 @@ final class FirebaseAiJsonTool
     : super(parser: (json) => json);
 
   @override
-  Future<ToolResult<Map<String, dynamic>>> execute(Map<String, dynamic> call) async {
+  Future<ToolResult<Map<String, dynamic>>> execute(
+    Map<String, dynamic> call,
+  ) async {
     try {
       final result = await onCall(call);
       return ToolResult.success(result, result);

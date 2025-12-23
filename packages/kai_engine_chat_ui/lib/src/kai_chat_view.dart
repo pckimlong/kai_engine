@@ -42,7 +42,8 @@ class KaiChatView extends StatefulWidget {
   final EdgeInsetsGeometry composerPadding;
   final EdgeInsetsGeometry? listPadding;
 
-  final Widget Function(BuildContext context, KaiComposer composer)? composerBuilder;
+  final Widget Function(BuildContext context, KaiComposer composer)?
+  composerBuilder;
 
   @override
   State<KaiChatView> createState() => _KaiChatViewState();
@@ -71,7 +72,9 @@ class _KaiChatViewState extends State<KaiChatView> {
 
   void scrollToBottom() {
     if (!_scrollController.hasClients) return;
-    final target = widget.reverse ? 0.0 : _scrollController.position.maxScrollExtent;
+    final target = widget.reverse
+        ? 0.0
+        : _scrollController.position.maxScrollExtent;
     _scrollController.animateTo(
       target,
       duration: const Duration(milliseconds: 220),

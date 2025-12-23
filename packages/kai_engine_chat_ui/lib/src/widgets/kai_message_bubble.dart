@@ -3,7 +3,8 @@ import 'package:kai_engine/kai_engine.dart';
 
 import '../kai_chat_theme.dart';
 
-typedef KaiMessageContentBuilder = Widget Function(BuildContext context, CoreMessage message);
+typedef KaiMessageContentBuilder =
+    Widget Function(BuildContext context, CoreMessage message);
 
 /// Default bubble used by [KaiMessageList] / [KaiChatView].
 class KaiMessageBubble extends StatelessWidget {
@@ -35,14 +36,19 @@ class KaiMessageBubble extends StatelessWidget {
         ? (theme.userTextColor ?? colors.onPrimary)
         : (theme.aiTextColor ?? colors.onSurface);
 
-    final content = contentBuilder?.call(context, message) ??
+    final content =
+        contentBuilder?.call(context, message) ??
         Text(
           message.content,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: textColor, height: 1.35),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: textColor, height: 1.35),
         );
 
     return Row(
-      mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+      mainAxisAlignment: isUser
+          ? MainAxisAlignment.end
+          : MainAxisAlignment.start,
       children: [
         Flexible(
           child: Semantics(
@@ -50,7 +56,9 @@ class KaiMessageBubble extends StatelessWidget {
             label: semanticLabel ?? (isUser ? 'Message from you' : 'Message'),
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width >= 1024 ? theme.maxBubbleWidthDesktop : theme.maxBubbleWidthMobile,
+                maxWidth: MediaQuery.of(context).size.width >= 1024
+                    ? theme.maxBubbleWidthDesktop
+                    : theme.maxBubbleWidthMobile,
               ),
               child: Material(
                 color: Colors.transparent,
@@ -61,16 +69,19 @@ class KaiMessageBubble extends StatelessWidget {
                     padding: theme.bubblePadding,
                     decoration: BoxDecoration(
                       color: bubbleColor,
-                      borderRadius: BorderRadius.circular(theme.bubbleRadius).copyWith(
-                        bottomLeft: isUser
-                            ? Radius.circular(theme.bubbleRadius)
-                            : const Radius.circular(6),
-                        bottomRight: isUser
-                            ? const Radius.circular(6)
-                            : Radius.circular(theme.bubbleRadius),
-                      ),
+                      borderRadius: BorderRadius.circular(theme.bubbleRadius)
+                          .copyWith(
+                            bottomLeft: isUser
+                                ? Radius.circular(theme.bubbleRadius)
+                                : const Radius.circular(6),
+                            bottomRight: isUser
+                                ? const Radius.circular(6)
+                                : Radius.circular(theme.bubbleRadius),
+                          ),
                       border: Border.all(
-                        color: colors.outlineVariant.withValues(alpha: isUser ? 0.15 : 0.35),
+                        color: colors.outlineVariant.withValues(
+                          alpha: isUser ? 0.15 : 0.35,
+                        ),
                         width: 1,
                       ),
                     ),

@@ -6,11 +6,17 @@ import 'kai_message_bubble.dart';
 import 'kai_streaming_text.dart';
 import 'kai_typing_indicator.dart';
 
-typedef KaiMessageBuilder = Widget Function(BuildContext context, CoreMessage message);
-typedef KaiTransientBuilder = Widget Function(BuildContext context, GenerationState<GenerationResult> state);
+typedef KaiMessageBuilder =
+    Widget Function(BuildContext context, CoreMessage message);
+typedef KaiTransientBuilder =
+    Widget Function(
+      BuildContext context,
+      GenerationState<GenerationResult> state,
+    );
 typedef KaiMessageFilter = bool Function(CoreMessage message);
 
-bool defaultKaiMessageFilter(CoreMessage m) => m.isDisplayable && !m.isBackgroundContext;
+bool defaultKaiMessageFilter(CoreMessage m) =>
+    m.isDisplayable && !m.isBackgroundContext;
 
 class KaiMessageList extends StatelessWidget {
   const KaiMessageList({
@@ -56,7 +62,9 @@ class KaiMessageList extends StatelessWidget {
         final isTransientIndex = transient && index == transientIndex;
         if (isTransientIndex) {
           final state = generationState!;
-          final built = transientBuilder?.call(context, state) ?? _defaultTransient(context, state);
+          final built =
+              transientBuilder?.call(context, state) ??
+              _defaultTransient(context, state);
           return Padding(
             padding: EdgeInsets.only(bottom: theme.itemSpacing),
             child: built,
@@ -68,7 +76,8 @@ class KaiMessageList extends StatelessWidget {
             : index;
         final message = filtered[messageIndex];
 
-        final bubble = messageBuilder?.call(context, message) ??
+        final bubble =
+            messageBuilder?.call(context, message) ??
             KaiMessageBubble(
               message: message,
               isUserMessage: message.type == CoreMessageType.user,
@@ -83,24 +92,28 @@ class KaiMessageList extends StatelessWidget {
     );
   }
 
-  Widget _defaultTransient(BuildContext context, GenerationState<GenerationResult> state) {
+  Widget _defaultTransient(
+    BuildContext context,
+    GenerationState<GenerationResult> state,
+  ) {
     return switch (state) {
-      GenerationLoadingState() || GenerationFunctionCallingState() => KaiMessageBubble(
-          message: CoreMessage.ai(content: ''),
-          isUserMessage: false,
-          contentBuilder: (_, __) => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 2),
-            child: KaiTypingIndicator(),
-          ),
+      GenerationLoadingState() ||
+      GenerationFunctionCallingState() => KaiMessageBubble(
+        message: CoreMessage.ai(content: ''),
+        isUserMessage: false,
+        contentBuilder: (_, __) => const Padding(
+          padding: EdgeInsets.symmetric(vertical: 2),
+          child: KaiTypingIndicator(),
         ),
+      ),
       GenerationStreamingTextState(text: final text) => KaiMessageBubble(
-          message: CoreMessage.ai(content: text),
-          isUserMessage: false,
-          contentBuilder: (context, _) => KaiStreamingText(
-            text: text,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+        message: CoreMessage.ai(content: text),
+        isUserMessage: false,
+        contentBuilder: (context, _) => KaiStreamingText(
+          text: text,
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
+      ),
       _ => const SizedBox.shrink(),
     };
   }

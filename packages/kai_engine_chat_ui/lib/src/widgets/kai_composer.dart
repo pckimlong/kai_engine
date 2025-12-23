@@ -83,8 +83,14 @@ class _KaiComposerState extends State<KaiComposer> {
               hintText: widget.hintText,
               filled: true,
               fillColor: colors.surfaceContainerHighest,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
             ),
             onSubmitted: (_) => _handleSend(),
             onChanged: (_) => setState(() {}),
