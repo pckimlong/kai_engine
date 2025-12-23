@@ -5,8 +5,6 @@
 
 A modular, extensible AI chat engine built with a pipeline-based architecture.
 
-> **Battle-tested in production** - Powers [Resonate](https://resonate-app-link.com), a modern AI chat application.
-
 ## Packages
 
 This repository is a monorepo containing the following packages:
@@ -22,12 +20,6 @@ This repository is a monorepo containing the following packages:
 The Kai Engine is a flexible framework for building AI-powered chat applications with a clean, modular architecture. It follows a pipeline-first pattern, allowing developers to easily customize and extend the processing pipeline with domain-specific logic.
 
 The Prompt Block package provides a flexible framework for creating, managing, and organizing prompt blocks used in AI applications. Combined with the Kai Engine, it offers a complete solution for building sophisticated AI applications.
-
-The core framework provides essential abstractions for building conversational AI applications while remaining unopinionated about concrete implementations, allowing maximum flexibility.
-
-## Features
-
-The Kai Engine is a flexible framework for building AI-powered chat applications with a clean, modular architecture. It follows a pipeline-first pattern, allowing developers to easily customize and extend the processing pipeline with domain-specific logic.
 
 The core framework provides essential abstractions for building conversational AI applications while remaining unopinionated about concrete implementations, allowing maximum flexibility.
 
