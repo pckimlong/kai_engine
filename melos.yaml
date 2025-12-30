@@ -1,4 +1,5 @@
 name: kai_engine_workspace
+repository: https://github.com/pckimlong/kai_engine
 
 packages:
   - packages/*
@@ -15,7 +16,7 @@ command:
         melos exec -- "dart format CHANGELOG.md 2>/dev/null || true"
 
   bootstrap:
-    usePubspecOverrides: true
+    usePubspecOverrides: false
 
 scripts:
   analyze:
@@ -40,7 +41,7 @@ scripts:
 
   version:dry:
     description: Preview version changes without committing
-    run: melos version --yes --dry-run
+    run: melos version --yes --no-git-commit-version --no-git-tag-version
 
   version:
     description: Version packages based on conventional commits

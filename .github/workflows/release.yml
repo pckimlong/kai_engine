@@ -36,46 +36,29 @@ jobs:
       - name: Setup Melos
         uses: bluefireteam/melos-action@v3
         with:
-          melos-version: '6.1.0'
+          melos-version: '6.3.0'
 
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Check for version changes
-        id: version_check
+      - name: Run Melos version
+        id: melos_version
         run: |
-          OUTPUT=$(melos version --yes --dry-run 2>&1) || true
+          OUTPUT=$(melos version --yes --all 2>&1) || true
           echo "$OUTPUT"
-          if echo "$OUTPUT" | grep -q "No packages"; then
+          
+          if echo "$OUTPUT" | grep -qE "No versioning|No packages"; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "No packages to version"
           else
             echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "Packages need versioning"
+            echo "Packages were versioned"
           fi
 
-      - name: Run Melos version
-        if: steps.version_check.outputs.has_changes == 'true'
-        id: melos_version
-        run: |
-          melos version --yes --no-git-tag-version
-          
-          CHANGED_PACKAGES=$(git diff --name-only HEAD~1 -- 'packages/*/pubspec.yaml' | xargs -I {} dirname {} | xargs -I {} basename {} | sort -u)
-          echo "changed_packages<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGED_PACKAGES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Commit version changes
-        if: steps.version_check.outputs.has_changes == 'true'
-        run: |
-          git add .
-          git commit -m "chore(release): version packages" || echo "No changes to commit"
-          git push origin main
-
-      - name: Create releases for changed packages
-        if: steps.version_check.outputs.has_changes == 'true'
+      - name: Create releases for packages
+        if: steps.melos_version.outputs.has_changes == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -98,6 +81,7 @@ jobs:
             
             echo "Creating release for $package_name v$VERSION"
             
+            NOTES=""
             if [ -f "$changelog_file" ]; then
               NOTES=$(awk -v ver="$VERSION" '
                 /^## \[/ {
