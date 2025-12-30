@@ -1,6 +1,0 @@
-{
-  "packages/kai_engine": "1.0.0",
-  "packages/kai_engine_firebase_ai": "1.0.0",
-  "packages/kai_engine_chat_ui": "0.1.0",
-  "packages/prompt_block": "0.1.0"
-}

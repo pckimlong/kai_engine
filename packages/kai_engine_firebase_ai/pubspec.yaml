@@ -1,17 +1,16 @@
 name: kai_engine_firebase_ai
 description: "A Firebase AI adapter for the Kai Engine."
-version: 1.0.0
+version: 0.1.0
 homepage: https://github.com/pckimlong/kai_engine
 repository: https://github.com/pckimlong/kai_engine
 issue_tracker: https://github.com/pckimlong/kai_engine/issues
 documentation: https://github.com/pckimlong/kai_engine#readme
-publish_to: none
 
 environment:
   sdk: ^3.10.1
 
 dependencies:
-  kai_engine: ^1.0.0
+  kai_engine: ^0.1.0
   rxdart: ^0.28.0
   uuid: ^4.5.1
   firebase_ai: ^3.2.0
@@ -20,13 +19,11 @@ dependencies:
   fast_immutable_collections: ^11.0.4
   synchronized: ^3.4.0
   collection: ^1.19.1
-  test: ^1.26.2
 
 dev_dependencies:
   lints: ^2.0.0
-  flutter_test:
-    sdk: flutter
   build_runner: ^2.6.0
   freezed: ^3.2.0
   json_serializable: ^6.10.0
   mocktail: ^1.0.4
+  test: ^1.26.2

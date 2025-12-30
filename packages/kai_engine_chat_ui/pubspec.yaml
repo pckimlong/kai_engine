@@ -5,7 +5,6 @@ homepage: https://github.com/pckimlong/kai_engine
 repository: https://github.com/pckimlong/kai_engine
 issue_tracker: https://github.com/pckimlong/kai_engine/issues
 documentation: https://github.com/pckimlong/kai_engine#readme
-publish_to: "none"
 
 environment:
   sdk: ^3.10.1
@@ -14,7 +13,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  kai_engine: ^1.0.0
+  kai_engine: ^0.1.0
 
 dev_dependencies:
   flutter_test:

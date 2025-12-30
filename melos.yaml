@@ -15,7 +15,7 @@ command:
 scripts:
   analyze:
     description: Analyze all packages
-    run: melos exec --fail-fast -- "if [ \"$MELOS_PACKAGE_NAME\" = \"prompt_block\" ]; then dart analyze; else flutter analyze --no-fatal-infos; fi"
+    run: melos exec --fail-fast -- "if [ \"$MELOS_PACKAGE_NAME\" = \"kai_engine_chat_ui\" ]; then flutter analyze --no-fatal-infos; else dart analyze; fi"
 
   format:
     description: Format all packages
@@ -23,13 +23,13 @@ scripts:
 
   test:
     description: Run tests for all packages
-    run: melos exec --fail-fast -- "if [ \"$MELOS_PACKAGE_NAME\" = \"prompt_block\" ]; then dart test; else flutter test; fi"
+    run: melos exec --fail-fast -- "if [ \"$MELOS_PACKAGE_NAME\" = \"kai_engine_chat_ui\" ]; then flutter test; else dart test; fi"
     packageFilters:
       dirExists: test
 
   test:coverage:
     description: Run tests with coverage
-    run: melos exec --fail-fast -- "if [ \"$MELOS_PACKAGE_NAME\" = \"prompt_block\" ]; then dart test; else flutter test --coverage; fi"
+    run: melos exec --fail-fast -- "if [ \"$MELOS_PACKAGE_NAME\" = \"kai_engine_chat_ui\" ]; then flutter test --coverage; else dart test; fi"
     packageFilters:
       dirExists: test
 

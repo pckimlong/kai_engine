@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.0] - 2025-08-16
+## [0.1.0] - 2025-08-16
 
 ### Added
 - Initial release of Kai Engine Firebase AI Adapter

@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 import 'package:kai_engine/src/conversation_manager.dart';
 import 'package:kai_engine/src/message_adapter_base.dart';
 import 'package:kai_engine/src/message_repository_base.dart';
