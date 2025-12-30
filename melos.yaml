@@ -11,9 +11,6 @@ command:
     workspaceChangelog: true
     releaseUrl: true
 
-  bootstrap:
-    usePubspecOverrides: false
-
 scripts:
   analyze:
     description: Analyze all packages
