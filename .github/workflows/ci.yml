@@ -35,7 +35,11 @@ jobs:
       - name: Analyze project source
         run: |
           cd packages/${{ matrix.package }}
-          flutter analyze
+          if [ "${{ matrix.package }}" = "prompt_block" ]; then
+            dart analyze
+          else
+            flutter analyze
+          fi
 
   # Run tests for each package
   test:
@@ -61,4 +65,8 @@ jobs:
       - name: Run tests
         run: |
           cd packages/${{ matrix.package }}
-          flutter test --coverage
+          if [ "${{ matrix.package }}" = "prompt_block" ]; then
+            dart test
+          else
+            flutter test --coverage
+          fi

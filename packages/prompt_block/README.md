@@ -322,10 +322,10 @@ The package includes comprehensive tests organized into multiple files:
 - `prompt_block_core_test.dart` - Core feature tests
 - `prompt_block_integration_test.dart` - Integration tests
 
-All tests follow the standard Flutter testing conventions and can be run with:
+All tests follow standard Dart testing conventions and can be run with:
 
 ```bash
-flutter test
+dart test
 ```
 
 ## Contributing
