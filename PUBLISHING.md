@@ -28,6 +28,8 @@ Workflow: `.github/workflows/pub-publish.yml`
 3. Merge to `main`.
 4. Automation will open a PR to update `CHANGELOG.md`, then create the release tag after it merges, triggering publish.
 
+If the changelog PR cannot be created due to GitHub Actions policy, create a fine-grained PAT with `Contents: Read and write` + `Pull requests: Read and write` and add it as repository secret `CHANGELOG_PR_TOKEN`.
+
 ## Manual publish (first time / troubleshooting)
 
 From the package folder:
