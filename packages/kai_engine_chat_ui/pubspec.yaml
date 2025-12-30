@@ -1,6 +1,6 @@
 name: kai_engine_chat_ui
 description: Flutter chat UI widgets for kai_engine (message list, composer, streaming UI).
-version: 0.2.0
+version: 0.1.0
 homepage: https://github.com/pckimlong/kai_engine
 repository: https://github.com/pckimlong/kai_engine
 issue_tracker: https://github.com/pckimlong/kai_engine/issues
