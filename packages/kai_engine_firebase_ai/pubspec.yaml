@@ -6,13 +6,12 @@ repository: https://github.com/pckimlong/kai_engine
 issue_tracker: https://github.com/pckimlong/kai_engine/issues
 documentation: https://github.com/pckimlong/kai_engine#readme
 publish_to: none
-resolution: workspace
 
 environment:
   sdk: ^3.10.1
 
 dependencies:
-  kai_engine:
+  kai_engine: ^1.0.0
   rxdart: ^0.28.0
   uuid: ^4.5.1
   firebase_ai: ^3.2.0

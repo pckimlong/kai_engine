@@ -29,8 +29,14 @@ jobs:
         with:
           channel: stable
 
+      - name: Install Melos
+        run: dart pub global activate melos 6.3.0
+
+      - name: Setup Melos path
+        run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+
       - name: Install dependencies
-        run: flutter pub get
+        run: melos bootstrap
 
       # Uncomment this step to verify the use of 'dart format' on each commit.
       # - name: Verify formatting
@@ -38,4 +44,4 @@ jobs:
 
       # Consider passing '--fatal-infos' for slightly stricter analysis.
       - name: Analyze project source
-        run: flutter analyze
+        run: melos run analyze

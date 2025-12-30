@@ -1,6 +1,13 @@
 version: 2
 updates:
   - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "pub"
+  - package-ecosystem: "pub"
     directory: "/packages/kai_engine"
     schedule:
       interval: "weekly"
@@ -9,6 +16,20 @@ updates:
       - "pub"
   - package-ecosystem: "pub"
     directory: "/packages/kai_engine_firebase_ai"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "pub"
+  - package-ecosystem: "pub"
+    directory: "/packages/kai_engine_chat_ui"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "pub"
+  - package-ecosystem: "pub"
+    directory: "/packages/prompt_block"
     schedule:
       interval: "weekly"
     labels:
