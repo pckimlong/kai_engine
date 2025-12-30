@@ -1,6 +1,7 @@
 name: kai_engine_workspace
 repository: https://github.com/pckimlong/kai_engine
 
+# all packages
 packages:
   - packages/*
 
