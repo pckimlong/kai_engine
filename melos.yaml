@@ -14,7 +14,7 @@ command:
 scripts:
   analyze:
     description: Analyze all packages
-    run: melos exec -- "flutter analyze --no-fatal-infos"
+    run: melos exec --fail-fast -- "if [ \"$MELOS_PACKAGE_NAME\" = \"prompt_block\" ]; then dart analyze; else flutter analyze --no-fatal-infos; fi"
 
   format:
     description: Format all packages
@@ -22,13 +22,13 @@ scripts:
 
   test:
     description: Run tests for all packages
-    run: melos exec --fail-fast -- "flutter test"
+    run: melos exec --fail-fast -- "if [ \"$MELOS_PACKAGE_NAME\" = \"prompt_block\" ]; then dart test; else flutter test; fi"
     packageFilters:
       dirExists: test
 
   test:coverage:
     description: Run tests with coverage
-    run: melos exec --fail-fast -- "flutter test --coverage"
+    run: melos exec --fail-fast -- "if [ \"$MELOS_PACKAGE_NAME\" = \"prompt_block\" ]; then dart test; else flutter test --coverage; fi"
     packageFilters:
       dirExists: test
 

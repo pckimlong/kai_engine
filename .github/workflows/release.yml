@@ -33,10 +33,17 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Setup Melos
-        uses: bluefireteam/melos-action@v3
-        with:
-          melos-version: '6.3.0'
+      - name: Install Melos
+        run: dart pub global activate melos 6.3.0
+
+      - name: Setup Melos path
+        run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+
+      - name: Get dependencies
+        run: dart pub get
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
 
       - name: Configure Git
         run: |

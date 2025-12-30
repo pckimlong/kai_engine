@@ -19,13 +19,21 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) to ensure a wel
 ## Development Setup
 
 1. Install Flutter SDK
-2. Navigate to the package you want to work on:
+2. Install Melos:
+   ```bash
+   dart pub global activate melos 6.3.0
+   ```
+3. Bootstrap the workspace (links local packages and runs `pub get`):
+   ```bash
+   melos bootstrap
+   ```
+4. Navigate to the package you want to work on:
    ```bash
    cd packages/kai_engine
    # or
    cd packages/kai_engine_firebase_ai
    ```
-3. Install dependencies:
+5. Install dependencies (usually already done by `melos bootstrap`):
    ```bash
    flutter pub get
    ```
