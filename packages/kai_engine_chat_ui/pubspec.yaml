@@ -16,7 +16,6 @@ dependencies:
   flutter:
     sdk: flutter
   kai_engine:
-    path: ../kai_engine
 
 dev_dependencies:
   flutter_test:

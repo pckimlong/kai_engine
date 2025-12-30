@@ -1,0 +1,111 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/**'
+      - 'melos.yaml'
+      - 'pubspec.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Version and Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Setup Melos
+        uses: bluefireteam/melos-action@v3
+        with:
+          melos-version: '6.3.0'
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run Melos version
+        id: melos_version
+        run: |
+          OUTPUT=$(melos version --yes --all 2>&1) || true
+          echo "$OUTPUT"
+          
+          if echo "$OUTPUT" | grep -qE "No versioning|No packages"; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No packages to version"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Packages were versioned"
+          fi
+
+      - name: Create releases for packages
+        if: steps.melos_version.outputs.has_changes == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for package_dir in packages/*/; do
+            package_name=$(basename "$package_dir")
+            pubspec_file="${package_dir}pubspec.yaml"
+            changelog_file="${package_dir}CHANGELOG.md"
+            
+            if [ ! -f "$pubspec_file" ]; then
+              continue
+            fi
+            
+            VERSION=$(grep '^version:' "$pubspec_file" | sed 's/version: //' | tr -d '[:space:]')
+            TAG="${package_name}-v${VERSION}"
+            
+            if git rev-parse "$TAG" >/dev/null 2>&1; then
+              echo "Tag $TAG already exists, skipping"
+              continue
+            fi
+            
+            echo "Creating release for $package_name v$VERSION"
+            
+            NOTES=""
+            if [ -f "$changelog_file" ]; then
+              NOTES=$(awk -v ver="$VERSION" '
+                /^## \[/ {
+                  if (found) exit
+                  if (index($0, ver) || index($0, "[" ver "]")) found=1
+                  next
+                }
+                found { print }
+              ' "$changelog_file")
+            fi
+            
+            if [ -z "$NOTES" ]; then
+              NOTES="Release $package_name version $VERSION"
+            fi
+            
+            echo "$NOTES" > /tmp/release_notes.txt
+            
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+            
+            gh release create "$TAG" \
+              --title "$package_name v$VERSION" \
+              --notes-file /tmp/release_notes.txt \
+              --latest=false
+            
+            echo "Created release $TAG"
+          done
