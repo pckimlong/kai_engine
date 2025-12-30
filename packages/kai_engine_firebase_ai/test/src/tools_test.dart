@@ -1,5 +1,5 @@
 import 'package:firebase_ai/firebase_ai.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 import 'package:kai_engine/kai_engine.dart';
 import 'package:kai_engine_firebase_ai/src/tools.dart';
 

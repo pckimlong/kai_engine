@@ -35,10 +35,10 @@ jobs:
       - name: Analyze project source
         run: |
           cd packages/${{ matrix.package }}
-          if [ "${{ matrix.package }}" = "prompt_block" ]; then
-            dart analyze
-          else
+          if [ "${{ matrix.package }}" = "kai_engine_chat_ui" ]; then
             flutter analyze
+          else
+            dart analyze
           fi
 
   # Run tests for each package
@@ -65,8 +65,8 @@ jobs:
       - name: Run tests
         run: |
           cd packages/${{ matrix.package }}
-          if [ "${{ matrix.package }}" = "prompt_block" ]; then
-            dart test
+          if [ "${{ matrix.package }}" = "kai_engine_firebase_ai" ]; then
+            flutter test
           else
-            flutter test --coverage
+            dart test
           fi

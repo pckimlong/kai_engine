@@ -1,6 +1,6 @@
 name: prompt_block
 description: "A package for creating and managing prompt blocks in AI applications."
-version: 0.2.0
+version: 0.1.0
 homepage: https://github.com/pckimlong/kai_engine
 repository: https://github.com/pckimlong/kai_engine
 issue_tracker: https://github.com/pckimlong/kai_engine/issues

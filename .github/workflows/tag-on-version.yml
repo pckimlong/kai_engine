@@ -1,0 +1,60 @@
+name: Tag On Version
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/*/pubspec.yaml"
+      - "packages/*/CHANGELOG.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create missing tags for current versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          created_any=false
+
+          for pubspec in packages/*/pubspec.yaml; do
+            pkg_dir="$(dirname "$pubspec")"
+            pkg_name="$(basename "$pkg_dir")"
+            version="$(awk '/^version:/ {print $2; exit}' "$pubspec")"
+            changelog="$pkg_dir/CHANGELOG.md"
+            tag="${pkg_name}-v${version}"
+
+            if git show-ref --tags --verify --quiet "refs/tags/$tag"; then
+              continue
+            fi
+
+            if [ ! -f "$changelog" ]; then
+              echo "Missing $changelog; skipping $pkg_name"
+              continue
+            fi
+
+            if ! grep -qE "^## \\[$version\\]" "$changelog"; then
+              echo "No changelog entry for $pkg_name $version; skipping tag."
+              continue
+            fi
+
+            echo "Creating tag $tag"
+            git tag -a "$tag" -m "Release $tag"
+            git push origin "$tag"
+            created_any=true
+          done
+
+          if [ "$created_any" = "false" ]; then
+            echo "No tags to create."
+          fi

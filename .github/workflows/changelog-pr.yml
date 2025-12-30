@@ -1,0 +1,158 @@
+name: Changelog PR
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/*/pubspec.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.CHANGELOG_PR_TOKEN != '' && secrets.CHANGELOG_PR_TOKEN || github.token }}
+
+      - name: Generate changelog updates
+        id: gen
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch --tags --force
+
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+
+          # Fallback for workflow_dispatch (no before SHA).
+          if [ -z "${BEFORE:-}" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            BEFORE="$(git rev-parse HEAD~1)"
+          fi
+
+          changed_pubspecs="$(git diff --name-only "$BEFORE" "$AFTER" -- 'packages/*/pubspec.yaml' || true)"
+          if [ -z "$changed_pubspecs" ]; then
+            echo "No pubspec changes."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          changed_any=false
+
+          while IFS= read -r pubspec; do
+            [ -z "$pubspec" ] && continue
+
+            pkg_dir="$(dirname "$pubspec")"
+            pkg_name="$(basename "$pkg_dir")"
+            changelog="$pkg_dir/CHANGELOG.md"
+
+            new_version="$(awk '/^version:/ {print $2; exit}' "$pubspec")"
+            old_version="$(git show "$BEFORE:$pubspec" 2>/dev/null | awk '/^version:/ {print $2; exit}' || true)"
+
+            if [ -z "$new_version" ] || [ "$new_version" = "$old_version" ]; then
+              continue
+            fi
+
+            if [ ! -f "$changelog" ]; then
+              echo "Missing $changelog; skipping $pkg_name."
+              continue
+            fi
+
+            if grep -qE "^## \\[$new_version\\]" "$changelog"; then
+              echo "$pkg_name already has changelog entry for $new_version; skipping."
+              continue
+            fi
+
+            # Find last tag for this package and use it as the changelog baseline.
+            last_tag="$(git tag --list "${pkg_name}-v*" --sort=-v:refname | head -n1 || true)"
+            if [ -n "$last_tag" ]; then
+              range="${last_tag}..HEAD"
+            else
+              range="HEAD"
+            fi
+
+            mapfile -t subjects < <(git log --pretty=format:%s "$range" -- "$pkg_dir" | sed '/^\s*$/d' || true)
+
+            added=()
+            fixed=()
+            changed=()
+
+            for s in "${subjects[@]:-}"; do
+              if [[ "$s" =~ ^feat(\(.*\))?!?:\  ]]; then
+                added+=( "${s#*: }" )
+              elif [[ "$s" =~ ^fix(\(.*\))?!?:\  ]]; then
+                fixed+=( "${s#*: }" )
+              else
+                # Everything else: docs/chore/refactor/perf/test/build/ci/etc.
+                changed+=( "${s#*: }" )
+              fi
+            done
+
+            today="$(date -u +%Y-%m-%d)"
+
+            section="## [$new_version] - $today\n\n"
+            if [ ${#added[@]} -gt 0 ]; then
+              section+="### Added\n"
+              for item in "${added[@]}"; do section+="- $item\n"; done
+              section+="\n"
+            fi
+            if [ ${#fixed[@]} -gt 0 ]; then
+              section+="### Fixed\n"
+              for item in "${fixed[@]}"; do section+="- $item\n"; done
+              section+="\n"
+            fi
+            section+="### Changed\n"
+            if [ ${#changed[@]} -gt 0 ]; then
+              for item in "${changed[@]}"; do section+="- $item\n"; done
+            else
+              section+="- Internal maintenance.\n"
+            fi
+            section+="\n"
+
+            # Insert right after the "# Changelog" header.
+            tmp="$(mktemp)"
+            awk -v ins="$section" '
+              BEGIN { inserted=0 }
+              NR==1 { print; next }
+              inserted==0 && $0 ~ /^$/ {
+                print ""
+                printf "%s", ins
+                inserted=1
+                next
+              }
+              { print }
+              END {
+                if (inserted==0) {
+                  print ""
+                  printf "%s", ins
+                }
+              }
+            ' "$changelog" > "$tmp"
+            mv "$tmp" "$changelog"
+
+            echo "Updated $changelog for $pkg_name $new_version"
+            changed_any=true
+          done <<< "$changed_pubspecs"
+
+          if [ "$changed_any" = "true" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create PR
+        if: steps.gen.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.CHANGELOG_PR_TOKEN != '' && secrets.CHANGELOG_PR_TOKEN || github.token }}
+          commit-message: "chore(changelog): update for version bumps"
+          title: "chore(changelog): update for version bumps"
+          body: "Auto-generated changelog entries for packages whose `version:` was bumped."
+          branch: "automation/changelog-${{ github.run_id }}"
+          labels: "dependencies"

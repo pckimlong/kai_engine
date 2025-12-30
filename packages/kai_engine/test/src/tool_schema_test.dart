@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:kai_engine/src/tool_schema.dart';
 

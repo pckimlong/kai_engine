@@ -1,0 +1,84 @@
+name: Publish to pub.dev
+
+on:
+  push:
+    tags:
+      - 'kai_engine-v*'
+      - 'kai_engine_firebase_ai-v*'
+      - 'kai_engine_chat_ui-v*'
+      - 'prompt_block-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish-kai_engine:
+    if: startsWith(github.ref_name, 'kai_engine-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Publish kai_engine
+        working-directory: packages/kai_engine
+        run: |
+          dart pub get
+          dart pub publish --force
+
+  publish-prompt_block:
+    if: startsWith(github.ref_name, 'prompt_block-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Publish prompt_block
+        working-directory: packages/prompt_block
+        run: |
+          dart pub get
+          dart pub publish --force
+
+  publish-kai_engine_firebase_ai:
+    if: startsWith(github.ref_name, 'kai_engine_firebase_ai-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Publish kai_engine_firebase_ai
+        working-directory: packages/kai_engine_firebase_ai
+        run: |
+          # If this release depends on a freshly-published kai_engine version,
+          # pub.dev may take a short time to index it.
+          for i in $(seq 1 10); do
+            if dart pub get; then
+              break
+            fi
+            echo "dart pub get failed (attempt $i/10), retrying..."
+            sleep 15
+          done
+          dart pub publish --force
+
+  publish-kai_engine_chat_ui:
+    if: startsWith(github.ref_name, 'kai_engine_chat_ui-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Publish kai_engine_chat_ui
+        working-directory: packages/kai_engine_chat_ui
+        run: |
+          flutter pub get
+          flutter pub publish --force
