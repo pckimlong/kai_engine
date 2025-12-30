@@ -22,10 +22,12 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Install Melos
+        run: dart pub global activate melos 6.3.0
+      - name: Setup Melos path
+        run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
       - name: Install dependencies
-        run: |
-          cd packages/${{ matrix.package }}
-          flutter pub get
+        run: melos bootstrap
       - name: Verify formatting
         run: |
           cd packages/${{ matrix.package }}
@@ -50,10 +52,12 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Install Melos
+        run: dart pub global activate melos 6.3.0
+      - name: Setup Melos path
+        run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
       - name: Install dependencies
-        run: |
-          cd packages/${{ matrix.package }}
-          flutter pub get
+        run: melos bootstrap
       - name: Run tests
         run: |
           cd packages/${{ matrix.package }}

@@ -13,9 +13,3 @@ dev_dependencies:
   melos: ^6.3.0
   coverage: ^1.11.0
   test: ^1.26.2
-
-workspace:
-  - packages/kai_engine
-  - packages/kai_engine_firebase_ai
-  - packages/kai_engine_chat_ui
-  - packages/prompt_block
