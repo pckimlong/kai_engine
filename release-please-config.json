@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "",
+  "include-component-in-tag": true,
+  "include-v-in-tag": true,
+  "packages": {
+    "packages/kai_engine": {
+      "release-type": "dart",
+      "package-name": "kai_engine",
+      "changelog-path": "packages/kai_engine/CHANGELOG.md"
+    },
+    "packages/kai_engine_firebase_ai": {
+      "release-type": "dart",
+      "package-name": "kai_engine_firebase_ai",
+      "changelog-path": "packages/kai_engine_firebase_ai/CHANGELOG.md"
+    },
+    "packages/kai_engine_chat_ui": {
+      "release-type": "dart",
+      "package-name": "kai_engine_chat_ui",
+      "changelog-path": "packages/kai_engine_chat_ui/CHANGELOG.md"
+    },
+    "packages/prompt_block": {
+      "release-type": "dart",
+      "package-name": "prompt_block",
+      "changelog-path": "packages/prompt_block/CHANGELOG.md"
+    }
+  }
+}
