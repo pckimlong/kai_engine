@@ -4,8 +4,6 @@ updates:
     directory: "/packages/kai_engine"
     schedule:
       interval: "weekly"
-    reviewers:
-      - "pckimlong"
     labels:
       - "dependencies"
       - "pub"
@@ -13,8 +11,6 @@ updates:
     directory: "/packages/kai_engine_firebase_ai"
     schedule:
       interval: "weekly"
-    reviewers:
-      - "pckimlong"
     labels:
       - "dependencies"
       - "pub"
