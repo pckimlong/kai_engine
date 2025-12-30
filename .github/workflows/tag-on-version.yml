@@ -44,7 +44,7 @@ jobs:
               continue
             fi
 
-            if ! rg -n "^## \\[$version\\]" "$changelog" >/dev/null 2>&1; then
+            if ! grep -qE "^## \\[$version\\]" "$changelog"; then
               echo "No changelog entry for $pkg_name $version; skipping tag."
               continue
             fi
@@ -58,4 +58,3 @@ jobs:
           if [ "$created_any" = "false" ]; then
             echo "No tags to create."
           fi
-

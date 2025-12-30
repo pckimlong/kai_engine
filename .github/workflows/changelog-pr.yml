@@ -64,7 +64,7 @@ jobs:
               continue
             fi
 
-            if rg -n "^## \\[$new_version\\]" "$changelog" >/dev/null 2>&1; then
+            if grep -qE "^## \\[$new_version\\]" "$changelog"; then
               echo "$pkg_name already has changelog entry for $new_version; skipping."
               continue
             fi
