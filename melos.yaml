@@ -9,11 +9,7 @@ command:
     branch: main
     linkToCommits: true
     workspaceChangelog: true
-    includeCommitId: true
     releaseUrl: true
-    hooks:
-      preCommit: |
-        melos exec -- "dart format CHANGELOG.md 2>/dev/null || true"
 
   bootstrap:
     usePubspecOverrides: false
@@ -38,18 +34,6 @@ scripts:
     run: melos exec --fail-fast -- "flutter test --coverage"
     packageFilters:
       dirExists: test
-
-  version:dry:
-    description: Preview version changes without committing
-    run: melos version --yes --no-git-commit-version --no-git-tag-version
-
-  version:
-    description: Version packages based on conventional commits
-    run: melos version --yes
-
-  list:changed:
-    description: List packages that have changed since last release
-    run: melos list --diff="HEAD~10" --json
 
   build:runner:
     description: Run build_runner for all packages
