@@ -34,17 +34,13 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  prompt_block:
-    git:
-      url: https://github.com/pckimlong/kai_engine.git
-      ref: main
-      path: packages/prompt_block
+  prompt_block: ^0.1.1
 ```
 
-Then run:
+Or install via command line:
 
 ```bash
-flutter pub get
+dart pub add prompt_block
 ```
 
 ### Basic Usage
@@ -328,6 +324,12 @@ All tests follow standard Dart testing conventions and can be run with:
 dart test
 ```
 
+## Related Packages
+
+- [kai_engine](https://pub.dev/packages/kai_engine) - Core AI chat engine
+- [kai_engine_firebase_ai](https://pub.dev/packages/kai_engine_firebase_ai) - Firebase AI adapter
+- [kai_engine_chat_ui](https://pub.dev/packages/kai_engine_chat_ui) - Flutter chat UI widgets
+
 ## Contributing
 
 Contributions are welcome! Please read our [Contributing Guide](https://github.com/pckimlong/kai_engine/blob/main/CONTRIBUTING.md) for details on how to contribute to this project.
@@ -335,9 +337,3 @@ Contributions are welcome! Please read our [Contributing Guide](https://github.c
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Related Documentation
-
-- [API Reference](https://pub.dev/documentation/prompt_block/latest/)
-- [GitHub Repository](https://github.com/pckimlong/kai_engine/tree/main/packages/prompt_block)
-- [Issue Tracker](https://github.com/pckimlong/kai_engine/issues)

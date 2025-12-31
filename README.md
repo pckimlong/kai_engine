@@ -9,78 +9,151 @@ A modular, extensible AI chat engine built with a pipeline-based architecture.
 
 This repository is a monorepo containing the following packages:
 
-| Package | Description |
-|---------|-------------|
-| [`kai_engine`](packages/kai_engine/) | The core AI chat engine with a pipeline-based architecture |
-| [`kai_engine_firebase_ai`](packages/kai_engine_firebase_ai/) | Firebase AI adapter for the Kai Engine |
-| [`kai_engine_chat_ui`](packages/kai_engine_chat_ui/) | Flutter chat UI widgets for Kai Engine (Riverpod-free) |
-| [`prompt_block`](packages/prompt_block/) | A powerful Dart package for creating and managing structured prompt blocks in AI applications |
+| Package | Pub | Description |
+|---------|-----|-------------|
+| [kai_engine](packages/kai_engine/) | [![Pub Version](https://img.shields.io/pub/v/kai_engine)](https://pub.dev/packages/kai_engine) | Core AI chat engine with pipeline-based architecture |
+| [kai_engine_firebase_ai](packages/kai_engine_firebase_ai/) | [![Pub Version](https://img.shields.io/pub/v/kai_engine_firebase_ai)](https://pub.dev/packages/kai_engine_firebase_ai) | Firebase AI (Gemini) adapter for Kai Engine |
+| [kai_engine_chat_ui](packages/kai_engine_chat_ui/) | [![Pub Version](https://img.shields.io/pub/v/kai_engine_chat_ui)](https://pub.dev/packages/kai_engine_chat_ui) | Flutter chat UI widgets for Kai Engine |
+| [prompt_block](packages/prompt_block/) | [![Pub Version](https://img.shields.io/pub/v/prompt_block)](https://pub.dev/packages/prompt_block) | Structured prompt blocks for AI applications |
 
 ## Overview
 
 The Kai Engine is a flexible framework for building AI-powered chat applications with a clean, modular architecture. It follows a pipeline-first pattern, allowing developers to easily customize and extend the processing pipeline with domain-specific logic.
 
-The Prompt Block package provides a flexible framework for creating, managing, and organizing prompt blocks used in AI applications. Combined with the Kai Engine, it offers a complete solution for building sophisticated AI applications.
+### Architecture
 
-The core framework provides essential abstractions for building conversational AI applications while remaining unopinionated about concrete implementations, allowing maximum flexibility.
+```mermaid
+flowchart TD
+    subgraph UI["UI / Application Layer"]
+        A[UI Component] --> B[ChatControllerBase]
+    end
+
+    subgraph Orchestration["Orchestration Layer"]
+        B --> C[ConversationManager]
+        B --> D[QueryEngine]
+        B --> E[ContextEngine]
+        B --> F[GenerationServiceBase]
+        B --> G[PostResponseEngine]
+    end
+
+    subgraph Context["Context Building"]
+        E --> I[System Prompt]
+        E --> J[History Context]
+        E --> K[Custom Context]
+        E --> L[User Input]
+    end
+
+    subgraph Generation["AI Generation"]
+        F --> M[Token Streaming]
+        M --> N[Tool Calling]
+    end
+
+    subgraph Data["Data Layer"]
+        C --> Q[MessageRepository]
+    end
+
+    subgraph External["External Services"]
+        F --> R[LLM Provider]
+    end
+
+    style B fill:#e1f5fe
+    style C fill:#e8f5e9
+    style D fill:#fff3e0
+    style E fill:#fff3e0
+    style F fill:#fff3e0
+    style G fill:#fff3e0
+    style Q fill:#e8f5e9
+    style R fill:#fce4ec
+```
 
 ## Features
 
-- **Modular Pipeline Architecture**: Each processing step is a separate component that can be customized or replaced.
-- **Extensible Design**: Unlimited extensibility through component composition.
-- **Generic Type Support**: Full generic support for using your own message types with MessageAdapter.
-- **Stream-Based Responses**: Real-time streaming responses for better user experience.
-- **Optimistic UI Updates**: Immediate UI feedback with rollback on errors.
-- **Flexible Context Building**: Advanced prompt engineering with parallel and sequential context building.
-- **Tool Calling Support**: Native support for AI function/tool calling with type-safe schemas.
-- **Template Engine**: Built-in flexible template engine for dynamic content generation.
-- **Structured Prompt Blocks**: Create and manage structured prompt blocks with the Prompt Block package.
-- **Post-Response Processing**: Process AI responses after generation with custom pipelines.
-- **Type Safety**: Strong typing throughout the system for better developer experience.
-- **Comprehensive Testability**: Designed for easy unit and integration testing.
+- **Modular Pipeline Architecture**: Each processing step is a separate component that can be customized or replaced
+- **Extensible Design**: Unlimited extensibility through component composition
+- **Generic Type Support**: Full generic support for using your own message types
+- **Stream-Based Responses**: Real-time streaming responses for better user experience
+- **Optimistic UI Updates**: Immediate UI feedback with rollback on errors
+- **Flexible Context Building**: Advanced prompt engineering with parallel and sequential context building
+- **Tool Calling Support**: Native support for AI function/tool calling with type-safe schemas
+- **Structured Prompt Blocks**: Create and manage structured prompt blocks
+- **Post-Response Processing**: Process AI responses after generation with custom pipelines
+- **Type Safety**: Strong typing throughout the system
+- **Comprehensive Testability**: Designed for easy unit and integration testing
 
-## Getting Started
+## Quick Start
 
-Add the dependency to your `pubspec.yaml`:
+### Installation
 
 ```yaml
 dependencies:
-  kai_engine:
-    git:
-      url: https://github.com/pckimlong/kai_engine.git
-      ref: main
-      path: packages/kai_engine
+  kai_engine: ^0.1.1
+  kai_engine_firebase_ai: ^0.1.1  # For Firebase AI integration
+  kai_engine_chat_ui: ^0.1.1      # For Flutter UI widgets
+  prompt_block: ^0.1.1            # For structured prompts
 ```
 
-For structured prompt blocks:
+### Basic Usage
 
-```yaml
-dependencies:
-  prompt_block:
-    git:
-      url: https://github.com/pckimlong/kai_engine.git
-      ref: main
-      path: packages/prompt_block
+```dart
+import 'package:kai_engine/kai_engine.dart';
+import 'package:kai_engine_firebase_ai/kai_engine_firebase_ai.dart';
+
+// 1. Create the generation service
+final generationService = FirebaseAiGenerationService(
+  firebaseAi: FirebaseAI.googleAI(),
+  config: GenerativeConfig(model: 'gemini-2.0-flash'),
+);
+
+// 2. Create a chat controller
+final class MyChatController extends ChatControllerBase<MyMessage> {
+  MyChatController({
+    required super.conversationManager,
+    required super.generationService,
+  });
+
+  @override
+  ContextEngine build() => ContextEngine.builder([
+    PromptTemplate.system("You are a helpful AI assistant."),
+    PromptTemplate.buildSequential(HistoryContext()),
+    PromptTemplate.input(),
+  ]);
+
+  @override
+  GenerationExecuteConfig generativeConfigs(IList<CoreMessage> prompts) {
+    return GenerationExecuteConfig.none();
+  }
+}
+
+// 3. Use the controller
+final controller = MyChatController(
+  conversationManager: myConversationManager,
+  generationService: generationService,
+);
+
+await controller.submit('Hello, world!');
 ```
 
-For Firebase AI integration:
+### With Flutter UI
 
-```yaml
-dependencies:
-  kai_engine_firebase_ai:
-    git:
-      url: https://github.com/pckimlong/kai_engine.git
-      ref: main
-      path: packages/kai_engine_firebase_ai
+```dart
+import 'package:kai_engine_chat_ui/kai_engine_chat_ui.dart';
+
+KaiChatView(
+  messages: messages,
+  generationState: generationState,
+  onSend: (text) => controller.submit(text),
+  onCancel: controller.cancel,
+)
 ```
 
 ## Documentation
 
 See the individual package READMEs for detailed documentation:
-- [kai_engine README](packages/kai_engine/README.md)
-- [kai_engine_firebase_ai README](packages/kai_engine_firebase_ai/README.md)
-- [kai_engine_chat_ui README](packages/kai_engine_chat_ui/README.md)
-- [prompt_block README](packages/prompt_block/README.md)
+
+- [kai_engine README](packages/kai_engine/README.md) - Core engine documentation
+- [kai_engine_firebase_ai README](packages/kai_engine_firebase_ai/README.md) - Firebase AI integration
+- [kai_engine_chat_ui README](packages/kai_engine_chat_ui/README.md) - Flutter UI widgets
+- [prompt_block README](packages/prompt_block/README.md) - Structured prompt blocks
 
 ## Contributing
 
