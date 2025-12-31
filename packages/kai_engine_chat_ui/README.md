@@ -177,8 +177,8 @@ MaterialApp(
 | `maxBubbleWidthMobile` | `double` | `320` | Max bubble width on mobile |
 | `maxBubbleWidthDesktop` | `double` | `480` | Max bubble width on desktop |
 | `bubbleRadius` | `double` | `16` | Border radius of message bubbles |
-| `bubblePadding` | `EdgeInsets` | `12h, 10v` | Padding inside bubbles |
-| `listPadding` | `EdgeInsets` | `16h, 12v` | Padding around message list |
+| `bubblePadding` | `EdgeInsets` | `EdgeInsets.symmetric(horizontal: 12, vertical: 10)` | Padding inside bubbles |
+| `listPadding` | `EdgeInsets` | `EdgeInsets.symmetric(horizontal: 16, vertical: 12)` | Padding around message list |
 | `itemSpacing` | `double` | `12` | Spacing between messages |
 | `userBubbleColor` | `Color?` | theme-based | User message bubble color |
 | `aiBubbleColor` | `Color?` | theme-based | AI message bubble color |
