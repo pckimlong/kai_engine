@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   tag:
@@ -18,21 +19,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # PAT_TOKEN required to trigger pub-publish workflow on tag push
-          # GITHUB_TOKEN does NOT trigger other workflows (security feature)
-          token: ${{ secrets.PAT_TOKEN }}
 
-      - name: Create missing tags for current versions
+      - name: Create tags and trigger publish
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch --tags --force
-
-          created_any=false
 
           for pubspec in packages/*/pubspec.yaml; do
             pkg_dir="$(dirname "$pubspec")"
@@ -58,7 +54,6 @@ jobs:
             echo "Creating tag $tag"
             git tag -a "$tag" -m "Release $tag"
             git push origin "$tag"
-            created_any=true
 
             # Extract changelog for this version
             changelog_content=$(awk "/^## \\[$version\\]/,/^## \\[/" "$changelog" | head -n -1)
@@ -68,8 +63,8 @@ jobs:
               --title "$pkg_name v$version" \
               --notes "$changelog_content" \
               --verify-tag
-          done
 
-          if [ "$created_any" = "false" ]; then
-            echo "No tags to create."
-          fi
+            # Trigger publish workflow FROM the tag ref (so OIDC gets refType=tag)
+            echo "Triggering pub-publish workflow for $tag"
+            gh workflow run pub-publish.yml --ref "$tag"
+          done

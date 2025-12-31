@@ -8,122 +8,69 @@ on:
       - 'kai_engine_chat_ui-v*'
       - 'prompt_block-v*'
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag to publish (e.g. kai_engine-v1.0.0)'
-        required: true
-        type: string
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
-  # Determine which package to publish based on tag
-  resolve:
+  publish:
     runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.resolve.outputs.tag }}
-      package: ${{ steps.resolve.outputs.package }}
     steps:
-      - name: Resolve tag
-        id: resolve
+      - name: Validate tag ref
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ inputs.tag }}"
-          else
-            TAG="${{ github.ref_name }}"
+          if [ "${{ github.ref_type }}" != "tag" ]; then
+            echo "Error: This workflow must run from a tag ref"
+            echo "Current ref: ${{ github.ref }} (type: ${{ github.ref_type }})"
+            exit 1
           fi
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
 
+      - uses: actions/checkout@v4
+
+      - name: Determine package
+        id: pkg
+        run: |
+          TAG="${{ github.ref_name }}"
           if [[ "$TAG" == kai_engine-v* ]]; then
-            echo "package=kai_engine" >> $GITHUB_OUTPUT
+            echo "name=kai_engine" >> $GITHUB_OUTPUT
+            echo "type=dart" >> $GITHUB_OUTPUT
           elif [[ "$TAG" == kai_engine_firebase_ai-v* ]]; then
-            echo "package=kai_engine_firebase_ai" >> $GITHUB_OUTPUT
+            echo "name=kai_engine_firebase_ai" >> $GITHUB_OUTPUT
+            echo "type=dart" >> $GITHUB_OUTPUT
           elif [[ "$TAG" == kai_engine_chat_ui-v* ]]; then
-            echo "package=kai_engine_chat_ui" >> $GITHUB_OUTPUT
+            echo "name=kai_engine_chat_ui" >> $GITHUB_OUTPUT
+            echo "type=flutter" >> $GITHUB_OUTPUT
           elif [[ "$TAG" == prompt_block-v* ]]; then
-            echo "package=prompt_block" >> $GITHUB_OUTPUT
+            echo "name=prompt_block" >> $GITHUB_OUTPUT
+            echo "type=dart" >> $GITHUB_OUTPUT
           else
             echo "Unknown tag format: $TAG"
             exit 1
           fi
 
-  publish-kai_engine:
-    needs: resolve
-    if: needs.resolve.outputs.package == 'kai_engine'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.resolve.outputs.tag }}
       - uses: dart-lang/setup-dart@v1
+        if: steps.pkg.outputs.type == 'dart'
         with:
           sdk: stable
-      - name: Publish kai_engine
-        working-directory: packages/kai_engine
-        run: |
-          dart pub get
-          dart pub publish --force
 
-  publish-prompt_block:
-    needs: resolve
-    if: needs.resolve.outputs.package == 'prompt_block'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.resolve.outputs.tag }}
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: stable
-      - name: Publish prompt_block
-        working-directory: packages/prompt_block
-        run: |
-          dart pub get
-          dart pub publish --force
-
-  publish-kai_engine_firebase_ai:
-    needs: resolve
-    if: needs.resolve.outputs.package == 'kai_engine_firebase_ai'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.resolve.outputs.tag }}
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: stable
-      - name: Publish kai_engine_firebase_ai
-        working-directory: packages/kai_engine_firebase_ai
-        run: |
-          for i in $(seq 1 10); do
-            if dart pub get; then
-              break
-            fi
-            echo "dart pub get failed (attempt $i/10), retrying..."
-            sleep 15
-          done
-          dart pub publish --force
-
-  publish-kai_engine_chat_ui:
-    needs: resolve
-    if: needs.resolve.outputs.package == 'kai_engine_chat_ui'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.resolve.outputs.tag }}
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: stable
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
+        if: steps.pkg.outputs.type == 'flutter'
         with:
           channel: stable
           cache: true
-      - name: Publish kai_engine_chat_ui
-        working-directory: packages/kai_engine_chat_ui
+
+      - name: Publish ${{ steps.pkg.outputs.name }}
+        working-directory: packages/${{ steps.pkg.outputs.name }}
         run: |
-          flutter pub get
-          flutter pub publish --force
+          PKG_TYPE="${{ steps.pkg.outputs.type }}"
+
+          # Retry pub get in case dependencies were just published
+          for i in $(seq 1 10); do
+            if $PKG_TYPE pub get; then
+              break
+            fi
+            echo "pub get failed (attempt $i/10), retrying..."
+            sleep 15
+          done
+
+          $PKG_TYPE pub publish --force
