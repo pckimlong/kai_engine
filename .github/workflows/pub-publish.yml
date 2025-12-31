@@ -1,88 +1,76 @@
 name: Publish to pub.dev
 
 on:
+  push:
+    tags:
+      - 'kai_engine-v*'
+      - 'kai_engine_firebase_ai-v*'
+      - 'kai_engine_chat_ui-v*'
+      - 'prompt_block-v*'
   workflow_dispatch:
-    inputs:
-      package:
-        description: 'Package to publish'
-        required: true
-        type: choice
-        options:
-          - kai_engine
-          - kai_engine_firebase_ai
-          - kai_engine_chat_ui
-          - prompt_block
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 jobs:
-  publish-kai_engine:
-    if: inputs.package == 'kai_engine'
+  publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: stable
-      - name: Publish kai_engine
-        working-directory: packages/kai_engine
+      - name: Validate tag ref
         run: |
-          dart pub get
-          dart pub publish --force
+          if [ "${{ github.ref_type }}" != "tag" ]; then
+            echo "Error: This workflow must run from a tag ref"
+            echo "Current ref: ${{ github.ref }} (type: ${{ github.ref_type }})"
+            exit 1
+          fi
 
-  publish-prompt_block:
-    if: inputs.package == 'prompt_block'
-    runs-on: ubuntu-latest
-    steps:
       - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: stable
-      - name: Publish prompt_block
-        working-directory: packages/prompt_block
+
+      - name: Determine package
+        id: pkg
         run: |
-          dart pub get
-          dart pub publish --force
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" == kai_engine-v* ]]; then
+            echo "name=kai_engine" >> $GITHUB_OUTPUT
+            echo "type=dart" >> $GITHUB_OUTPUT
+          elif [[ "$TAG" == kai_engine_firebase_ai-v* ]]; then
+            echo "name=kai_engine_firebase_ai" >> $GITHUB_OUTPUT
+            echo "type=dart" >> $GITHUB_OUTPUT
+          elif [[ "$TAG" == kai_engine_chat_ui-v* ]]; then
+            echo "name=kai_engine_chat_ui" >> $GITHUB_OUTPUT
+            echo "type=flutter" >> $GITHUB_OUTPUT
+          elif [[ "$TAG" == prompt_block-v* ]]; then
+            echo "name=prompt_block" >> $GITHUB_OUTPUT
+            echo "type=dart" >> $GITHUB_OUTPUT
+          else
+            echo "Unknown tag format: $TAG"
+            exit 1
+          fi
 
-  publish-kai_engine_firebase_ai:
-    if: inputs.package == 'kai_engine_firebase_ai'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
+        if: steps.pkg.outputs.type == 'dart'
         with:
           sdk: stable
-      - name: Publish kai_engine_firebase_ai
-        working-directory: packages/kai_engine_firebase_ai
-        run: |
-          # If this release depends on a freshly-published kai_engine version,
-          # pub.dev may take a short time to index it.
-          for i in $(seq 1 10); do
-            if dart pub get; then
-              break
-            fi
-            echo "dart pub get failed (attempt $i/10), retrying..."
-            sleep 15
-          done
-          dart pub publish --force
 
-  publish-kai_engine_chat_ui:
-    if: inputs.package == 'kai_engine_chat_ui'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: stable
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
+        if: steps.pkg.outputs.type == 'flutter'
         with:
           channel: stable
           cache: true
-      - name: Publish kai_engine_chat_ui
-        working-directory: packages/kai_engine_chat_ui
+
+      - name: Publish ${{ steps.pkg.outputs.name }}
+        working-directory: packages/${{ steps.pkg.outputs.name }}
         run: |
-          flutter pub get
-          flutter pub publish --force
+          PKG_TYPE="${{ steps.pkg.outputs.type }}"
+
+          # Retry pub get in case dependencies were just published
+          for i in $(seq 1 10); do
+            if $PKG_TYPE pub get; then
+              break
+            fi
+            echo "pub get failed (attempt $i/10), retrying..."
+            sleep 15
+          done
+
+          $PKG_TYPE pub publish --force
