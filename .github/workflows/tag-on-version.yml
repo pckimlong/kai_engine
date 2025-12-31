@@ -10,27 +10,22 @@ on:
 
 permissions:
   contents: write
-  id-token: write
 
 jobs:
   tag:
     runs-on: ubuntu-latest
-    outputs:
-      kai_engine: ${{ steps.check.outputs.kai_engine }}
-      kai_engine_firebase_ai: ${{ steps.check.outputs.kai_engine_firebase_ai }}
-      kai_engine_chat_ui: ${{ steps.check.outputs.kai_engine_chat_ui }}
-      prompt_block: ${{ steps.check.outputs.prompt_block }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # PAT_TOKEN required to trigger pub-publish workflow on tag push
+          # GITHUB_TOKEN does NOT trigger other workflows (security feature)
+          token: ${{ secrets.PAT_TOKEN }}
 
       - name: Create missing tags for current versions
-        id: check
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -64,93 +59,17 @@ jobs:
             git tag -a "$tag" -m "Release $tag"
             git push origin "$tag"
             created_any=true
-            
+
             # Extract changelog for this version
             changelog_content=$(awk "/^## \\[$version\\]/,/^## \\[/" "$changelog" | head -n -1)
-            
+
             # Create GitHub Release
             gh release create "$tag" \
               --title "$pkg_name v$version" \
               --notes "$changelog_content" \
               --verify-tag
-            
-            # Output which package was tagged for publishing
-            echo "${pkg_name}=true" >> $GITHUB_OUTPUT
           done
 
           if [ "$created_any" = "false" ]; then
             echo "No tags to create."
           fi
-
-  publish-kai_engine:
-    needs: tag
-    if: needs.tag.outputs.kai_engine == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: stable
-      - name: Publish kai_engine
-        working-directory: packages/kai_engine
-        run: |
-          dart pub get
-          dart pub publish --force
-
-  publish-prompt_block:
-    needs: tag
-    if: needs.tag.outputs.prompt_block == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: stable
-      - name: Publish prompt_block
-        working-directory: packages/prompt_block
-        run: |
-          dart pub get
-          dart pub publish --force
-
-  publish-kai_engine_firebase_ai:
-    needs: [tag, publish-kai_engine]
-    if: always() && needs.tag.outputs.kai_engine_firebase_ai == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: stable
-      - name: Publish kai_engine_firebase_ai
-        working-directory: packages/kai_engine_firebase_ai
-        run: |
-          # If this release depends on a freshly-published kai_engine version,
-          # pub.dev may take a short time to index it.
-          for i in $(seq 1 10); do
-            if dart pub get; then
-              break
-            fi
-            echo "dart pub get failed (attempt $i/10), retrying..."
-            sleep 15
-          done
-          dart pub publish --force
-
-  publish-kai_engine_chat_ui:
-    needs: [tag, publish-kai_engine]
-    if: always() && needs.tag.outputs.kai_engine_chat_ui == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: stable
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-      - name: Publish kai_engine_chat_ui
-        working-directory: packages/kai_engine_chat_ui
-        run: |
-          flutter pub get
-          flutter pub publish --force
