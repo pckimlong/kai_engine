@@ -1,12 +1,6 @@
 name: Publish to pub.dev
 
 on:
-  push:
-    tags:
-      - 'kai_engine-v*'
-      - 'kai_engine_firebase_ai-v*'
-      - 'kai_engine_chat_ui-v*'
-      - 'prompt_block-v*'
   workflow_dispatch:
     inputs:
       package:
@@ -20,12 +14,12 @@ on:
           - prompt_block
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
   publish-kai_engine:
-    if: startsWith(github.ref_name, 'kai_engine-v') || inputs.package == 'kai_engine'
+    if: inputs.package == 'kai_engine'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,7 +33,7 @@ jobs:
           dart pub publish --force
 
   publish-prompt_block:
-    if: startsWith(github.ref_name, 'prompt_block-v') || inputs.package == 'prompt_block'
+    if: inputs.package == 'prompt_block'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +47,7 @@ jobs:
           dart pub publish --force
 
   publish-kai_engine_firebase_ai:
-    if: startsWith(github.ref_name, 'kai_engine_firebase_ai-v') || inputs.package == 'kai_engine_firebase_ai'
+    if: inputs.package == 'kai_engine_firebase_ai'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +69,7 @@ jobs:
           dart pub publish --force
 
   publish-kai_engine_chat_ui:
-    if: startsWith(github.ref_name, 'kai_engine_chat_ui-v') || inputs.package == 'kai_engine_chat_ui'
+    if: inputs.package == 'kai_engine_chat_ui'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
