@@ -1,5 +1,8 @@
 # Kai Engine
 
+[![Pub Version](https://img.shields.io/pub/v/kai_engine)](https://pub.dev/packages/kai_engine)
+[![GitHub](https://img.shields.io/github/license/pckimlong/kai_engine)](https://github.com/pckimlong/kai_engine/blob/main/LICENSE)
+
 A modular, extensible AI chat engine built with a pipeline-based architecture.
 
 ## Overview
@@ -17,7 +20,6 @@ The core framework provides essential abstractions for building conversational A
 - **Optimistic UI Updates**: Immediate UI feedback with rollback on errors.
 - **Flexible Context Building**: Advanced prompt engineering with parallel and sequential context building.
 - **Tool Calling Support**: Native support for AI function/tool calling with type-safe schemas.
-- **Template Engine**: Built-in flexible template engine for dynamic content generation.
 - **Post-Response Processing**: Process AI responses after generation with custom pipelines.
 - **Type Safety**: Strong typing throughout the system for better developer experience.
 - **Comprehensive Testability**: Designed for easy unit and integration testing.
@@ -38,12 +40,12 @@ The Kai Engine follows a flexible architecture with clearly defined components:
 ### Data Flow Architecture
 
 ```mermaid
-graph TD
-    subgraph "UI / Application Layer"
+flowchart TD
+    subgraph UI["UI / Application Layer"]
         A[UI Component] --> B[ChatControllerBase]
     end
 
-    subgraph "Orchestration Layer"
+    subgraph Orchestration["Orchestration Layer"]
         B --> C[ConversationManager]
         B --> D[QueryEngine]
         B --> E[ContextEngine]
@@ -51,46 +53,43 @@ graph TD
         B --> G[PostResponseEngine]
     end
 
-    subgraph "Query Processing"
+    subgraph Query["Query Processing"]
         D --> H[Input Processing]
     end
 
-    subgraph "Context Building"
+    subgraph Context["Context Building"]
         E --> I[System Prompt]
         E --> J[History Context]
         E --> K[Custom Context]
         E --> L[User Input]
     end
 
-    subgraph "AI Generation"
+    subgraph Generation["AI Generation"]
         F --> M[Token Streaming]
         M --> N[Tool Calling]
     end
 
-    subgraph "Post-Processing"
+    subgraph PostProc["Post-Processing"]
         G --> O[Embedding Generation]
         G --> P[Analytics]
     end
 
-    subgraph "Data Layer"
+    subgraph Data["Data Layer"]
         C --> Q[MessageRepository]
     end
 
-    subgraph "External Services"
+    subgraph External["External Services"]
         F --> R[LLM Provider]
     end
 
-    classDef controller fill:#e1f5fe
-    classDef engine fill:#fff3e0
-    classDef component fill:#f3e5f5
-    classDef data fill:#e8f5e8
-    classDef external fill:#fce4ec
-
-    class B controller
-    class D,E,F,G engine
-    class H,I,J,K,L,M,N,O,P component
-    class C,Q data
-    class R external
+    style B fill:#e1f5fe
+    style C fill:#e8f5e9
+    style D fill:#fff3e0
+    style E fill:#fff3e0
+    style F fill:#fff3e0
+    style G fill:#fff3e0
+    style Q fill:#e8f5e9
+    style R fill:#fce4ec
 ```
 
 ## Core Components
@@ -125,18 +124,30 @@ Key features:
 Manages conversation state with optimistic updates:
 
 ```dart
-class ConversationManager<T> {
-  Future<IList<CoreMessage>> addMessages(IList<CoreMessage> messages);
-  Future<void> updateMessages(IList<CoreMessage> messages);
-  Future<void> removeMessages(IList<CoreMessage> messages);
-  Stream<IList<CoreMessage>> get messagesStream;
-}
+// Create with async factory method
+final conversationManager = await ConversationManager.create<MyMessage>(
+  session: ConversationSession(id: 'conversation-123'),
+  repository: myMessageRepository,
+  messageAdapter: myMessageAdapter,
+);
+
+// Or use the built-in in-memory manager for simple use cases
+final inMemoryManager = InMemoryConversationManager(
+  session: ConversationSession(id: 'conversation-123'),
+);
+
+// API
+conversationManager.addMessages(messages);
+conversationManager.updateMessages(messages);
+conversationManager.removeMessages(messages);
+conversationManager.messagesStream; // Stream<IList<CoreMessage>>
 ```
 
 Features:
 - Optimistic UI updates for immediate feedback
 - Automatic rollback on errors
 - Pluggable persistence layer via MessageRepositoryBase
+- Built-in `InMemoryConversationManager` for simple use cases
 
 ### ContextEngine
 
@@ -164,22 +175,38 @@ Features:
 Define your prompt structure with various template types:
 
 ```dart
-final class SimpleContextEngine extends ContextEngine {
-  @override
-  List<PromptTemplate> get promptBuilder => [
-    PromptTemplate.system("You're kai, a useful friendly personal assistant."),
-    PromptTemplate.buildSequential(HistoryContext()),
-    PromptTemplate.input(),
-  ];
-}
+// Using the built-in SimpleContextEngine
+final contextEngine = SimpleContextEngine();
+
+// Or create a custom context engine using the builder
+final customEngine = ContextEngine.builder([
+  PromptTemplate.system("You're kai, a useful friendly personal assistant."),
+  PromptTemplate.buildSequential(HistoryContext()),
+  PromptTemplate.input(),
+]);
+
+// Or use inline functions for dynamic context
+final dynamicEngine = ContextEngine.builder([
+  PromptTemplate.system("You are a helpful assistant."),
+  PromptTemplate.buildParallelFn((input, messageId, context) async {
+    // Fetch user context in parallel
+    return [CoreMessage.system("User timezone: UTC+7")].lock;
+  }),
+  PromptTemplate.buildSequential(HistoryContext()),
+  PromptTemplate.input((query, messages) async {
+    // Optionally revise user input before sending
+    return query.processedQuery;
+  }),
+]);
 ```
 
 Template types:
 - `PromptTemplate.system(String)` - Static system prompts
-- `PromptTemplate.input()` - User input placeholder
+- `PromptTemplate.input([revision])` - User input placeholder with optional revision callback
 - `PromptTemplate.buildParallel(ParallelContextBuilder)` - Parallel context building
 - `PromptTemplate.buildSequential(SequentialContextBuilder)` - Sequential context building
 - `PromptTemplate.buildParallelFn(Function)` - Parallel context with inline function
+- `PromptTemplate.buildSequentialFn(Function)` - Sequential context with inline function
 
 ### QueryEngineBase
 
@@ -220,43 +247,26 @@ Features:
 - Built-in success/failure handling
 - Customizable response building
 
-### FlexTemplate
-
-Built-in flexible template engine:
-
-```dart
-final template = FlexTemplate('Hello {{name}}!');
-print(template.render({'name': 'World'})); // "Hello World!"
-```
-
-Features:
-- Variable interpolation: `{{name}}`
-- Nested properties: `{{user.name}}`
-- Conditionals: `{{#if condition}}...{{#else}}...{{/if}}`
-- Equality checks: `{{#if status == "active"}}...{{/if}}`
-- Negation: `{{#if !isInactive}}...{{/if}}`
-- Loops: `{{#each list as item}}{{item}}{{/each}}`
-- Loop helpers: `{{@index}}`, `{{@first}}`, `{{@last}}`
-- Built-in functions: `{{upper(name)}}`, `{{lower(name)}}`, `{{length(name)}}`, `{{default(value, "fallback")}}`
-- Custom functions registration
-- Custom delimiters support
-
 ## Getting Started
 
 Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  kai_engine:
-    git:
-      url: https://github.com/pckimlong/kai_engine.git
-      ref: main
-      path: packages/kai_engine
+  kai_engine: ^0.1.1
+```
+
+Or install via command line:
+
+```bash
+dart pub add kai_engine
 ```
 
 Create a custom chat controller:
 
 ```dart
+import 'package:kai_engine/kai_engine.dart';
+
 final class MyChatController extends ChatControllerBase<MyMessage> {
   MyChatController({
     required super.conversationManager,
@@ -266,14 +276,15 @@ final class MyChatController extends ChatControllerBase<MyMessage> {
   });
 
   @override
-  ContextEngine build() => SimpleContextEngine();
-  
+  ContextEngine build() => ContextEngine.builder([
+    PromptTemplate.system("You are a helpful AI assistant."),
+    PromptTemplate.buildSequential(HistoryContext()),
+    PromptTemplate.input(),
+  ]);
+
   @override
   GenerationExecuteConfig generativeConfigs(IList<CoreMessage> prompts) {
-    return const GenerationExecuteConfig(
-      tools: [],
-      config: {'temperature': 0.7},
-    );
+    return GenerationExecuteConfig.none();
   }
 }
 ```
@@ -281,6 +292,7 @@ final class MyChatController extends ChatControllerBase<MyMessage> {
 Use the controller:
 
 ```dart
+// Create controller instance
 final controller = MyChatController(
   conversationManager: myConversationManager,
   generationService: myGenerationService,
@@ -296,12 +308,18 @@ controller.messagesStream.listen((messages) {
 
 // Listen to generation state
 controller.generationStateStream.listen((state) {
-  if (state.isLoading) {
-    // Show loading indicator
-  } else if (state.isStreaming) {
-    // Show streaming text
-  }
+  state.when(
+    initial: () => print('Ready'),
+    loading: (_) => print('Loading...'),
+    streamingText: (text) => print('Streaming: $text'),
+    functionCalling: (name) => print('Calling: $name'),
+    complete: (result) => print('Done: ${result.responseText}'),
+    error: (error) => print('Error: $error'),
+  );
 });
+
+// Don't forget to dispose when done
+controller.dispose();
 ```
 
 ## Testing
