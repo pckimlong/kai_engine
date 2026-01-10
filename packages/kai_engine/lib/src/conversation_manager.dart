@@ -18,9 +18,7 @@ class ConversationManager<T> {
   IList<CoreMessage> _messages = IList(const []);
   final BehaviorSubject<IList<CoreMessage>> _messagesController =
       BehaviorSubject<IList<CoreMessage>>();
-  final BehaviorSubject<bool> _loadingController = BehaviorSubject<bool>.seeded(
-    false,
-  );
+  final BehaviorSubject<bool> _loadingController = BehaviorSubject<bool>.seeded(false);
 
   ConversationManager._({
     required this.session,
@@ -59,9 +57,7 @@ class ConversationManager<T> {
   /// Adds a message to the conversation
   Future<IList<CoreMessage>> addMessages(IList<CoreMessage> messages) async {
     // Ensure system messages are ignored
-    final persistentMessages = messages
-        .where((m) => m.isMessageSavable)
-        .toList();
+    final persistentMessages = messages.where((m) => m.isMessageSavable).toList();
 
     // Store original state for rollback
     final originalMessages = _messages;
@@ -82,9 +78,7 @@ class ConversationManager<T> {
           .then((e) => e.map(_messageAdapter.toCoreMessage));
 
       _messages = _messages
-          .removeWhere(
-            (e) => persistentMessages.any((m) => m.messageId == e.messageId),
-          )
+          .removeWhere((e) => persistentMessages.any((m) => m.messageId == e.messageId))
           .addAll(result);
       _messagesController.add(_messages);
       return result.toIList();
@@ -97,9 +91,7 @@ class ConversationManager<T> {
   }
 
   Future<void> updateMessages(IList<CoreMessage> messages) async {
-    final persistentMessages = messages
-        .where((m) => m.isMessageSavable)
-        .toList();
+    final persistentMessages = messages.where((m) => m.isMessageSavable).toList();
 
     // Store original state for rollback
     final originalMessages = _messages;
@@ -117,9 +109,7 @@ class ConversationManager<T> {
       // Update repository
       final result = await _repository
           .updateMessages(
-            persistentMessages.map(
-              (e) => _messageAdapter.fromCoreMessage(e, session: session),
-            ),
+            persistentMessages.map((e) => _messageAdapter.fromCoreMessage(e, session: session)),
           )
           .then((e) => e.map(_messageAdapter.toCoreMessage));
 
@@ -154,9 +144,7 @@ class ConversationManager<T> {
 
       // Remove from repository
       await _repository.removeMessages(
-        messages.map(
-          (e) => _messageAdapter.fromCoreMessage(e, session: session),
-        ),
+        messages.map((e) => _messageAdapter.fromCoreMessage(e, session: session)),
       );
     } catch (error) {
       // Rollback optimistic update on failure
@@ -180,8 +168,7 @@ class ConversationManager<T> {
 }
 
 /// Prebuilt for in memory management of conversation messages
-final class InMemoryConversationManager
-    extends ConversationManager<CoreMessage> {
+final class InMemoryConversationManager extends ConversationManager<CoreMessage> {
   InMemoryConversationManager({
     required super.session,
     MessageRepositoryBase<CoreMessage>? repository,

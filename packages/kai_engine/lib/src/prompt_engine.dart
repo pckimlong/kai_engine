@@ -23,8 +23,7 @@ base class ContextEngineBuilder extends ContextEngine {
 /// system prompts, historical context, and user input according to a defined template structure.
 /// It supports both parallel and sequential context building strategies to optimize performance
 /// while maintaining logical ordering where required.
-abstract base class ContextEngine
-    extends KaiPhase<ContextEngineInput, ContextEngineOutput> {
+abstract base class ContextEngine extends KaiPhase<ContextEngineInput, ContextEngineOutput> {
   static ContextEngineBuilder builder(List<PromptTemplate> promptBuilder) {
     return ContextEngineBuilder(promptBuilder);
   }
@@ -42,10 +41,7 @@ abstract base class ContextEngine
       inputQuery: input.inputQuery,
       providedUserMessage: input.providedUserMessage,
     );
-    return ContextEngineOutput(
-      userMessage: result.userMessage,
-      prompts: result.prompts,
-    );
+    return ContextEngineOutput(userMessage: result.userMessage, prompts: result.prompts);
   }
 
   /// Generates a complete contextual prompt ready for AI consumption.
@@ -72,9 +68,7 @@ abstract base class ContextEngine
     CoreMessage? providedUserMessage,
   }) async {
     // Extract messageId for debug tracking
-    final userMessage =
-        providedUserMessage ??
-        CoreMessage.user(content: inputQuery.originalQuery);
+    final userMessage = providedUserMessage ?? CoreMessage.user(content: inputQuery.originalQuery);
     final messageId = userMessage.messageId;
 
     assert(
@@ -99,12 +93,7 @@ abstract base class ContextEngine
         .toList();
 
     // Process both concurrently
-    final parallelFuture = _buildParallelWithIndex(
-      parallelItems,
-      source,
-      inputQuery,
-      messageId,
-    );
+    final parallelFuture = _buildParallelWithIndex(parallelItems, source, inputQuery, messageId);
     final sequentialFuture = _buildSequentialWithIndex(
       sequentialItems,
       source,
@@ -173,9 +162,7 @@ abstract base class ContextEngine
         finalContexts.addAll(allResults[i]!);
       } else {
         // This should not happen - all template types should be handled above
-        throw StateError(
-          'Unhandled template type at index $i: ${template.runtimeType}',
-        );
+        throw StateError('Unhandled template type at index $i: ${template.runtimeType}');
       }
     }
 
@@ -196,8 +183,7 @@ abstract base class ContextEngine
   ///
   /// Returns:
   /// - A list of results with their original indices for proper reordering
-  Future<List<({int index, IList<CoreMessage> result})>>
-  _buildParallelWithIndex(
+  Future<List<({int index, IList<CoreMessage> result})>> _buildParallelWithIndex(
     List<({int index, PromptTemplate builder})> items,
     IList<CoreMessage> source,
     QueryContext inputQuery,
@@ -227,8 +213,7 @@ abstract base class ContextEngine
   ///
   /// Returns:
   /// - A list of results with their original indices for proper reordering
-  Future<List<({int index, IList<CoreMessage> result})>>
-  _buildSequentialWithIndex(
+  Future<List<({int index, IList<CoreMessage> result})>> _buildSequentialWithIndex(
     List<({int index, PromptTemplate builder})> items,
     IList<CoreMessage> source,
     QueryContext inputQuery,
@@ -240,11 +225,7 @@ abstract base class ContextEngine
     for (final item in items) {
       final sequentialBuilder = item.builder as _BuildSequentialPromptTemplate;
       final builder = sequentialBuilder.builder;
-      final context = await builder.build(
-        inputQuery,
-        messageId,
-        currentContext,
-      );
+      final context = await builder.build(inputQuery, messageId, currentContext);
 
       currentContext = context;
       results.add((index: item.index, result: context));
@@ -263,12 +244,16 @@ abstract base class ContextEngine
 ///
 /// This implementation is suitable for most basic conversational AI scenarios.
 final class SimpleContextEngine extends ContextEngine {
+  final String? systemPrompt;
+
   @override
   List<PromptTemplate> get promptBuilder => [
-    PromptTemplate.system("You're kai, a useful friendly personal assistant."),
+    PromptTemplate.system(systemPrompt ?? "You're kai, a useful friendly personal assistant."),
     PromptTemplate.buildSequential(HistoryContext()),
     PromptTemplate.input(),
   ];
+
+  SimpleContextEngine({this.systemPrompt});
 }
 
 @freezed
@@ -276,15 +261,11 @@ sealed class PromptTemplate with _$PromptTemplate {
   const PromptTemplate._();
 
   static PromptTemplate buildParallelFn(ParallelContextBuilderFn builder) {
-    return PromptTemplate.buildParallel(
-      _FunctionParallelContextBuilder(builder),
-    );
+    return PromptTemplate.buildParallel(_FunctionParallelContextBuilder(builder));
   }
 
   static PromptTemplate buildSequentialFn(SequentialContextBuilderFn builder) {
-    return PromptTemplate.buildSequential(
-      _FunctionSequentialContextBuilder(builder),
-    );
+    return PromptTemplate.buildSequential(_FunctionSequentialContextBuilder(builder));
   }
 
   /// Creates a system prompt template with fixed text content.
@@ -322,9 +303,8 @@ sealed class PromptTemplate with _$PromptTemplate {
   ///
   /// Parameters:
   /// - [builder]: The context builder that will generate the prompt content
-  const factory PromptTemplate.buildSequential(
-    SequentialContextBuilder builder,
-  ) = _BuildSequentialPromptTemplate;
+  const factory PromptTemplate.buildSequential(SequentialContextBuilder builder) =
+      _BuildSequentialPromptTemplate;
 
   /// Creates an input prompt template for the user's message.
   ///
@@ -340,11 +320,7 @@ sealed class PromptTemplate with _$PromptTemplate {
   /// - [input]: The user's raw input message
   /// - [messages]: The final list of messages in the conversation context after processing other templates include system prompts
   const factory PromptTemplate.input([
-    FutureOr<String> Function(
-      QueryContext input,
-      IList<CoreMessage> finalizedMessages,
-    )?
-    revision,
+    FutureOr<String> Function(QueryContext input, IList<CoreMessage> finalizedMessages)? revision,
   ]) = InputPromptTemplate;
 }
 
@@ -377,8 +353,7 @@ final class _FunctionParallelContextBuilder implements ParallelContextBuilder {
   }
 }
 
-final class _FunctionSequentialContextBuilder
-    implements SequentialContextBuilder {
+final class _FunctionSequentialContextBuilder implements SequentialContextBuilder {
   final SequentialContextBuilderFn _builder;
 
   const _FunctionSequentialContextBuilder(this._builder);

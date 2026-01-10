@@ -42,10 +42,7 @@ void main() {
 
     group('constructor', () {
       test('should create instance with required callbacks', () {
-        final repo = CoreMessageRepository(
-          onInitial: (s) async => [],
-          onPut: (s, msgs) async => msgs,
-        );
+        final repo = CoreMessageRepository(onInitial: (s) async => [], onPut: (s, msgs) async {});
 
         expect(repo, isA<CoreMessageRepository>());
       });
@@ -53,7 +50,7 @@ void main() {
       test('should create instance with optional onRemove callback', () {
         final repo = CoreMessageRepository(
           onInitial: (s) async => [],
-          onPut: (s, msgs) async => msgs,
+          onPut: (s, msgs) async {},
           onRemove: (msgs) async {},
         );
 
@@ -69,7 +66,7 @@ void main() {
             capturedSession = s;
             return Future.value([testMessage1]);
           },
-          onPut: (s, msgs) async => msgs,
+          onPut: (s, msgs) async {},
         );
 
         final result = await repo.getMessages(session);
@@ -91,7 +88,7 @@ void main() {
             msg1.copyWith(timestamp: now),
             msg2.copyWith(timestamp: now.add(Duration(minutes: 1))),
           ],
-          onPut: (s, msgs) async => msgs,
+          onPut: (s, msgs) async {},
         );
 
         final result = await repo.getMessages(session);
@@ -105,7 +102,7 @@ void main() {
       test('should populate internal state from onInitial callback', () async {
         final repo = CoreMessageRepository(
           onInitial: (s) async => [testMessage1, testMessage2],
-          onPut: (s, msgs) async => msgs,
+          onPut: (s, msgs) async {},
         );
 
         await repo.getMessages(session);
@@ -121,7 +118,7 @@ void main() {
             callCount++;
             return callCount == 1 ? [testMessage1] : [testMessage2];
           },
-          onPut: (s, msgs) async => msgs,
+          onPut: (s, msgs) async {},
         );
 
         final result1 = await repo.getMessages(session);
@@ -135,7 +132,7 @@ void main() {
       test('should cache session for later use', () async {
         final repo = CoreMessageRepository(
           onInitial: (s) async => [testMessage1],
-          onPut: (s, msgs) async => msgs,
+          onPut: (s, msgs) async {},
         );
 
         await repo.getMessages(session);
@@ -167,10 +164,7 @@ void main() {
       });
 
       test('should add messages to internal state', () async {
-        final repo = CoreMessageRepository(
-          onInitial: (s) async => [],
-          onPut: (s, msgs) async => msgs,
-        );
+        final repo = CoreMessageRepository(onInitial: (s) async => [], onPut: (s, msgs) async {});
 
         await repo.saveMessages(session: session, messages: [testMessage1]);
         final result = await repo.getMessages(session);
@@ -179,10 +173,7 @@ void main() {
       });
 
       test('should accumulate messages in internal state across multiple saves', () async {
-        final repo = CoreMessageRepository(
-          onInitial: (s) async => [],
-          onPut: (s, msgs) async => msgs,
-        );
+        final repo = CoreMessageRepository(onInitial: (s) async => [], onPut: (s, msgs) async {});
 
         await repo.saveMessages(session: session, messages: [testMessage1]);
         await repo.saveMessages(session: session, messages: [testMessage2]);
@@ -192,10 +183,7 @@ void main() {
       });
 
       test('should cache session for later use', () async {
-        final repo = CoreMessageRepository(
-          onInitial: (s) async => [],
-          onPut: (s, msgs) async => msgs,
-        );
+        final repo = CoreMessageRepository(onInitial: (s) async => [], onPut: (s, msgs) async {});
 
         await repo.saveMessages(session: session, messages: [testMessage1]);
 
@@ -229,7 +217,7 @@ void main() {
       test('should update messages in internal state', () async {
         final repo = CoreMessageRepository(
           onInitial: (s) async => [testMessage1],
-          onPut: (s, msgs) async => msgs,
+          onPut: (s, msgs) async {},
         );
 
         await repo.getMessages(session);
@@ -241,10 +229,7 @@ void main() {
       });
 
       test('should throw StateError when session not initialized', () async {
-        final repo = CoreMessageRepository(
-          onInitial: (s) async => [],
-          onPut: (s, msgs) async => msgs,
-        );
+        final repo = CoreMessageRepository(onInitial: (s) async => [], onPut: (s, msgs) async {});
 
         expect(
           () => repo.updateMessages([testMessage1]),
@@ -259,10 +244,7 @@ void main() {
       });
 
       test('should use session from saveMessages if getMessages not called', () async {
-        final repo = CoreMessageRepository(
-          onInitial: (s) async => [],
-          onPut: (s, msgs) async => msgs,
-        );
+        final repo = CoreMessageRepository(onInitial: (s) async => [], onPut: (s, msgs) async {});
 
         await repo.saveMessages(session: session, messages: [testMessage1]);
         final updated = testMessage1.copyWith(content: 'Updated');
@@ -275,7 +257,7 @@ void main() {
       test('should only update existing messages, not add new ones', () async {
         final repo = CoreMessageRepository(
           onInitial: (s) async => [testMessage1],
-          onPut: (s, msgs) async => msgs,
+          onPut: (s, msgs) async {},
         );
 
         await repo.getMessages(session);
@@ -291,7 +273,7 @@ void main() {
         var capturedMessages;
         final repo = CoreMessageRepository(
           onInitial: (s) async => [testMessage1, testMessage2],
-          onPut: (s, msgs) async => msgs,
+          onPut: (s, msgs) async {},
           onRemove: (msgs) {
             capturedMessages = msgs;
             return Future.value();
@@ -307,7 +289,7 @@ void main() {
       test('should remove messages from internal state', () async {
         final repo = CoreMessageRepository(
           onInitial: (s) async => [testMessage1, testMessage2],
-          onPut: (s, msgs) async => msgs,
+          onPut: (s, msgs) async {},
         );
 
         await repo.getMessages(session);
@@ -320,7 +302,7 @@ void main() {
       test('should complete successfully when onRemove is null', () async {
         final repo = CoreMessageRepository(
           onInitial: (s) async => [testMessage1],
-          onPut: (s, msgs) async => msgs,
+          onPut: (s, msgs) async {},
         );
 
         await repo.getMessages(session);
@@ -330,7 +312,7 @@ void main() {
       test('should handle multiple messages in removeMessages', () async {
         final repo = CoreMessageRepository(
           onInitial: (s) async => [testMessage1, testMessage2],
-          onPut: (s, msgs) async => msgs,
+          onPut: (s, msgs) async {},
         );
 
         await repo.getMessages(session);
@@ -357,7 +339,6 @@ void main() {
                 persistedMessages.add(msg);
               }
             }
-            return msgs;
           },
           onRemove: (msgs) async {
             persistedMessages.removeWhere((m) => msgs.contains(m));
@@ -389,10 +370,7 @@ void main() {
       });
 
       test('should handle append-only pattern without onRemove', () async {
-        final repo = CoreMessageRepository(
-          onInitial: (s) async => [],
-          onPut: (s, msgs) async => msgs,
-        );
+        final repo = CoreMessageRepository(onInitial: (s) async => [], onPut: (s, msgs) async {});
 
         await repo.saveMessages(session: session, messages: [testMessage1]);
         await repo.saveMessages(session: session, messages: [testMessage2]);
@@ -415,7 +393,7 @@ void main() {
             persistenceCallCount++;
             return [];
           },
-          onPut: (s, msgs) async => msgs,
+          onPut: (s, msgs) async {},
         );
 
         // First load calls persistence

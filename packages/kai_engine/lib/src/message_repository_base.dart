@@ -75,9 +75,9 @@ final class InMemoryMessageRepository implements CoreMessageRepositoryBase {
 /// its own internal state for immediate read operations. Messages are
 /// automatically sorted by timestamp on initial load.
 final class CoreMessageRepository implements CoreMessageRepositoryBase {
-  final Future<Iterable<CoreMessage>> Function(ConversationSession) onInitial;
-  final Future<Iterable<CoreMessage>> Function(ConversationSession, Iterable<CoreMessage>) onPut;
-  final Future<void> Function(Iterable<CoreMessage>)? onRemove;
+  final Future<Iterable<CoreMessage>> Function(ConversationSession session) onInitial;
+  final Future<void> Function(ConversationSession session, Iterable<CoreMessage> messages) onPut;
+  final Future<void> Function(Iterable<CoreMessage> messages)? onRemove;
 
   final List<CoreMessage> _messages = [];
   ConversationSession? _cachedSession;
