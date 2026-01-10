@@ -3,6 +3,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:kai_engine/kai_engine.dart';
 
 import '../kai_chat_theme.dart';
+import 'kai_message_list.dart';
 
 typedef KaiMessageContentBuilder = Widget Function(BuildContext context, CoreMessage message);
 
@@ -16,6 +17,7 @@ class KaiMessageBubble extends StatelessWidget {
     this.isUserMessage,
     this.semanticLabel,
     this.showTimeLabel = false,
+    this.avatarBuilder,
   });
 
   final CoreMessage message;
@@ -24,6 +26,7 @@ class KaiMessageBubble extends StatelessWidget {
   final bool? isUserMessage;
   final String? semanticLabel;
   final bool showTimeLabel;
+  final KaiAvatarBuilder? avatarBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +69,12 @@ class KaiMessageBubble extends StatelessWidget {
 
     return Row(
       mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
+        if (!isUser && avatarBuilder != null) ...[
+          avatarBuilder!(context, message),
+          const SizedBox(width: 8),
+        ],
         Flexible(
           child: Semantics(
             container: true,
@@ -89,9 +97,9 @@ class KaiMessageBubble extends StatelessWidget {
                       borderRadius: BorderRadius.circular(theme.bubbleRadius).copyWith(
                         bottomLeft: isUser
                             ? Radius.circular(theme.bubbleRadius)
-                            : const Radius.circular(6),
+                            : const Radius.circular(4),
                         bottomRight: isUser
-                            ? const Radius.circular(6)
+                            ? const Radius.circular(4)
                             : Radius.circular(theme.bubbleRadius),
                       ),
                       border: Border.all(

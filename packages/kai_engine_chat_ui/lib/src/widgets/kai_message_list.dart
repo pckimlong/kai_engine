@@ -7,6 +7,26 @@ import 'kai_message_bubble.dart';
 import 'kai_streaming_text.dart';
 import 'kai_typing_indicator.dart';
 
+/// Builder that constructs a custom avatar widget.
+///
+/// This builder receives the [context] and [message] as parameters.
+/// You can use this to create a custom avatar for messages.
+///
+/// Example - Create a simple avatar:
+/// ```dart
+/// KaiChatView(
+///   avatarBuilder: (context, message) {
+///     return CircleAvatar(
+///       radius: 16,
+///       backgroundColor: Colors.blue,
+///       child: Icon(Icons.smart_toy, size: 18),
+///     );
+///   },
+///   // ...
+/// )
+/// ```
+typedef KaiAvatarBuilder = Widget Function(BuildContext context, CoreMessage message);
+
 /// Builder that constructs a custom message widget.
 ///
 /// This builder receives the [context] and [message] as parameters.
@@ -147,6 +167,42 @@ typedef KaiMessageFilter = bool Function(CoreMessage message);
 /// ```
 typedef KaiFunctionCallBuilder = Widget Function(BuildContext context, CoreMessage message);
 
+/// Builder that constructs a custom empty state widget.
+///
+/// This builder receives the [context] and [onSubmit] callback as parameters.
+/// The [onSubmit] callback allows you to trigger message submission from the empty state.
+/// If provided, this widget is shown when there are no messages in the chat.
+/// If null, an empty list is shown.
+///
+/// Example - Show a welcome message with a quick action button:
+/// ```dart
+/// KaiChatView(
+///   emptyStateBuilder: (context, onSubmit) {
+///     return Center(
+///       child: Column(
+///         mainAxisAlignment: MainAxisAlignment.center,
+///         children: [
+///           Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+///           SizedBox(height: 16),
+///           Text(
+///             'Start a conversation!',
+///             style: TextStyle(fontSize: 18, color: Colors.grey),
+///           ),
+///           SizedBox(height: 16),
+///           ElevatedButton(
+///             onPressed: () => onSubmit('Hello, I need help!'),
+///             child: Text('Say Hello'),
+///           ),
+///         ],
+///       ),
+///     );
+///   },
+///   // ...
+/// )
+/// ```
+typedef KaiEmptyStateBuilder =
+    Widget Function(BuildContext context, void Function(String text) onSubmit);
+
 bool defaultKaiMessageFilter(CoreMessage m) => m.isDisplayable && !m.isBackgroundContext;
 
 class KaiMessageList extends StatelessWidget {
@@ -162,10 +218,13 @@ class KaiMessageList extends StatelessWidget {
     this.transientBuilder,
     this.transientItemBuilder,
     this.functionCallBuilder,
+    this.emptyStateBuilder,
+    this.onEmptyStateSubmit,
     this.onMessageTap,
     this.padding,
     this.physics,
     this.showTimeLabel = false,
+    this.avatarBuilder,
   });
 
   final IList<CoreMessage> messages;
@@ -178,10 +237,13 @@ class KaiMessageList extends StatelessWidget {
   final KaiTransientBuilder? transientBuilder;
   final KaiTransientItemBuilder? transientItemBuilder;
   final KaiFunctionCallBuilder? functionCallBuilder;
+  final KaiEmptyStateBuilder? emptyStateBuilder;
+  final void Function(String text)? onEmptyStateSubmit;
   final void Function(CoreMessage message)? onMessageTap;
   final EdgeInsetsGeometry? padding;
   final ScrollPhysics? physics;
   final bool showTimeLabel;
+  final KaiAvatarBuilder? avatarBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -195,6 +257,10 @@ class KaiMessageList extends StatelessWidget {
     final transient = generationState != null && generationState!.isGenerating;
     final totalCount = filtered.length + (transient ? 1 : 0);
     final transientIndex = reverse ? 0 : filtered.length;
+
+    if (totalCount == 0 && emptyStateBuilder != null) {
+      return emptyStateBuilder!(context, onEmptyStateSubmit ?? (_) {});
+    }
 
     return ListView.builder(
       controller: controller,
@@ -210,7 +276,7 @@ class KaiMessageList extends StatelessWidget {
               transientBuilder?.call(context, state) ?? _defaultTransient(context, state);
           final built = transientItemBuilder?.call(context, state, defaultChild) ?? defaultChild;
           return Padding(
-            padding: EdgeInsets.only(bottom: theme.itemSpacing),
+            padding: EdgeInsets.only(bottom: index == 0 ? 4 : theme.itemSpacing),
             child: built,
           );
         }
@@ -222,7 +288,7 @@ class KaiMessageList extends StatelessWidget {
 
         if (message.type == CoreMessageType.function && functionCallBuilder != null) {
           return Padding(
-            padding: EdgeInsets.only(bottom: theme.itemSpacing),
+            padding: EdgeInsets.only(bottom: index == 0 ? 4 : theme.itemSpacing),
             child: functionCallBuilder!(context, message),
           );
         }
@@ -232,6 +298,7 @@ class KaiMessageList extends StatelessWidget {
           isUserMessage: message.type == CoreMessageType.user,
           onTap: onMessageTap == null ? null : () => onMessageTap!(message),
           showTimeLabel: showTimeLabel,
+          avatarBuilder: avatarBuilder,
         );
 
         final bubble =
@@ -240,7 +307,7 @@ class KaiMessageList extends StatelessWidget {
             defaultChild;
 
         return Padding(
-          padding: EdgeInsets.only(bottom: theme.itemSpacing),
+          padding: EdgeInsets.only(bottom: index == 0 ? 4 : theme.itemSpacing),
           child: bubble,
         );
       },
@@ -254,12 +321,14 @@ class KaiMessageList extends StatelessWidget {
         isUserMessage: false,
         contentBuilder: (_, __) =>
             const Padding(padding: EdgeInsets.symmetric(vertical: 2), child: KaiTypingIndicator()),
+        avatarBuilder: avatarBuilder,
       ),
       GenerationStreamingTextState(text: final text) => KaiMessageBubble(
         message: CoreMessage.ai(content: text),
         isUserMessage: false,
         contentBuilder: (context, _) =>
             KaiStreamingText(text: text, style: Theme.of(context).textTheme.bodyMedium),
+        avatarBuilder: avatarBuilder,
       ),
       _ => const SizedBox.shrink(),
     };

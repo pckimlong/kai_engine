@@ -97,6 +97,19 @@ class KaiComposerCallbacks {
 ///   },
 /// )
 /// ```
+///
+/// Example - Customize inline button:
+/// ```dart
+/// KaiComposer(
+///   onSend: (text) => controller.submit(text),
+///   isGenerating: isGenerating,
+///   inlineButton: true,
+///   sendIcon: Icons.send,
+///   stopIcon: Icons.close,
+///   buttonSize: 40,
+///   buttonColor: Colors.blue,
+/// )
+/// ```
 typedef KaiComposerBuilder =
     Widget Function(BuildContext context, KaiComposerState state, KaiComposerCallbacks callbacks);
 
@@ -109,9 +122,14 @@ class KaiComposer extends StatefulWidget {
     this.hintText = 'Type a message…',
     this.controller,
     this.autofocus = false,
-    this.maxLines = 6,
+    this.maxLines = 8,
     this.onError,
     this.builder,
+    this.inlineButton = true,
+    this.sendIcon,
+    this.stopIcon,
+    this.buttonSize = 36,
+    this.buttonColor,
   });
 
   final Future<void> Function(String text) onSend;
@@ -123,6 +141,11 @@ class KaiComposer extends StatefulWidget {
   final int maxLines;
   final void Function(Object error, StackTrace stackTrace)? onError;
   final KaiComposerBuilder? builder;
+  final bool inlineButton;
+  final IconData? sendIcon;
+  final IconData? stopIcon;
+  final double buttonSize;
+  final Color? buttonColor;
 
   @override
   State<KaiComposer> createState() => _KaiComposerState();
@@ -191,6 +214,80 @@ class _KaiComposerState extends State<KaiComposer> {
     }
 
     final colors = Theme.of(context).colorScheme;
+
+    if (widget.inlineButton) {
+      final effectiveButtonColor = widget.buttonColor ?? colors.primary;
+      final effectiveSendIcon = widget.sendIcon ?? Icons.arrow_upward;
+      final effectiveStopIcon = widget.stopIcon ?? Icons.stop;
+
+      return Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              autofocus: widget.autofocus,
+              maxLines: widget.maxLines,
+              minLines: 1,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                hintText: widget.hintText,
+                filled: true,
+                fillColor: colors.surfaceContainerHighest,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                suffixIcon: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Semantics(
+                    button: true,
+                    label: widget.isGenerating ? 'Stop generating' : 'Send message',
+                    child: Tooltip(
+                      message: widget.isGenerating ? 'Stop' : 'Send message',
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Container(
+                          width: widget.buttonSize,
+                          height: widget.buttonSize,
+                          decoration: BoxDecoration(
+                            color: effectiveButtonColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: colors.outlineVariant.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: InkWell(
+                            onTap: widget.isGenerating
+                                ? widget.onCancel
+                                : canSend
+                                ? _handleSend
+                                : null,
+                            borderRadius: BorderRadius.circular(widget.buttonSize / 2),
+                            child: Center(
+                              child: Icon(
+                                widget.isGenerating ? effectiveStopIcon : effectiveSendIcon,
+                                color: effectiveButtonColor == colors.primary
+                                    ? colors.onPrimary
+                                    : colors.onPrimaryContainer,
+                                size: widget.buttonSize * 0.56,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              onSubmitted: (_) => _handleSend(),
+              onChanged: (_) => setState(() {}),
+            ),
+          ),
+        ],
+      );
+    }
 
     return Row(
       children: [

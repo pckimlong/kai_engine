@@ -22,13 +22,15 @@ class KaiChatView extends StatefulWidget {
     this.transientBuilder,
     this.transientItemBuilder,
     this.functionCallBuilder,
+    this.emptyStateBuilder,
     this.onMessageTap,
     this.reverse = true,
     this.scrollController,
-    this.composerPadding = const EdgeInsets.fromLTRB(16, 0, 16, 12),
+    this.composerPadding = const EdgeInsets.fromLTRB(16, 12, 16, 12),
     this.listPadding,
     this.composerBuilder,
     this.showTimeLabel = false,
+    this.avatarBuilder,
   });
 
   final ChatControllerBase controller;
@@ -58,7 +60,9 @@ class KaiChatView extends StatefulWidget {
   final KaiTransientBuilder? transientBuilder;
   final KaiTransientItemBuilder? transientItemBuilder;
   final KaiFunctionCallBuilder? functionCallBuilder;
+  final KaiEmptyStateBuilder? emptyStateBuilder;
   final void Function(CoreMessage message)? onMessageTap;
+  final KaiAvatarBuilder? avatarBuilder;
 
   final bool reverse;
   final ScrollController? scrollController;
@@ -157,9 +161,12 @@ class _KaiChatViewState extends State<KaiChatView> {
                     transientBuilder: widget.transientBuilder,
                     transientItemBuilder: widget.transientItemBuilder,
                     functionCallBuilder: widget.functionCallBuilder,
+                    emptyStateBuilder: widget.emptyStateBuilder,
+                    onEmptyStateSubmit: _handleSend,
                     onMessageTap: widget.onMessageTap,
                     padding: widget.listPadding ?? theme.listPadding,
                     showTimeLabel: widget.showTimeLabel,
+                    avatarBuilder: widget.avatarBuilder,
                   );
                 },
               ),
