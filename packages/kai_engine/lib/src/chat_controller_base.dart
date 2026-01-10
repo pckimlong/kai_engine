@@ -161,7 +161,7 @@ abstract base class ChatControllerBase<TEntity> {
       final errorState = GenerationState<GenerationResult>.error(
         KaiException.exception(error.toString(), stackTrace),
       );
-      _generationStateController.add(errorState);
+      _setState(errorState);
       return errorState;
     }
   }
