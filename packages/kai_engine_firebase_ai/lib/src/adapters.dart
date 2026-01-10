@@ -5,8 +5,7 @@ import 'package:firebase_ai/src/content.dart'; // Access parsePart function
 import 'package:kai_engine/kai_engine.dart';
 
 /// Adapter for Firebase AI content to Core Message
-class FirebaseAiContentAdapter
-    implements GenerativeMessageAdapterBase<Content> {
+class FirebaseAiContentAdapter implements GenerativeMessageAdapterBase<Content> {
   const FirebaseAiContentAdapter();
 
   @override
@@ -19,7 +18,7 @@ class FirebaseAiContentAdapter
       CoreMessageType.unknown => null,
     };
 
-    // Check if we have stored original Content
+    // Check if we have stored original Content with timestamp
     if (message.extensions.containsKey('_originalContent')) {
       final originalContentJson = message.extensions['_originalContent'];
       if (originalContentJson != null) {
@@ -33,8 +32,7 @@ class FirebaseAiContentAdapter
           final reconstructedParts = <Part>[];
           final originalJson = originalContentJson as Map<String, dynamic>;
           final originalParts =
-              (originalJson['parts'] as List?)?.cast<Map<String, dynamic>>() ??
-              [];
+              (originalJson['parts'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
           for (int i = 0; i < parsedContent.parts.length; i++) {
             final parsedPart = parsedContent.parts[i];
@@ -42,13 +40,10 @@ class FirebaseAiContentAdapter
             // If this was parsed as UnknownPart but we have original JSON, try to reconstruct manually
             // Also handle InlineDataPart with null willContinue field
             if ((parsedPart is UnknownPart ||
-                    (parsedPart is InlineDataPart &&
-                        parsedPart.willContinue == null)) &&
+                    (parsedPart is InlineDataPart && parsedPart.willContinue == null)) &&
                 i < originalParts.length) {
               final originalPartJson = originalParts[i];
-              final reconstructedPart = _reconstructPartFromJson(
-                originalPartJson,
-              );
+              final reconstructedPart = _reconstructPartFromJson(originalPartJson);
               reconstructedParts.add(reconstructedPart ?? parsedPart);
             } else {
               reconstructedParts.add(parsedPart);
@@ -86,7 +81,8 @@ class FirebaseAiContentAdapter
     final combinedText = textParts.map((part) => part.text).join('\n').trim();
 
     // Store the entire Content object as JSON for perfect reconstruction
-    extensions['_originalContent'] = content.toJson();
+    final contentJson = content.toJson();
+    extensions['_originalContent'] = contentJson;
 
     final messageType = switch (content.role) {
       'user' => CoreMessageType.user,
@@ -96,11 +92,22 @@ class FirebaseAiContentAdapter
       _ => CoreMessageType.unknown,
     };
 
-    return CoreMessage.create(
-      type: messageType,
-      content: combinedText,
-      extensions: extensions,
-    );
+    // Try to preserve timestamp from stored content or extensions
+    DateTime? timestamp;
+    if (contentJson.containsKey('_timestamp')) {
+      try {
+        timestamp = DateTime.parse(contentJson['_timestamp'] as String);
+      } catch (e) {
+        // If parsing fails, use current time
+      }
+    }
+
+    // Store timestamp in extensions for future round-trip conversions
+    if (timestamp != null) {
+      extensions['_timestamp'] = timestamp.toIso8601String();
+    }
+
+    return CoreMessage.create(type: messageType, content: combinedText, extensions: extensions);
   }
 
   /// Helper method to manually reconstruct parts that Firebase AI's parseContent doesn't handle
@@ -111,9 +118,7 @@ class FirebaseAiContentAdapter
       final response = fr['response'];
       return FunctionResponse(
         fr['name'] as String,
-        response is Map
-            ? Map<String, Object?>.from(response)
-            : <String, Object?>{},
+        response is Map ? Map<String, Object?>.from(response) : <String, Object?>{},
         id: fr['id'] as String?,
       );
     }
@@ -144,10 +149,7 @@ class FirebaseAiContentAdapter
     // Handle FileData
     if (partJson.containsKey('fileData')) {
       final fileData = partJson['fileData'] as Map<String, dynamic>;
-      return FileData(
-        fileData['mimeType'] as String,
-        fileData['fileUri'] as String,
-      );
+      return FileData(fileData['mimeType'] as String, fileData['fileUri'] as String);
     }
 
     // If we can't reconstruct it, return null
