@@ -1,5 +1,105 @@
 import 'package:flutter/material.dart';
 
+/// State data provided to [KaiComposerBuilder].
+class KaiComposerState {
+  const KaiComposerState({
+    required this.isGenerating,
+    required this.isSending,
+    required this.canSend,
+    required this.text,
+  });
+
+  /// Whether the AI is currently generating a response.
+  final bool isGenerating;
+
+  /// Whether a send operation is in progress.
+  final bool isSending;
+
+  /// Whether the user can send a message (has text and not busy).
+  final bool canSend;
+
+  /// Current text in the input field.
+  final String text;
+}
+
+/// Callbacks provided to [KaiComposerBuilder].
+class KaiComposerCallbacks {
+  const KaiComposerCallbacks({required this.onSend, this.onCancel, required this.onTextChanged});
+
+  /// Send the current text in the input field.
+  final Future<void> Function() onSend;
+
+  /// Cancel the current generation (optional).
+  final VoidCallback? onCancel;
+
+  /// Called when the text field content changes.
+  final void Function(String text) onTextChanged;
+}
+
+/// Builder that creates a custom composer widget.
+///
+/// This builder receives the [state] and [callbacks] to build a custom composer.
+/// You can create your own text field, send button, and any additional UI elements.
+///
+/// Example - Create a custom composer with attachment button:
+/// ```dart
+/// KaiComposer(
+///   onSend: (text) => controller.submit(text),
+///   onCancel: () => controller.cancel(),
+///   isGenerating: isGenerating,
+///   builder: (context, state, callbacks) {
+///     return Row(
+///       children: [
+///         IconButton(
+///           icon: Icon(Icons.attach_file),
+///           onPressed: () => _handleAttachment(),
+///         ),
+///         Expanded(
+///           child: TextField(
+///             decoration: InputDecoration(
+///               hintText: 'Type a message...',
+///               border: OutlineInputBorder(),
+///             ),
+///             onChanged: callbacks.onTextChanged,
+///             onSubmitted: (_) => callbacks.onSend(),
+///           ),
+///         ),
+///         if (state.isGenerating)
+///           IconButton(
+///             icon: Icon(Icons.stop),
+///             onPressed: callbacks.onCancel,
+///           )
+///         else
+///           IconButton(
+///             icon: Icon(Icons.send),
+///             onPressed: state.canSend ? callbacks.onSend : null,
+///           ),
+///       ],
+///     );
+///   },
+/// )
+/// ```
+///
+/// Example - Use with KaiChatView:
+/// ```dart
+/// KaiChatView(
+///   controller: myController,
+///   composerBuilder: (context, composer) {
+///     return KaiComposer(
+///       onSend: composer.onSend,
+///       onCancel: composer.onCancel,
+///       isGenerating: composer.isGenerating,
+///       builder: (context, state, callbacks) {
+///         // Custom composer UI
+///         return YourCustomComposer(state: state, callbacks: callbacks);
+///       },
+///     );
+///   },
+/// )
+/// ```
+typedef KaiComposerBuilder =
+    Widget Function(BuildContext context, KaiComposerState state, KaiComposerCallbacks callbacks);
+
 class KaiComposer extends StatefulWidget {
   const KaiComposer({
     super.key,
@@ -11,6 +111,7 @@ class KaiComposer extends StatefulWidget {
     this.autofocus = false,
     this.maxLines = 6,
     this.onError,
+    this.builder,
   });
 
   final Future<void> Function(String text) onSend;
@@ -21,6 +122,7 @@ class KaiComposer extends StatefulWidget {
   final bool autofocus;
   final int maxLines;
   final void Function(Object error, StackTrace stackTrace)? onError;
+  final KaiComposerBuilder? builder;
 
   @override
   State<KaiComposer> createState() => _KaiComposerState();
@@ -53,10 +155,12 @@ class _KaiComposerState extends State<KaiComposer> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
+    // Clear text immediately for responsive UX (like Resonate pattern)
+    _controller.clear();
     setState(() => _sending = true);
+
     try {
       await widget.onSend(text);
-      if (mounted) _controller.clear();
     } catch (e, s) {
       widget.onError?.call(e, s);
     } finally {
@@ -66,9 +170,27 @@ class _KaiComposerState extends State<KaiComposer> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final isBusy = widget.isGenerating || _sending;
     final canSend = _controller.text.trim().isNotEmpty && !isBusy;
+
+    final state = KaiComposerState(
+      isGenerating: widget.isGenerating,
+      isSending: _sending,
+      canSend: canSend,
+      text: _controller.text,
+    );
+
+    final callbacks = KaiComposerCallbacks(
+      onSend: _handleSend,
+      onCancel: widget.onCancel,
+      onTextChanged: (text) => setState(() {}),
+    );
+
+    if (widget.builder != null) {
+      return widget.builder!(context, state, callbacks);
+    }
+
+    final colors = Theme.of(context).colorScheme;
 
     return Row(
       children: [
@@ -87,10 +209,7 @@ class _KaiComposerState extends State<KaiComposer> {
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
-              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
             onSubmitted: (_) => _handleSend(),
             onChanged: (_) => setState(() {}),

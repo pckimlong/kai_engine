@@ -13,6 +13,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  fast_immutable_collections: ^11.0.2
+  gpt_markdown: ^1.1.2
   kai_engine: ^0.1.1
 
 dev_dependencies:

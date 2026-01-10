@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:kai_engine/kai_engine.dart';
 
 import '../kai_chat_theme.dart';
 
-typedef KaiMessageContentBuilder =
-    Widget Function(BuildContext context, CoreMessage message);
+typedef KaiMessageContentBuilder = Widget Function(BuildContext context, CoreMessage message);
 
 /// Default bubble used by [KaiMessageList] / [KaiChatView].
 class KaiMessageBubble extends StatelessWidget {
@@ -15,6 +15,7 @@ class KaiMessageBubble extends StatelessWidget {
     this.onTap,
     this.isUserMessage,
     this.semanticLabel,
+    this.showTimeLabel = false,
   });
 
   final CoreMessage message;
@@ -22,6 +23,7 @@ class KaiMessageBubble extends StatelessWidget {
   final VoidCallback? onTap;
   final bool? isUserMessage;
   final String? semanticLabel;
+  final bool showTimeLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -36,19 +38,34 @@ class KaiMessageBubble extends StatelessWidget {
         ? (theme.userTextColor ?? colors.onPrimary)
         : (theme.aiTextColor ?? colors.onSurface);
 
+    final textStyle = Theme.of(
+      context,
+    ).textTheme.bodyMedium?.copyWith(color: textColor, height: 1.35);
+
     final content =
         contentBuilder?.call(context, message) ??
-        Text(
-          message.content,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: textColor, height: 1.35),
-        );
+        (isUser
+            ? Text(message.content, style: textStyle)
+            : GptMarkdown(message.content, style: textStyle));
+
+    final child = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        content,
+        if (showTimeLabel)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              _formatTime(message.timestamp),
+              style: TextStyle(fontSize: 12, color: textColor.withValues(alpha: 0.6)),
+            ),
+          ),
+      ],
+    );
 
     return Row(
-      mainAxisAlignment: isUser
-          ? MainAxisAlignment.end
-          : MainAxisAlignment.start,
+      mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
       children: [
         Flexible(
           child: Semantics(
@@ -69,25 +86,22 @@ class KaiMessageBubble extends StatelessWidget {
                     padding: theme.bubblePadding,
                     decoration: BoxDecoration(
                       color: bubbleColor,
-                      borderRadius: BorderRadius.circular(theme.bubbleRadius)
-                          .copyWith(
-                            bottomLeft: isUser
-                                ? Radius.circular(theme.bubbleRadius)
-                                : const Radius.circular(6),
-                            bottomRight: isUser
-                                ? const Radius.circular(6)
-                                : Radius.circular(theme.bubbleRadius),
-                          ),
+                      borderRadius: BorderRadius.circular(theme.bubbleRadius).copyWith(
+                        bottomLeft: isUser
+                            ? Radius.circular(theme.bubbleRadius)
+                            : const Radius.circular(6),
+                        bottomRight: isUser
+                            ? const Radius.circular(6)
+                            : Radius.circular(theme.bubbleRadius),
+                      ),
                       border: Border.all(
-                        color: colors.outlineVariant.withValues(
-                          alpha: isUser ? 0.15 : 0.35,
-                        ),
+                        color: colors.outlineVariant.withValues(alpha: isUser ? 0.15 : 0.35),
                         width: 1,
                       ),
                     ),
                     child: DefaultTextStyle.merge(
                       style: TextStyle(color: textColor),
-                      child: content,
+                      child: child,
                     ),
                   ),
                 ),
@@ -97,5 +111,24 @@ class KaiMessageBubble extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _formatTime(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
+    }
   }
 }
