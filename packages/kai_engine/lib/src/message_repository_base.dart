@@ -20,13 +20,14 @@ abstract interface class MessageRepositoryBase<T> {
 }
 
 /// Abstract interface for a core message repository. No adapter required.
-abstract interface class CoreMessageRepositoryBase
-    extends MessageRepositoryBase<CoreMessage> {}
+abstract interface class CoreMessageRepositoryBase extends MessageRepositoryBase<CoreMessage> {}
 
 /// Prebuilt repository for memory persistence.
+/// Messages are automatically sorted by timestamp on initialization.
 final class InMemoryMessageRepository implements CoreMessageRepositoryBase {
   InMemoryMessageRepository({Iterable<CoreMessage>? initialMessages})
-    : _messages = initialMessages?.toList() ?? [];
+    : _messages = (initialMessages?.toList() ?? [])
+        ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
   final List<CoreMessage> _messages;
 
@@ -60,5 +61,80 @@ final class InMemoryMessageRepository implements CoreMessageRepositoryBase {
       }
     }
     return Future.value(messages);
+  }
+}
+
+/// Prebuilt repository for callback-based persistence.
+///
+/// Simplified API with only 2 required callbacks:
+/// - [onInitial]: Load initial messages from persistence
+/// - [onPut]: Persist insert or update operations (upsert)
+/// - [onRemove]: Optional callback for persisting deletions
+///
+/// Note: Callbacks are for persistence only. The repository maintains
+/// its own internal state for immediate read operations. Messages are
+/// automatically sorted by timestamp on initial load.
+final class CoreMessageRepository implements CoreMessageRepositoryBase {
+  final Future<Iterable<CoreMessage>> Function(ConversationSession) onInitial;
+  final Future<Iterable<CoreMessage>> Function(ConversationSession, Iterable<CoreMessage>) onPut;
+  final Future<void> Function(Iterable<CoreMessage>)? onRemove;
+
+  final List<CoreMessage> _messages = [];
+  ConversationSession? _cachedSession;
+  bool _isInitialized = false;
+
+  CoreMessageRepository({required this.onInitial, required this.onPut, this.onRemove});
+
+  @override
+  Future<Iterable<CoreMessage>> getMessages(ConversationSession session) async {
+    if (!_isInitialized || _cachedSession != session) {
+      _cachedSession = session;
+      final loaded = await onInitial(session);
+      _messages.clear();
+      _messages.addAll(loaded);
+      _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      _isInitialized = true;
+    }
+    return _messages;
+  }
+
+  @override
+  Future<Iterable<CoreMessage>> saveMessages({
+    required ConversationSession session,
+    required Iterable<CoreMessage> messages,
+  }) async {
+    if (_cachedSession != null && _cachedSession != session) {
+      _cachedSession = session;
+      _messages.clear();
+    } else {
+      _cachedSession = session;
+    }
+    _isInitialized = true;
+    _messages.addAll(messages);
+    await onPut(session, messages);
+    return messages;
+  }
+
+  @override
+  Future<Iterable<CoreMessage>> updateMessages(Iterable<CoreMessage> messages) async {
+    if (_cachedSession == null) {
+      throw StateError('Session not initialized. Call getMessages or saveMessages first.');
+    }
+    for (var message in messages) {
+      final index = _messages.indexWhere((m) => m.messageId == message.messageId);
+      if (index != -1) {
+        _messages[index] = message;
+      }
+    }
+    await onPut(_cachedSession!, messages);
+    return messages;
+  }
+
+  @override
+  Future<void> removeMessages(Iterable<CoreMessage> messages) async {
+    _messages.removeWhere(
+      (message) => messages.map((e) => e.messageId).contains(message.messageId),
+    );
+    await onRemove?.call(messages);
   }
 }
